@@ -338,6 +338,11 @@ select:disabled,
   color: var(--amber);
 }
 
+.map-dot--red {
+  background: var(--red);
+  color: var(--red);
+}
+
 .map-dot--neutral {
   background: #c7d2d4;
   color: #c7d2d4;
@@ -438,7 +443,8 @@ select:disabled,
 
 table {
   width: 100%;
-  border-collapse: collapse;
+  border-collapse: separate;
+  border-spacing: 0;
 }
 
 thead {
@@ -456,11 +462,13 @@ th {
   position: sticky;
   top: 0;
   z-index: 1;
+  background: rgba(16, 28, 33, 0.98);
   color: var(--muted);
   font-size: 0.82rem;
   text-transform: uppercase;
   letter-spacing: 0.06em;
   border-bottom: 1px solid rgba(255, 188, 84, 0.18);
+  box-shadow: inset 0 -1px 0 rgba(255, 188, 84, 0.12);
 }
 
 tbody tr:nth-child(odd) {
