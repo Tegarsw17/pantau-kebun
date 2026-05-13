@@ -112,7 +112,8 @@ function App() {
         });
   const hoveredDot = visibleDots.find((dot) => dot.id === hoveredDotId) ?? null;
   const selectedDot = visibleDots.find((dot) => dot.id === selectedDotId) ?? null;
-  const activeDot = hoveredDot ?? selectedDot;
+  const activeDot = selectedDot ?? hoveredDot;
+  const activeDotLabel = selectedDot ? "Selected Tree" : "Hover Preview";
 
   return (
     <div className="app-shell">
@@ -267,9 +268,7 @@ function App() {
                       top: `${Math.max(activeDot.topPercent - 14, 8)}%`,
                     }}
                   >
-                    <p className="overlay-label">
-                      {hoveredDot ? "Hover Preview" : "Selected Tree"}
-                    </p>
+                    <p className="overlay-label">{activeDotLabel}</p>
                     <strong>{activeDot.treeIdDisplay}</strong>
                     <span>{activeDot.plantName}</span>
                     <span>Jenis: {activeDot.plantType.label}</span>
