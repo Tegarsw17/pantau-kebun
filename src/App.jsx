@@ -237,7 +237,7 @@ function App() {
                       } ${isHovered ? "map-dot--hovered" : ""}`}
                       key={dot.id}
                       style={{ left: `${dot.leftPercent}%`, top: `${dot.topPercent}%` }}
-                      title={`${dot.treeIdDisplay} · ${dot.plantName} · ${dot.plantType.label} · ${dot.condition.label}`}
+                      aria-label={`${dot.treeIdDisplay}, ${dot.plantName}, ${dot.plantType.label}, ${dot.condition.label}`}
                       onMouseEnter={() => setHoveredDotId(dot.id)}
                       onMouseLeave={() => setHoveredDotId(null)}
                       onFocus={() => setHoveredDotId(dot.id)}
