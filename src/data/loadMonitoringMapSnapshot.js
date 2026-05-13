@@ -28,18 +28,21 @@ const conditionPresentation = {
     label: "Baik",
     dotClassName: "map-dot--green",
     legendClassName: "legend-swatch--green",
+    badgeClassName: "status-badge--green",
   },
   "Perlu Cek": {
     value: "Perlu Cek",
     label: "Perlu Cek",
     dotClassName: "map-dot--amber",
     legendClassName: "legend-swatch--amber",
+    badgeClassName: "status-badge--amber",
   },
   Buruk: {
     value: "Buruk",
     label: "Buruk",
     dotClassName: "map-dot--red",
     legendClassName: "legend-swatch--red",
+    badgeClassName: "status-badge--red",
   },
 };
 
@@ -94,6 +97,18 @@ function buildFilterOptions(dots, attributeKey) {
   return Array.from(uniqueValues.values());
 }
 
+function deriveSyntheticNote(plantType, condition, plant) {
+  if (condition.value === "Baik") {
+    return `${plantType.label} block stable, routine observation complete for ${plant.plant_name}.`;
+  }
+
+  if (condition.value === "Perlu Cek") {
+    return `Check canopy response and branch health near ${plant.plant_name}.`;
+  }
+
+  return `Inspect leaf stress and root-zone moisture around ${plant.plant_name}.`;
+}
+
 function normalizeSnapshot(payload) {
   const bounds = payload?.meta?.bounds_hint;
   const plants = Array.isArray(payload?.plants) ? payload.plants : [];
@@ -130,9 +145,20 @@ function normalizeSnapshot(payload) {
     };
   });
 
+  const reportRows = dots.map((dot) => ({
+    treeId: dot.treeIdDisplay,
+    plantName: dot.plantName,
+    jenis: dot.plantType.label,
+    kondisi: dot.condition.label,
+    badgeClass: dot.condition.badgeClassName,
+    note: deriveSyntheticNote(dot.plantType, dot.condition, { plant_name: dot.plantName }),
+    updatedAt: dot.id >= 33 ? "2026-02-15" : "2026-02-14",
+  }));
+
   return {
     totalTrees: dots.length,
     dots,
+    reportRows,
     filters: {
       plantType: buildFilterOptions(dots, "plantType"),
       condition: buildFilterOptions(dots, "condition"),

@@ -430,7 +430,8 @@ select:disabled,
 }
 
 .table-shell {
-  overflow: hidden;
+  overflow: auto;
+  max-height: 430px;
   border: 1px solid rgba(255, 188, 84, 0.2);
   background: rgba(7, 13, 17, 0.92);
 }
@@ -452,6 +453,9 @@ td {
 }
 
 th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
   color: var(--muted);
   font-size: 0.82rem;
   text-transform: uppercase;
@@ -508,6 +512,23 @@ tbody tr + tr td {
 
 .placeholder-row {
   opacity: 0.84;
+}
+
+.empty-table-state {
+  display: grid;
+  place-items: center;
+  gap: 8px;
+  min-height: 220px;
+  padding: 24px;
+  text-align: center;
+}
+
+.empty-table-state strong {
+  font-size: 1rem;
+}
+
+.empty-table-state span {
+  color: var(--muted);
 }
 
 @media (max-width: 1120px) {

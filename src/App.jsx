@@ -1,45 +1,5 @@
-import { useEffect, useState } from "react";
+import { useDeferredValue, useEffect, useState } from "react";
 import { loadMonitoringMapSnapshot } from "./data/loadMonitoringMapSnapshot.js";
-
-const sampleRows = [
-  {
-    treeId: "G03-P000013",
-    plantName: "Bawor 1",
-    jenis: "Bawor",
-    kondisi: "Baik",
-    badgeClass: "status-badge--green",
-    note: "Waiting for monitoring feed",
-    updatedAt: "2026-02-14",
-  },
-  {
-    treeId: "G03-P000023",
-    plantName: "Musangking 1",
-    jenis: "Musangking",
-    kondisi: "Perlu Cek",
-    badgeClass: "status-badge--amber",
-    note: "Shell placeholder row",
-    updatedAt: "2026-02-14",
-  },
-  {
-    treeId: "G03-P000033",
-    plantName: "Duri Hitam 149",
-    jenis: "Duri Hitam",
-    kondisi: "Buruk",
-    badgeClass: "status-badge--red",
-    note: "Data wiring in next feature step",
-    updatedAt: "2026-02-15",
-  },
-  {
-    treeId: "G03-P000038",
-    plantName: "Bawor 18",
-    jenis: "Bawor",
-    kondisi: "Tersedia",
-    badgeClass: "status-badge--cyan",
-    note: "Preview layout only",
-    updatedAt: "2026-02-15",
-    placeholder: true,
-  },
-];
 
 const ALL_VALUES = "Tampilkan Semua";
 const CATEGORY_OPTIONS = {
@@ -60,10 +20,12 @@ function App() {
       plantType: [],
       condition: [],
     },
+    reportRows: [],
     message: "Loading synthetic coordinate layout",
   });
   const [selectedCategory, setSelectedCategory] = useState("condition");
   const [selectedValue, setSelectedValue] = useState(ALL_VALUES);
+  const [tableSearchQuery, setTableSearchQuery] = useState("");
 
   useEffect(() => {
     let isMounted = true;
@@ -79,6 +41,7 @@ function App() {
           dots: snapshot.dots,
           totalTrees: snapshot.totalTrees,
           filters: snapshot.filters,
+          reportRows: snapshot.reportRows,
           message: "Synthetic layout loaded from JSON",
         });
       })
@@ -95,6 +58,7 @@ function App() {
             plantType: [],
             condition: [],
           },
+          reportRows: [],
           message: "Failed to load synthetic coordinate layout",
         });
       });
@@ -110,6 +74,7 @@ function App() {
 
   const activeCategory = CATEGORY_OPTIONS[selectedCategory];
   const availableValues = mapSnapshot.filters[selectedCategory] ?? [];
+  const deferredTableSearchQuery = useDeferredValue(tableSearchQuery);
   const visibleDots =
     selectedValue === ALL_VALUES
       ? mapSnapshot.dots
@@ -119,6 +84,18 @@ function App() {
     selectedValue === ALL_VALUES
       ? availableValues
       : availableValues.filter((item) => item.value === selectedValue);
+  const normalizedTableSearchQuery = deferredTableSearchQuery.trim().toLowerCase();
+  const filteredReportRows =
+    normalizedTableSearchQuery === ""
+      ? mapSnapshot.reportRows
+      : mapSnapshot.reportRows.filter((row) => {
+          const treeId = row.treeId.toLowerCase();
+          const note = row.note.toLowerCase();
+
+          return (
+            treeId.includes(normalizedTableSearchQuery) || note.includes(normalizedTableSearchQuery)
+          );
+        });
 
   return (
     <div className="app-shell">
@@ -280,39 +257,52 @@ function App() {
             <div className="report-toolbar">
               <label className="search-shell" aria-label="Search Placeholder">
                 <span className="search-shell__icon">⌕</span>
-                <input type="text" value="" placeholder="Search Tree ID or notes" readOnly />
+                <input
+                  type="text"
+                  value={tableSearchQuery}
+                  placeholder="Search Tree ID or notes"
+                  onChange={(event) => setTableSearchQuery(event.target.value)}
+                  disabled={mapSnapshot.loadState !== "ready"}
+                />
               </label>
-              <span className="results-pill">27 rows</span>
+              <span className="results-pill">{filteredReportRows.length} rows</span>
             </div>
           </div>
 
           <div className="table-shell">
-            <table>
-              <thead>
-                <tr>
-                  <th>Tree ID</th>
-                  <th>Plant Name</th>
-                  <th>Jenis</th>
-                  <th>Kondisi</th>
-                  <th>Last Note</th>
-                  <th>Updated At</th>
-                </tr>
-              </thead>
-              <tbody>
-                {sampleRows.map((row) => (
-                  <tr className={row.placeholder ? "placeholder-row" : ""} key={row.treeId}>
-                    <td className="mono">{row.treeId}</td>
-                    <td>{row.plantName}</td>
-                    <td>{row.jenis}</td>
-                    <td>
-                      <span className={`status-badge ${row.badgeClass}`}>● {row.kondisi}</span>
-                    </td>
-                    <td>{row.note}</td>
-                    <td>{row.updatedAt}</td>
+            {filteredReportRows.length === 0 ? (
+              <div className="empty-table-state">
+                <strong>No matching records</strong>
+                <span>Try another Tree ID fragment or note keyword.</span>
+              </div>
+            ) : (
+              <table>
+                <thead>
+                  <tr>
+                    <th>Tree ID</th>
+                    <th>Plant Name</th>
+                    <th>Jenis</th>
+                    <th>Kondisi</th>
+                    <th>Last Note</th>
+                    <th>Updated At</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {filteredReportRows.map((row) => (
+                    <tr key={row.treeId}>
+                      <td className="mono">{row.treeId}</td>
+                      <td>{row.plantName}</td>
+                      <td>{row.jenis}</td>
+                      <td>
+                        <span className={`status-badge ${row.badgeClass}`}>● {row.kondisi}</span>
+                      </td>
+                      <td>{row.note}</td>
+                      <td>{row.updatedAt}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
           </div>
         </section>
       </main>
