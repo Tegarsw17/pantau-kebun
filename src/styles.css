@@ -43,6 +43,10 @@ body::before {
   pointer-events: none;
 }
 
+#root {
+  min-height: 100vh;
+}
+
 .app-shell {
   width: min(1480px, calc(100vw - 40px));
   margin: 0 auto;
