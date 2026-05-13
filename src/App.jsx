@@ -74,6 +74,14 @@ function App() {
     setSelectedValue(ALL_VALUES);
   }, [selectedCategory]);
 
+  const activeCategory = CATEGORY_OPTIONS[selectedCategory];
+  const availableValues = mapSnapshot.filters[selectedCategory] ?? [];
+  const deferredTableSearchQuery = useDeferredValue(tableSearchQuery);
+  const visibleDots =
+    selectedValue === ALL_VALUES
+      ? mapSnapshot.dots
+      : mapSnapshot.dots.filter((dot) => dot[selectedCategory].value === selectedValue);
+
   useEffect(() => {
     const visibleIds = new Set(visibleDots.map((dot) => dot.id));
 
@@ -85,14 +93,6 @@ function App() {
       setSelectedDotId(null);
     }
   }, [hoveredDotId, selectedDotId, visibleDots]);
-
-  const activeCategory = CATEGORY_OPTIONS[selectedCategory];
-  const availableValues = mapSnapshot.filters[selectedCategory] ?? [];
-  const deferredTableSearchQuery = useDeferredValue(tableSearchQuery);
-  const visibleDots =
-    selectedValue === ALL_VALUES
-      ? mapSnapshot.dots
-      : mapSnapshot.dots.filter((dot) => dot[selectedCategory].value === selectedValue);
 
   const legendItems =
     selectedValue === ALL_VALUES
