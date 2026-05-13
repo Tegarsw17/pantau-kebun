@@ -321,6 +321,28 @@ select:disabled,
   transform: translate(-50%, -50%);
   border: 2px solid rgba(7, 13, 17, 0.9);
   box-shadow: 0 0 18px currentColor;
+  pointer-events: auto;
+  cursor: pointer;
+  transition:
+    transform 140ms ease,
+    box-shadow 140ms ease,
+    filter 140ms ease;
+}
+
+.map-dot:hover,
+.map-dot--hovered {
+  transform: translate(-50%, -50%) scale(1.18);
+  filter: brightness(1.08);
+  box-shadow: 0 0 0 6px rgba(255, 255, 255, 0.04), 0 0 24px currentColor;
+  z-index: 4;
+}
+
+.map-dot--selected {
+  transform: translate(-50%, -50%) scale(1.32);
+  box-shadow:
+    0 0 0 6px rgba(255, 255, 255, 0.08),
+    0 0 30px currentColor;
+  z-index: 5;
 }
 
 .map-dot--cyan {
@@ -379,6 +401,11 @@ select:disabled,
   bottom: 16px;
 }
 
+.map-overlay--bottom-left {
+  left: 16px;
+  bottom: 16px;
+}
+
 .map-overlay--center {
   inset: 50% auto auto 50%;
   transform: translate(-50%, -50%);
@@ -400,6 +427,30 @@ select:disabled,
   box-shadow:
     0 0 0 18px rgba(60, 230, 255, 0.04),
     inset 0 0 24px rgba(60, 230, 255, 0.08);
+}
+
+.map-tooltip {
+  position: absolute;
+  display: grid;
+  gap: 4px;
+  min-width: 180px;
+  max-width: 240px;
+  padding: 12px 14px;
+  border: 1px solid rgba(60, 230, 255, 0.28);
+  background: rgba(6, 14, 17, 0.92);
+  box-shadow: var(--shadow);
+  pointer-events: none;
+  z-index: 5;
+}
+
+.map-tooltip strong {
+  font-size: 0.98rem;
+}
+
+.map-tooltip span {
+  color: var(--muted);
+  line-height: 1.35;
+  font-size: 0.9rem;
 }
 
 .report-toolbar {
@@ -432,6 +483,11 @@ select:disabled,
 
 .search-shell input::placeholder {
   color: var(--subtle);
+}
+
+.search-shell input:focus {
+  border-color: rgba(87, 242, 135, 0.44);
+  box-shadow: 0 0 0 3px rgba(87, 242, 135, 0.08);
 }
 
 .table-shell {

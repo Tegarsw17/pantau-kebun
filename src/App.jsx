@@ -26,6 +26,8 @@ function App() {
   const [selectedCategory, setSelectedCategory] = useState("condition");
   const [selectedValue, setSelectedValue] = useState(ALL_VALUES);
   const [tableSearchQuery, setTableSearchQuery] = useState("");
+  const [hoveredDotId, setHoveredDotId] = useState(null);
+  const [selectedDotId, setSelectedDotId] = useState(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -72,6 +74,18 @@ function App() {
     setSelectedValue(ALL_VALUES);
   }, [selectedCategory]);
 
+  useEffect(() => {
+    const visibleIds = new Set(visibleDots.map((dot) => dot.id));
+
+    if (hoveredDotId !== null && !visibleIds.has(hoveredDotId)) {
+      setHoveredDotId(null);
+    }
+
+    if (selectedDotId !== null && !visibleIds.has(selectedDotId)) {
+      setSelectedDotId(null);
+    }
+  }, [hoveredDotId, selectedDotId, visibleDots]);
+
   const activeCategory = CATEGORY_OPTIONS[selectedCategory];
   const availableValues = mapSnapshot.filters[selectedCategory] ?? [];
   const deferredTableSearchQuery = useDeferredValue(tableSearchQuery);
@@ -96,6 +110,9 @@ function App() {
             treeId.includes(normalizedTableSearchQuery) || note.includes(normalizedTableSearchQuery)
           );
         });
+  const hoveredDot = visibleDots.find((dot) => dot.id === hoveredDotId) ?? null;
+  const selectedDot = visibleDots.find((dot) => dot.id === selectedDotId) ?? null;
+  const activeDot = hoveredDot ?? selectedDot;
 
   return (
     <div className="app-shell">
@@ -210,13 +227,30 @@ function App() {
               <div className="map-dot-layer">
                 {visibleDots.map((dot) => {
                   const presentation = dot[selectedCategory];
+                  const isSelected = selectedDotId === dot.id;
+                  const isHovered = hoveredDotId === dot.id;
 
                   return (
                     <span
-                      className={`map-dot ${presentation.dotClassName}`}
+                      className={`map-dot ${presentation.dotClassName} ${
+                        isSelected ? "map-dot--selected" : ""
+                      } ${isHovered ? "map-dot--hovered" : ""}`}
                       key={dot.id}
                       style={{ left: `${dot.leftPercent}%`, top: `${dot.topPercent}%` }}
                       title={`${dot.treeIdDisplay} · ${dot.plantName} · ${dot.plantType.label} · ${dot.condition.label}`}
+                      onMouseEnter={() => setHoveredDotId(dot.id)}
+                      onMouseLeave={() => setHoveredDotId(null)}
+                      onFocus={() => setHoveredDotId(dot.id)}
+                      onBlur={() => setHoveredDotId(null)}
+                      onClick={() => setSelectedDotId(dot.id)}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter" || event.key === " ") {
+                          event.preventDefault();
+                          setSelectedDotId(dot.id);
+                        }
+                      }}
+                      role="button"
+                      tabIndex={0}
                     />
                   );
                 })}
@@ -224,6 +258,24 @@ function App() {
                 <div className="map-overlay map-overlay--center">
                   <div className="focus-ring" />
                 </div>
+
+                {activeDot ? (
+                  <div
+                    className="map-tooltip"
+                    style={{
+                      left: `${Math.min(activeDot.leftPercent + 3, 82)}%`,
+                      top: `${Math.max(activeDot.topPercent - 14, 8)}%`,
+                    }}
+                  >
+                    <p className="overlay-label">
+                      {hoveredDot ? "Hover Preview" : "Selected Tree"}
+                    </p>
+                    <strong>{activeDot.treeIdDisplay}</strong>
+                    <span>{activeDot.plantName}</span>
+                    <span>Jenis: {activeDot.plantType.label}</span>
+                    <span>Kondisi: {activeDot.condition.label}</span>
+                  </div>
+                ) : null}
               </div>
             </div>
 
@@ -243,6 +295,23 @@ function App() {
               <p className="overlay-label">Visible Dots</p>
               <strong>{visibleDots.length} Trees</strong>
               <span>{mapSnapshot.message}</span>
+            </div>
+
+            <div className="map-overlay map-overlay--bottom-left">
+              <p className="overlay-label">Selection</p>
+              {selectedDot ? (
+                <>
+                  <strong>{selectedDot.treeIdDisplay}</strong>
+                  <span>{selectedDot.plantName}</span>
+                  <span>{selectedDot.plantType.label}</span>
+                  <span>{selectedDot.condition.label}</span>
+                </>
+              ) : (
+                <>
+                  <strong>No tree selected</strong>
+                  <span>Click a dot to pin it in the workspace.</span>
+                </>
+              )}
             </div>
           </div>
         </section>
