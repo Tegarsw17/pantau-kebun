@@ -163,13 +163,30 @@ function App() {
           </div>
 
           <div className="map-viewport">
-            <img
-              className="map-viewport__image"
-              src="/dronentak.jpeg"
-              alt="Drone orthomosaic preview for Garden 3"
-            />
-            <div className="map-viewport__scrim" />
-            <div className="map-viewport__grid" />
+            <div className="map-viewport__artboard" aria-hidden="true">
+              <img
+                className="map-viewport__image"
+                src="/dronentak.jpeg"
+                alt="Drone orthomosaic preview for Garden 3"
+              />
+              <div className="map-viewport__scrim" />
+              <div className="map-viewport__grid" />
+
+              <div className="map-dot-layer">
+                {mapSnapshot.dots.map((dot) => (
+                  <span
+                    className={`map-dot ${dot.dotClassName}`}
+                    key={dot.id}
+                    style={{ left: `${dot.leftPercent}%`, top: `${dot.topPercent}%` }}
+                    title={`${dot.treeIdDisplay} · ${dot.plantName}`}
+                  />
+                ))}
+
+                <div className="map-overlay map-overlay--center">
+                  <div className="focus-ring" />
+                </div>
+              </div>
+            </div>
 
             <div className="map-overlay map-overlay--top-left">
               <p className="overlay-label">Map Status</p>
@@ -183,21 +200,6 @@ function App() {
               <p className="overlay-label">Visible Dots</p>
               <strong>{mapSnapshot.totalTrees} Trees</strong>
               <span>Garden 3 synthetic coordinate preview</span>
-            </div>
-
-            <div className="map-overlay map-overlay--center">
-              <div className="focus-ring" />
-            </div>
-
-            <div className="map-dot-layer" aria-hidden="true">
-              {mapSnapshot.dots.map((dot) => (
-                <span
-                  className={`map-dot ${dot.dotClassName}`}
-                  key={dot.id}
-                  style={{ left: `${dot.leftPercent}%`, top: `${dot.topPercent}%` }}
-                  title={`${dot.treeIdDisplay} · ${dot.plantName}`}
-                />
-              ))}
             </div>
           </div>
         </section>
