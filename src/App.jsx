@@ -112,8 +112,6 @@ function App() {
         });
   const hoveredDot = visibleDots.find((dot) => dot.id === hoveredDotId) ?? null;
   const selectedDot = visibleDots.find((dot) => dot.id === selectedDotId) ?? null;
-  const activeDot = selectedDot ?? hoveredDot;
-  const activeDotLabel = selectedDot ? "Selected Tree" : "Hover Preview";
 
   return (
     <div className="app-shell">
@@ -260,19 +258,19 @@ function App() {
                   <div className="focus-ring" />
                 </div>
 
-                {activeDot ? (
+                {hoveredDot ? (
                   <div
                     className="map-tooltip"
                     style={{
-                      left: `${Math.min(activeDot.leftPercent + 3, 82)}%`,
-                      top: `${Math.max(activeDot.topPercent - 14, 8)}%`,
+                      left: `${Math.min(hoveredDot.leftPercent + 3, 82)}%`,
+                      top: `${Math.max(hoveredDot.topPercent - 14, 8)}%`,
                     }}
                   >
-                    <p className="overlay-label">{activeDotLabel}</p>
-                    <strong>{activeDot.treeIdDisplay}</strong>
-                    <span>{activeDot.plantName}</span>
-                    <span>Jenis: {activeDot.plantType.label}</span>
-                    <span>Kondisi: {activeDot.condition.label}</span>
+                    <p className="overlay-label">Hover Preview</p>
+                    <strong>{hoveredDot.treeIdDisplay}</strong>
+                    <span>{hoveredDot.plantName}</span>
+                    <span>Jenis: {hoveredDot.plantType.label}</span>
+                    <span>Kondisi: {hoveredDot.condition.label}</span>
                   </div>
                 ) : null}
               </div>
