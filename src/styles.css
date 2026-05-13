@@ -283,6 +283,42 @@ select,
   background-size: 48px 48px;
 }
 
+.map-dot-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+}
+
+.map-dot {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  border: 2px solid rgba(7, 13, 17, 0.9);
+  box-shadow: 0 0 18px currentColor;
+}
+
+.map-dot--cyan {
+  background: var(--cyan);
+  color: var(--cyan);
+}
+
+.map-dot--green {
+  background: var(--green);
+  color: var(--green);
+}
+
+.map-dot--amber {
+  background: var(--amber);
+  color: var(--amber);
+}
+
+.map-dot--neutral {
+  background: #c7d2d4;
+  color: #c7d2d4;
+}
+
 .map-overlay {
   position: absolute;
   display: grid;
@@ -292,6 +328,7 @@ select,
   border: 1px solid rgba(111, 169, 184, 0.22);
   background: rgba(8, 18, 21, 0.8);
   backdrop-filter: blur(8px);
+  z-index: 3;
 }
 
 .map-overlay strong {

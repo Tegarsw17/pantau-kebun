@@ -1,3 +1,6 @@
+import { useEffect, useState } from "react";
+import { loadMonitoringMapSnapshot } from "./data/loadMonitoringMapSnapshot.js";
+
 const sampleRows = [
   {
     treeId: "G03-P000013",
@@ -46,6 +49,47 @@ const legendItems = [
 ];
 
 function App() {
+  const [mapSnapshot, setMapSnapshot] = useState({
+    loadState: "loading",
+    dots: [],
+    totalTrees: 0,
+    message: "Loading synthetic coordinate layout",
+  });
+
+  useEffect(() => {
+    let isMounted = true;
+
+    loadMonitoringMapSnapshot()
+      .then((snapshot) => {
+        if (!isMounted) {
+          return;
+        }
+
+        setMapSnapshot({
+          loadState: "ready",
+          dots: snapshot.dots,
+          totalTrees: snapshot.totalTrees,
+          message: "Synthetic layout loaded from JSON",
+        });
+      })
+      .catch(() => {
+        if (!isMounted) {
+          return;
+        }
+
+        setMapSnapshot({
+          loadState: "error",
+          dots: [],
+          totalTrees: 0,
+          message: "Failed to load synthetic coordinate layout",
+        });
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   return (
     <div className="app-shell">
       <header className="topbar">
@@ -129,18 +173,31 @@ function App() {
 
             <div className="map-overlay map-overlay--top-left">
               <p className="overlay-label">Map Status</p>
-              <strong>Shell preview active</strong>
-              <span>Leaflet and data layers will be connected in the next step.</span>
+              <strong>
+                {mapSnapshot.loadState === "ready" ? "JSON map preview ready" : "Map shell active"}
+              </strong>
+              <span>{mapSnapshot.message}</span>
             </div>
 
             <div className="map-overlay map-overlay--bottom-right">
               <p className="overlay-label">Visible Dots</p>
-              <strong>27 Trees</strong>
-              <span>Static presentation only</span>
+              <strong>{mapSnapshot.totalTrees} Trees</strong>
+              <span>Garden 3 synthetic coordinate preview</span>
             </div>
 
             <div className="map-overlay map-overlay--center">
               <div className="focus-ring" />
+            </div>
+
+            <div className="map-dot-layer" aria-hidden="true">
+              {mapSnapshot.dots.map((dot) => (
+                <span
+                  className={`map-dot ${dot.dotClassName}`}
+                  key={dot.id}
+                  style={{ left: `${dot.leftPercent}%`, top: `${dot.topPercent}%` }}
+                  title={`${dot.treeIdDisplay} · ${dot.plantName}`}
+                />
+              ))}
             </div>
           </div>
         </section>
