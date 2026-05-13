@@ -271,11 +271,13 @@ select:disabled,
   overflow: hidden;
   border: 1px solid rgba(255, 188, 84, 0.22);
   background: #04090c;
+  isolation: isolate;
 }
 
 .map-viewport__leaflet-shell {
   position: absolute;
   inset: 0;
+  z-index: 0;
 }
 
 .map-leaflet {
@@ -337,7 +339,7 @@ select:disabled,
 .map-dot-layer {
   position: absolute;
   inset: 0;
-  z-index: 2;
+  z-index: 900;
   pointer-events: none;
 }
 
@@ -362,7 +364,7 @@ select:disabled,
   transform: translate(-50%, -50%) scale(1.18);
   filter: brightness(1.08);
   box-shadow: 0 0 0 6px rgba(255, 255, 255, 0.04), 0 0 24px currentColor;
-  z-index: 4;
+  z-index: 920;
 }
 
 .map-dot--selected {
@@ -370,7 +372,7 @@ select:disabled,
   box-shadow:
     0 0 0 6px rgba(255, 255, 255, 0.08),
     0 0 30px currentColor;
-  z-index: 5;
+  z-index: 930;
 }
 
 .map-dot--cyan {
@@ -407,7 +409,7 @@ select:disabled,
   border: 1px solid rgba(111, 169, 184, 0.22);
   background: rgba(8, 18, 21, 0.8);
   backdrop-filter: blur(8px);
-  z-index: 3;
+  z-index: 1000;
   pointer-events: none;
 }
 
@@ -445,7 +447,7 @@ select:disabled,
   border: none;
   background: none;
   backdrop-filter: none;
-  z-index: 2;
+  z-index: 950;
 }
 
 .focus-ring {
@@ -469,7 +471,7 @@ select:disabled,
   background: rgba(6, 14, 17, 0.92);
   box-shadow: var(--shadow);
   pointer-events: none;
-  z-index: 5;
+  z-index: 960;
 }
 
 .map-tooltip strong {
