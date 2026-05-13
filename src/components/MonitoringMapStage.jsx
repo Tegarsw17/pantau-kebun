@@ -1,7 +1,75 @@
 import { useEffect, useState } from "react";
+import { ImageOverlay, MapContainer, ZoomControl, useMap, useMapEvents } from "react-leaflet";
+
+const DRONE_IMAGE_URL = "/dronentak.jpeg";
+const FIT_BOUNDS_PADDING = [36, 36];
+const OVERLAY_DOT_MARGIN = 28;
+const DEFAULT_IMAGE_BOUNDS = [
+  [-2.25, 112.75],
+  [-2.249640676, 112.750323642],
+];
+
+function MapViewportBridge({ imageBounds, visibleDots, onViewportSync }) {
+  const map = useMap();
+
+  const syncProjectedDots = () => {
+    const size = map.getSize();
+    const projectedDots = visibleDots.map((dot) => {
+      const point = map.latLngToContainerPoint([dot.latitude, dot.longitude]);
+
+      return {
+        ...dot,
+        leftPx: point.x,
+        topPx: point.y,
+        isVisibleOnViewport:
+          point.x >= -OVERLAY_DOT_MARGIN &&
+          point.x <= size.x + OVERLAY_DOT_MARGIN &&
+          point.y >= -OVERLAY_DOT_MARGIN &&
+          point.y <= size.y + OVERLAY_DOT_MARGIN,
+      };
+    });
+
+    onViewportSync({
+      width: size.x,
+      height: size.y,
+      projectedDots,
+    });
+  };
+
+  useMapEvents({
+    load: syncProjectedDots,
+    move: syncProjectedDots,
+    zoom: syncProjectedDots,
+    resize: syncProjectedDots,
+  });
+
+  useEffect(() => {
+    map.fitBounds(imageBounds, {
+      padding: FIT_BOUNDS_PADDING,
+      animate: false,
+    });
+    map.setMinZoom(map.getZoom() - 0.5);
+    syncProjectedDots();
+  }, [imageBounds, map]);
+
+  useEffect(() => {
+    syncProjectedDots();
+  }, [visibleDots]);
+
+  return null;
+}
+
+function clampTooltipPosition(value, min, max) {
+  if (max <= min) {
+    return min;
+  }
+
+  return Math.min(Math.max(value, min), max);
+}
 
 export function MonitoringMapStage({
   allValues,
+  imageBounds,
   legendItems,
   loadState,
   mapMessage,
@@ -11,6 +79,13 @@ export function MonitoringMapStage({
 }) {
   const [hoveredDotId, setHoveredDotId] = useState(null);
   const [selectedDotId, setSelectedDotId] = useState(null);
+  const [viewportState, setViewportState] = useState({
+    width: 0,
+    height: 0,
+    projectedDots: [],
+  });
+
+  const resolvedImageBounds = imageBounds ?? DEFAULT_IMAGE_BOUNDS;
 
   useEffect(() => {
     const visibleIds = new Set(visibleDots.map((dot) => dot.id));
@@ -24,8 +99,28 @@ export function MonitoringMapStage({
     }
   }, [hoveredDotId, selectedDotId, visibleDots]);
 
-  const hoveredDot = visibleDots.find((dot) => dot.id === hoveredDotId) ?? null;
+  useEffect(() => {
+    const projectedVisibleIds = new Set(
+      viewportState.projectedDots
+        .filter((dot) => dot.isVisibleOnViewport)
+        .map((dot) => dot.id),
+    );
+
+    if (hoveredDotId !== null && !projectedVisibleIds.has(hoveredDotId)) {
+      setHoveredDotId(null);
+    }
+  }, [hoveredDotId, viewportState.projectedDots]);
+
+  const projectedDots = viewportState.projectedDots.filter((dot) => dot.isVisibleOnViewport);
+  const hoveredDot = projectedDots.find((dot) => dot.id === hoveredDotId) ?? null;
   const selectedDot = visibleDots.find((dot) => dot.id === selectedDotId) ?? null;
+
+  const tooltipLeft = hoveredDot
+    ? clampTooltipPosition(hoveredDot.leftPx + 18, 16, viewportState.width - 220)
+    : 16;
+  const tooltipTop = hoveredDot
+    ? clampTooltipPosition(hoveredDot.topPx - 112, 16, viewportState.height - 120)
+    : 16;
 
   return (
     <section className="map-stage" aria-label="Orchard Map">
@@ -55,17 +150,35 @@ export function MonitoringMapStage({
       </div>
 
       <div className="map-viewport">
-        <div className="map-viewport__artboard" aria-hidden="true">
-          <img
-            className="map-viewport__image"
-            src="/dronentak.jpeg"
-            alt="Drone orthomosaic preview for Garden 3"
-          />
+        <div className="map-viewport__leaflet-shell">
+          <MapContainer
+            attributionControl={false}
+            bounds={resolvedImageBounds}
+            boundsOptions={{ padding: FIT_BOUNDS_PADDING }}
+            className="map-leaflet"
+            maxBounds={resolvedImageBounds}
+            maxBoundsViscosity={1}
+            maxZoom={24}
+            preferCanvas
+            scrollWheelZoom
+            zoomControl={false}
+            zoomDelta={0.5}
+            zoomSnap={0.25}
+          >
+            <ZoomControl position="topright" />
+            <ImageOverlay bounds={resolvedImageBounds} opacity={1} url={DRONE_IMAGE_URL} />
+            <MapViewportBridge
+              imageBounds={resolvedImageBounds}
+              onViewportSync={setViewportState}
+              visibleDots={visibleDots}
+            />
+          </MapContainer>
+
           <div className="map-viewport__scrim" />
           <div className="map-viewport__grid" />
 
           <div className="map-dot-layer">
-            {visibleDots.map((dot) => {
+            {projectedDots.map((dot) => {
               const presentation = dot[selectedCategory];
               const isSelected = selectedDotId === dot.id;
               const isHovered = hoveredDotId === dot.id;
@@ -76,7 +189,7 @@ export function MonitoringMapStage({
                     isSelected ? "map-dot--selected" : ""
                   } ${isHovered ? "map-dot--hovered" : ""}`}
                   key={dot.id}
-                  style={{ left: `${dot.leftPercent}%`, top: `${dot.topPercent}%` }}
+                  style={{ left: `${dot.leftPx}px`, top: `${dot.topPx}px` }}
                   aria-label={`${dot.treeIdDisplay}, ${dot.plantName}, ${dot.plantType.label}, ${dot.condition.label}`}
                   onMouseEnter={() => setHoveredDotId(dot.id)}
                   onMouseLeave={() => setHoveredDotId(null)}
@@ -103,8 +216,8 @@ export function MonitoringMapStage({
               <div
                 className="map-tooltip"
                 style={{
-                  left: `${Math.min(hoveredDot.leftPercent + 3, 82)}%`,
-                  top: `${Math.max(hoveredDot.topPercent - 14, 8)}%`,
+                  left: `${tooltipLeft}px`,
+                  top: `${tooltipTop}px`,
                 }}
               >
                 <p className="overlay-label">Hover Preview</p>
@@ -119,7 +232,7 @@ export function MonitoringMapStage({
 
         <div className="map-overlay map-overlay--top-left">
           <p className="overlay-label">Map Status</p>
-          <strong>{loadState === "ready" ? "JSON map preview ready" : "Map shell active"}</strong>
+          <strong>{loadState === "ready" ? "Leaflet overlay ready" : "Map shell active"}</strong>
           <span>
             {selectedCategory === "plantType"
               ? "Color mode: Jenis Tumbuhan"

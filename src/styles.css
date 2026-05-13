@@ -271,35 +271,61 @@ select:disabled,
   background: #04090c;
 }
 
-.map-viewport__artboard {
+.map-viewport__leaflet-shell {
   position: absolute;
   inset: 0;
-  transform: scale(0.94);
-  transform-origin: center center;
-  will-change: transform;
 }
 
-.map-viewport__image,
+.map-leaflet {
+  width: 100%;
+  height: 100%;
+  background: #04090c;
+  outline: none;
+}
+
+.map-leaflet .leaflet-image-layer {
+  filter: saturate(0.86) brightness(0.75) contrast(1.05);
+}
+
+.map-leaflet .leaflet-control-zoom {
+  border: 1px solid rgba(87, 242, 135, 0.2);
+  background: rgba(8, 16, 20, 0.92);
+  box-shadow: var(--shadow);
+}
+
+.map-leaflet .leaflet-control-zoom a {
+  width: 34px;
+  height: 34px;
+  line-height: 34px;
+  border-bottom: 1px solid rgba(114, 144, 156, 0.12);
+  color: var(--text);
+  background: rgba(8, 16, 20, 0.92);
+}
+
+.map-leaflet .leaflet-control-zoom a:last-child {
+  border-bottom: 0;
+}
+
+.map-leaflet .leaflet-control-zoom a:hover {
+  background: rgba(18, 32, 38, 0.98);
+}
+
 .map-viewport__scrim,
 .map-viewport__grid {
   position: absolute;
   inset: 0;
-}
-
-.map-viewport__image {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  filter: saturate(0.86) brightness(0.75) contrast(1.05);
+  pointer-events: none;
 }
 
 .map-viewport__scrim {
+  z-index: 1;
   background:
     linear-gradient(180deg, rgba(5, 13, 16, 0.1), rgba(4, 9, 12, 0.58)),
     radial-gradient(circle at center, rgba(60, 230, 255, 0.06), transparent 48%);
 }
 
 .map-viewport__grid {
+  z-index: 1;
   background-image:
     linear-gradient(rgba(138, 206, 219, 0.08) 1px, transparent 1px),
     linear-gradient(90deg, rgba(138, 206, 219, 0.08) 1px, transparent 1px);
@@ -380,6 +406,7 @@ select:disabled,
   background: rgba(8, 18, 21, 0.8);
   backdrop-filter: blur(8px);
   z-index: 3;
+  pointer-events: none;
 }
 
 .map-overlay strong {

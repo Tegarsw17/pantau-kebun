@@ -141,6 +141,8 @@ function normalizeSnapshot(payload) {
       plantName: plant.plant_name,
       plantType,
       condition,
+      latitude: plant.latitude,
+      longitude: plant.longitude,
       ...position,
     };
   });
@@ -159,6 +161,10 @@ function normalizeSnapshot(payload) {
     totalTrees: dots.length,
     dots,
     reportRows,
+    mapBounds: [
+      [bounds.min_latitude, bounds.min_longitude],
+      [bounds.max_latitude, bounds.max_longitude],
+    ],
     filters: {
       plantType: buildFilterOptions(dots, "plantType"),
       condition: buildFilterOptions(dots, "condition"),

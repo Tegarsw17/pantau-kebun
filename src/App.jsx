@@ -16,6 +16,7 @@ function App() {
   const [mapSnapshot, setMapSnapshot] = useState({
     loadState: "loading",
     dots: [],
+    mapBounds: null,
     totalTrees: 0,
     filters: {
       plantType: [],
@@ -40,10 +41,11 @@ function App() {
         setMapSnapshot({
           loadState: "ready",
           dots: snapshot.dots,
+          mapBounds: snapshot.mapBounds,
           totalTrees: snapshot.totalTrees,
           filters: snapshot.filters,
           reportRows: snapshot.reportRows,
-          message: "Synthetic layout loaded from JSON",
+          message: "Leaflet image overlay loaded from JSON",
         });
       })
       .catch(() => {
@@ -54,6 +56,7 @@ function App() {
         setMapSnapshot({
           loadState: "error",
           dots: [],
+          mapBounds: null,
           totalTrees: 0,
           filters: {
             plantType: [],
@@ -174,6 +177,7 @@ function App() {
 
         <MonitoringMapStage
           allValues={ALL_VALUES}
+          imageBounds={mapSnapshot.mapBounds}
           legendItems={legendItems}
           loadState={mapSnapshot.loadState}
           mapMessage={mapSnapshot.message}
