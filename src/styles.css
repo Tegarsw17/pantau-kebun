@@ -217,7 +217,7 @@ select:disabled,
 }
 
 .map-stage {
-  min-height: 620px;
+  min-height: 0;
 }
 
 .legend-chip {
@@ -265,7 +265,9 @@ select:disabled,
 
 .map-viewport {
   position: relative;
-  min-height: 510px;
+  width: min(100%, 1220px);
+  aspect-ratio: 1600 / 900;
+  margin: 0 auto;
   overflow: hidden;
   border: 1px solid rgba(255, 188, 84, 0.22);
   background: #04090c;
@@ -661,11 +663,11 @@ tbody tr + tr td {
   }
 
   .map-stage {
-    min-height: 520px;
+    min-height: 0;
   }
 
   .map-viewport {
-    min-height: 420px;
+    width: 100%;
   }
 
   .report-toolbar {
