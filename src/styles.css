@@ -188,6 +188,12 @@ select,
   outline: none;
 }
 
+select:disabled,
+.search-shell input:disabled {
+  cursor: not-allowed;
+  opacity: 0.72;
+}
+
 .active-context {
   min-height: 48px;
   border: 1px solid rgba(255, 188, 84, 0.18);
@@ -218,6 +224,15 @@ select,
   border-color: rgba(255, 169, 86, 0.22);
   color: #fff1d4;
   background: rgba(19, 28, 31, 0.78);
+}
+
+.legend-chip--active {
+  border-color: rgba(87, 242, 135, 0.42);
+  box-shadow: 0 0 0 1px rgba(87, 242, 135, 0.08);
+}
+
+.legend-chip--muted {
+  opacity: 0.72;
 }
 
 .legend-swatch {
@@ -295,6 +310,7 @@ select,
   position: absolute;
   inset: 0;
   z-index: 2;
+  pointer-events: none;
 }
 
 .map-dot {

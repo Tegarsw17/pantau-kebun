@@ -41,20 +41,29 @@ const sampleRows = [
   },
 ];
 
-const legendItems = [
-  { label: "Musangking", className: "legend-swatch--cyan" },
-  { label: "Bawor", className: "legend-swatch--green" },
-  { label: "Duri Hitam", className: "legend-swatch--amber" },
-  { label: "Buruk", className: "legend-swatch--red" },
-];
+const ALL_VALUES = "Tampilkan Semua";
+const CATEGORY_OPTIONS = {
+  plantType: {
+    label: "Jenis Tumbuhan",
+  },
+  condition: {
+    label: "Kondisi",
+  },
+};
 
 function App() {
   const [mapSnapshot, setMapSnapshot] = useState({
     loadState: "loading",
     dots: [],
     totalTrees: 0,
+    filters: {
+      plantType: [],
+      condition: [],
+    },
     message: "Loading synthetic coordinate layout",
   });
+  const [selectedCategory, setSelectedCategory] = useState("condition");
+  const [selectedValue, setSelectedValue] = useState(ALL_VALUES);
 
   useEffect(() => {
     let isMounted = true;
@@ -69,6 +78,7 @@ function App() {
           loadState: "ready",
           dots: snapshot.dots,
           totalTrees: snapshot.totalTrees,
+          filters: snapshot.filters,
           message: "Synthetic layout loaded from JSON",
         });
       })
@@ -81,6 +91,10 @@ function App() {
           loadState: "error",
           dots: [],
           totalTrees: 0,
+          filters: {
+            plantType: [],
+            condition: [],
+          },
           message: "Failed to load synthetic coordinate layout",
         });
       });
@@ -89,6 +103,22 @@ function App() {
       isMounted = false;
     };
   }, []);
+
+  useEffect(() => {
+    setSelectedValue(ALL_VALUES);
+  }, [selectedCategory]);
+
+  const activeCategory = CATEGORY_OPTIONS[selectedCategory];
+  const availableValues = mapSnapshot.filters[selectedCategory] ?? [];
+  const visibleDots =
+    selectedValue === ALL_VALUES
+      ? mapSnapshot.dots
+      : mapSnapshot.dots.filter((dot) => dot[selectedCategory].value === selectedValue);
+
+  const legendItems =
+    selectedValue === ALL_VALUES
+      ? availableValues
+      : availableValues.filter((item) => item.value === selectedValue);
 
   return (
     <div className="app-shell">
@@ -112,25 +142,42 @@ function App() {
               <p className="section-kicker">Cascading Filters</p>
               <h2>Visual category controls</h2>
             </div>
-            <p className="filter-summary">Default focus: kondisi seluruh kebun</p>
+            <p className="filter-summary">
+              {activeCategory.label} / {selectedValue}
+            </p>
           </div>
 
           <div className="filter-grid">
             <label className="control-block">
               <span className="control-label">Kategori</span>
-              <select aria-label="Kategori" defaultValue="Jenis Tumbuhan">
-                <option>Jenis Tumbuhan</option>
-                <option>Kondisi</option>
+              <select
+                aria-label="Kategori"
+                value={selectedCategory}
+                onChange={(event) => setSelectedCategory(event.target.value)}
+                disabled={mapSnapshot.loadState !== "ready"}
+              >
+                {Object.entries(CATEGORY_OPTIONS).map(([key, option]) => (
+                  <option key={key} value={key}>
+                    {option.label}
+                  </option>
+                ))}
               </select>
             </label>
 
             <label className="control-block">
               <span className="control-label">Nilai</span>
-              <select aria-label="Nilai" defaultValue="Tampilkan Semua">
-                <option>Tampilkan Semua</option>
-                <option>Musangking</option>
-                <option>Bawor</option>
-                <option>Duri Hitam</option>
+              <select
+                aria-label="Nilai"
+                value={selectedValue}
+                onChange={(event) => setSelectedValue(event.target.value)}
+                disabled={mapSnapshot.loadState !== "ready"}
+              >
+                <option value={ALL_VALUES}>{ALL_VALUES}</option>
+                {availableValues.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
               </select>
             </label>
 
@@ -139,7 +186,9 @@ function App() {
               <div className="context-values">
                 <span className="context-chip">Garden 3</span>
                 <span className="context-chip">Orthomosaic Ready</span>
-                <span className="context-chip">Map Shell Only</span>
+                <span className="context-chip">
+                  {visibleDots.length}/{mapSnapshot.totalTrees} Visible
+                </span>
               </div>
             </div>
           </div>
@@ -154,8 +203,17 @@ function App() {
 
             <div className="legend-cluster" aria-label="Legend Preview">
               {legendItems.map((item) => (
-                <span className="legend-chip" key={item.label}>
-                  <span className={`legend-swatch ${item.className}`} />
+                <span
+                  className={`legend-chip ${
+                    selectedValue === ALL_VALUES
+                      ? ""
+                      : selectedValue === item.value
+                        ? "legend-chip--active"
+                        : "legend-chip--muted"
+                  }`}
+                  key={item.value}
+                >
+                  <span className={`legend-swatch ${item.legendClassName}`} />
                   {item.label}
                 </span>
               ))}
@@ -173,14 +231,18 @@ function App() {
               <div className="map-viewport__grid" />
 
               <div className="map-dot-layer">
-                {mapSnapshot.dots.map((dot) => (
-                  <span
-                    className={`map-dot ${dot.dotClassName}`}
-                    key={dot.id}
-                    style={{ left: `${dot.leftPercent}%`, top: `${dot.topPercent}%` }}
-                    title={`${dot.treeIdDisplay} · ${dot.plantName}`}
-                  />
-                ))}
+                {visibleDots.map((dot) => {
+                  const presentation = dot[selectedCategory];
+
+                  return (
+                    <span
+                      className={`map-dot ${presentation.dotClassName}`}
+                      key={dot.id}
+                      style={{ left: `${dot.leftPercent}%`, top: `${dot.topPercent}%` }}
+                      title={`${dot.treeIdDisplay} · ${dot.plantName} · ${dot.plantType.label} · ${dot.condition.label}`}
+                    />
+                  );
+                })}
 
                 <div className="map-overlay map-overlay--center">
                   <div className="focus-ring" />
@@ -193,13 +255,17 @@ function App() {
               <strong>
                 {mapSnapshot.loadState === "ready" ? "JSON map preview ready" : "Map shell active"}
               </strong>
-              <span>{mapSnapshot.message}</span>
+              <span>
+                {selectedCategory === "plantType"
+                  ? "Color mode: Jenis Tumbuhan"
+                  : "Color mode: Kondisi"}
+              </span>
             </div>
 
             <div className="map-overlay map-overlay--bottom-right">
               <p className="overlay-label">Visible Dots</p>
-              <strong>{mapSnapshot.totalTrees} Trees</strong>
-              <span>Garden 3 synthetic coordinate preview</span>
+              <strong>{visibleDots.length} Trees</strong>
+              <span>{mapSnapshot.message}</span>
             </div>
           </div>
         </section>

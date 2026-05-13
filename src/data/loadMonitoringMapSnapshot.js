@@ -2,9 +2,45 @@ const GARDEN_SCOPE = 3;
 const EDGE_PADDING_PERCENT = 5;
 
 const plantTypePresentation = {
-  7: { dotClassName: "map-dot--cyan" },
-  8: { dotClassName: "map-dot--amber" },
-  9: { dotClassName: "map-dot--green" },
+  7: {
+    value: "Musangking",
+    label: "Musangking",
+    dotClassName: "map-dot--cyan",
+    legendClassName: "legend-swatch--cyan",
+  },
+  8: {
+    value: "Duri Hitam",
+    label: "Duri Hitam",
+    dotClassName: "map-dot--amber",
+    legendClassName: "legend-swatch--amber",
+  },
+  9: {
+    value: "Bawor",
+    label: "Bawor",
+    dotClassName: "map-dot--green",
+    legendClassName: "legend-swatch--green",
+  },
+};
+
+const conditionPresentation = {
+  Baik: {
+    value: "Baik",
+    label: "Baik",
+    dotClassName: "map-dot--green",
+    legendClassName: "legend-swatch--green",
+  },
+  "Perlu Cek": {
+    value: "Perlu Cek",
+    label: "Perlu Cek",
+    dotClassName: "map-dot--amber",
+    legendClassName: "legend-swatch--amber",
+  },
+  Buruk: {
+    value: "Buruk",
+    label: "Buruk",
+    dotClassName: "map-dot--red",
+    legendClassName: "legend-swatch--red",
+  },
 };
 
 function clampPercent(value) {
@@ -27,6 +63,37 @@ function projectDotPosition(plant, bounds) {
   };
 }
 
+function deriveSyntheticCondition(plant) {
+  if (plant.layout_row <= 2) {
+    return conditionPresentation.Baik;
+  }
+
+  if (plant.layout_row <= 4) {
+    return conditionPresentation["Perlu Cek"];
+  }
+
+  return conditionPresentation.Buruk;
+}
+
+function buildFilterOptions(dots, attributeKey) {
+  const uniqueValues = new Map();
+
+  dots.forEach((dot) => {
+    const attribute = dot[attributeKey];
+
+    if (!uniqueValues.has(attribute.value)) {
+      uniqueValues.set(attribute.value, {
+        value: attribute.value,
+        label: attribute.label,
+        dotClassName: attribute.dotClassName,
+        legendClassName: attribute.legendClassName,
+      });
+    }
+  });
+
+  return Array.from(uniqueValues.values());
+}
+
 function normalizeSnapshot(payload) {
   const bounds = payload?.meta?.bounds_hint;
   const plants = Array.isArray(payload?.plants) ? payload.plants : [];
@@ -44,15 +111,21 @@ function normalizeSnapshot(payload) {
 
   const dots = scopedPlants.map((plant) => {
     const position = projectDotPosition(plant, bounds);
-    const presentation = plantTypePresentation[plant.plant_type_id] ?? {
-      dotClassName: "map-dot--neutral",
-    };
+    const plantType =
+      plantTypePresentation[plant.plant_type_id] ?? {
+        value: "Unknown",
+        label: "Unknown",
+        dotClassName: "map-dot--neutral",
+        legendClassName: "legend-swatch--neutral",
+      };
+    const condition = deriveSyntheticCondition(plant);
 
     return {
       id: plant.id,
       treeIdDisplay: plant.tree_id_display,
       plantName: plant.plant_name,
-      dotClassName: presentation.dotClassName,
+      plantType,
+      condition,
       ...position,
     };
   });
@@ -60,6 +133,10 @@ function normalizeSnapshot(payload) {
   return {
     totalTrees: dots.length,
     dots,
+    filters: {
+      plantType: buildFilterOptions(dots, "plantType"),
+      condition: buildFilterOptions(dots, "condition"),
+    },
   };
 }
 
