@@ -1,5 +1,7 @@
 const GARDEN_SCOPE = 3;
 const EDGE_PADDING_PERCENT = 5;
+const IMAGE_ASPECT_RATIO = 1600 / 900;
+const IMAGE_PADDING_RATIO = 0.08;
 
 const plantTypePresentation = {
   7: {
@@ -109,13 +111,51 @@ function deriveSyntheticNote(plantType, condition, plant) {
   return `Inspect leaf stress and root-zone moisture around ${plant.plant_name}.`;
 }
 
-function normalizeSnapshot(payload) {
-  const bounds = payload?.meta?.bounds_hint;
-  const plants = Array.isArray(payload?.plants) ? payload.plants : [];
+function buildImageBounds(plants, fallbackBounds) {
+  if (plants.length === 0) {
+    if (!fallbackBounds) {
+      throw new Error("Unable to derive map bounds without plants or fallback bounds");
+    }
 
-  if (!bounds) {
-    throw new Error("Missing bounds_hint in synthetic layout payload");
+    return fallbackBounds;
   }
+
+  const latitudes = plants.map((plant) => plant.latitude);
+  const longitudes = plants.map((plant) => plant.longitude);
+  const minLatitude = Math.min(...latitudes);
+  const maxLatitude = Math.max(...latitudes);
+  const minLongitude = Math.min(...longitudes);
+  const maxLongitude = Math.max(...longitudes);
+  const centerLatitude = (minLatitude + maxLatitude) / 2;
+  const centerLongitude = (minLongitude + maxLongitude) / 2;
+  const longitudeScale = Math.max(Math.cos((centerLatitude * Math.PI) / 180), 0.000001);
+
+  let normalizedWidth = Math.max((maxLongitude - minLongitude) * longitudeScale, 0.0000001);
+  let normalizedHeight = Math.max(maxLatitude - minLatitude, 0.0000001);
+
+  normalizedWidth *= 1 + IMAGE_PADDING_RATIO * 2;
+  normalizedHeight *= 1 + IMAGE_PADDING_RATIO * 2;
+
+  if (normalizedWidth / normalizedHeight < IMAGE_ASPECT_RATIO) {
+    normalizedWidth = normalizedHeight * IMAGE_ASPECT_RATIO;
+  } else {
+    normalizedHeight = normalizedWidth / IMAGE_ASPECT_RATIO;
+  }
+
+  const latitudeRange = normalizedHeight;
+  const longitudeRange = normalizedWidth / longitudeScale;
+
+  return {
+    min_latitude: centerLatitude - latitudeRange / 2,
+    max_latitude: centerLatitude + latitudeRange / 2,
+    min_longitude: centerLongitude - longitudeRange / 2,
+    max_longitude: centerLongitude + longitudeRange / 2,
+  };
+}
+
+function normalizeSnapshot(payload) {
+  const fallbackBounds = payload?.meta?.bounds_hint;
+  const plants = Array.isArray(payload?.plants) ? payload.plants : [];
 
   const scopedPlants = plants.filter(
     (plant) =>
@@ -123,9 +163,10 @@ function normalizeSnapshot(payload) {
       typeof plant.latitude === "number" &&
       typeof plant.longitude === "number",
   );
+  const calibratedBounds = buildImageBounds(scopedPlants, fallbackBounds);
 
   const dots = scopedPlants.map((plant) => {
-    const position = projectDotPosition(plant, bounds);
+    const position = projectDotPosition(plant, calibratedBounds);
     const plantType =
       plantTypePresentation[plant.plant_type_id] ?? {
         value: "Unknown",
@@ -162,8 +203,8 @@ function normalizeSnapshot(payload) {
     dots,
     reportRows,
     mapBounds: [
-      [bounds.min_latitude, bounds.min_longitude],
-      [bounds.max_latitude, bounds.max_longitude],
+      [calibratedBounds.min_latitude, calibratedBounds.min_longitude],
+      [calibratedBounds.max_latitude, calibratedBounds.max_longitude],
     ],
     filters: {
       plantType: buildFilterOptions(dots, "plantType"),
