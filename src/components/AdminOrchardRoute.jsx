@@ -37,6 +37,7 @@ export function AdminOrchardRoute() {
     dataSource: getAdminPersistenceMode(),
     imageBounds: null,
     loadState: "loading",
+    mappedTrees: [],
     unmappedTrees: [],
   });
 
@@ -59,6 +60,7 @@ export function AdminOrchardRoute() {
           dataSource: snapshot.dataSource,
           imageBounds: snapshot.imageBounds,
           loadState: "ready",
+          mappedTrees: snapshot.mappedTrees,
           unmappedTrees: snapshot.unmappedTrees,
         });
       })
@@ -71,6 +73,7 @@ export function AdminOrchardRoute() {
           dataSource: getAdminPersistenceMode(),
           imageBounds: null,
           loadState: "error",
+          mappedTrees: [],
           unmappedTrees: [],
         });
       });
@@ -172,6 +175,7 @@ export function AdminOrchardRoute() {
         dataSource={workspaceSnapshot.dataSource}
         imageBounds={workspaceSnapshot.imageBounds}
         loadState={workspaceSnapshot.loadState}
+        mappedTrees={workspaceSnapshot.mappedTrees}
         unmappedTrees={workspaceSnapshot.unmappedTrees}
       />
     </div>

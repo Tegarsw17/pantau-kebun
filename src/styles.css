@@ -189,6 +189,10 @@ body::before {
   flex-wrap: wrap;
 }
 
+.admin-panel__header--compact {
+  margin-top: 22px;
+}
+
 .admin-panel--sidebar {
   border-color: rgba(255, 155, 84, 0.34);
 }
@@ -271,6 +275,10 @@ body::before {
   padding-right: 4px;
 }
 
+.admin-tree-list--mapped {
+  max-height: 320px;
+}
+
 .admin-tree-row {
   display: grid;
   gap: 10px;
@@ -314,6 +322,11 @@ body::before {
   opacity: 0.72;
 }
 
+.admin-tree-row--mapped {
+  border-color: rgba(87, 242, 135, 0.16);
+  background: rgba(10, 20, 13, 0.72);
+}
+
 .admin-tree-badge {
   display: inline-flex;
   align-items: center;
@@ -323,6 +336,12 @@ body::before {
   background: rgba(58, 28, 12, 0.74);
   color: #ffdcb0;
   white-space: nowrap;
+}
+
+.admin-tree-badge--mapped {
+  border-color: rgba(87, 242, 135, 0.24);
+  background: rgba(12, 34, 18, 0.76);
+  color: #d5ffd9;
 }
 
 .admin-tree-name {
@@ -349,6 +368,11 @@ body::before {
 .admin-empty-state span {
   color: #cfbf97;
   line-height: 1.45;
+}
+
+.admin-map-divider {
+  margin-top: 22px;
+  border-top: 1px solid rgba(255, 202, 95, 0.16);
 }
 
 .admin-map-viewport {

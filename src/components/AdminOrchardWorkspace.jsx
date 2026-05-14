@@ -1,5 +1,12 @@
 import { useEffect, useState } from "react";
-import { CircleMarker, ImageOverlay, MapContainer, Popup, ZoomControl, useMapEvents } from "react-leaflet";
+import {
+  CircleMarker,
+  ImageOverlay,
+  MapContainer,
+  Popup,
+  ZoomControl,
+  useMapEvents,
+} from "react-leaflet";
 import { saveAdminTreePlacement } from "../data/adminOrchardSupabase.js";
 
 const DRONE_IMAGE_URL = "/dronentak.jpeg";
@@ -15,28 +22,44 @@ function AdminPlottingBridge({ onMapClick }) {
   return null;
 }
 
+function upsertMappedPlacement(currentPlacements, tree, latlng) {
+  const nextPlacement = {
+    ...tree,
+    latlng,
+  };
+  const existingIndex = currentPlacements.findIndex((placement) => placement.id === tree.id);
+
+  if (existingIndex === -1) {
+    return [...currentPlacements, nextPlacement];
+  }
+
+  return currentPlacements.map((placement) => (placement.id === tree.id ? nextPlacement : placement));
+}
+
 export function AdminOrchardWorkspace({
   dataSource,
   imageBounds,
   loadState,
+  mappedTrees,
   unmappedTrees,
 }) {
   const [showMapInfo, setShowMapInfo] = useState(false);
+  const [repositionMode, setRepositionMode] = useState(false);
   const [queueTrees, setQueueTrees] = useState(unmappedTrees);
-  const [selectedTreeId, setSelectedTreeId] = useState(null);
+  const [mappedPlacements, setMappedPlacements] = useState(mappedTrees);
+  const [selectedTreeSelection, setSelectedTreeSelection] = useState(null);
   const [pendingPlacement, setPendingPlacement] = useState(null);
-  const [confirmedPlacements, setConfirmedPlacements] = useState([]);
   const [feedback, setFeedback] = useState(null);
   const [isSavingPlacement, setIsSavingPlacement] = useState(false);
 
   useEffect(() => {
     setQueueTrees(unmappedTrees);
-    setSelectedTreeId(null);
+    setMappedPlacements(mappedTrees);
+    setSelectedTreeSelection(null);
     setPendingPlacement(null);
-    setConfirmedPlacements([]);
     setFeedback(null);
     setIsSavingPlacement(false);
-  }, [unmappedTrees]);
+  }, [mappedTrees, unmappedTrees]);
 
   useEffect(() => {
     if (feedback == null) {
@@ -47,24 +70,49 @@ export function AdminOrchardWorkspace({
     return () => window.clearTimeout(timeoutId);
   }, [feedback]);
 
-  const selectedTree = queueTrees.find((tree) => tree.id === selectedTreeId) ?? null;
+  const selectedTree =
+    selectedTreeSelection?.scope === "queue"
+      ? queueTrees.find((tree) => tree.id === selectedTreeSelection.treeId) ?? null
+      : selectedTreeSelection?.scope === "mapped"
+        ? mappedPlacements.find((tree) => tree.id === selectedTreeSelection.treeId) ?? null
+        : null;
+  const selectedTreeScope = selectedTreeSelection?.scope ?? null;
   const isPlottingMode = Boolean(selectedTree);
 
   useEffect(() => {
-    if (selectedTreeId !== null && selectedTree == null) {
-      setSelectedTreeId(null);
+    if (selectedTreeSelection == null) {
+      return;
+    }
+
+    if (selectedTreeSelection.scope === "mapped" && !repositionMode) {
+      setSelectedTreeSelection(null);
+      setPendingPlacement(null);
+      return;
+    }
+
+    const selectionExists =
+      selectedTreeSelection.scope === "queue"
+        ? queueTrees.some((tree) => tree.id === selectedTreeSelection.treeId)
+        : mappedPlacements.some((tree) => tree.id === selectedTreeSelection.treeId);
+
+    if (!selectionExists) {
+      setSelectedTreeSelection(null);
       setPendingPlacement(null);
     }
-  }, [selectedTree, selectedTreeId]);
+  }, [mappedPlacements, queueTrees, repositionMode, selectedTreeSelection]);
 
-  const handleTreeSelect = (tree) => {
+  const handleTreeSelect = (tree, scope) => {
     if (isSavingPlacement) {
       return;
     }
 
     setFeedback(null);
     setPendingPlacement(null);
-    setSelectedTreeId((currentValue) => (currentValue === tree.id ? null : tree.id));
+    setSelectedTreeSelection((currentValue) =>
+      currentValue?.scope === scope && currentValue.treeId === tree.id
+        ? null
+        : { scope, treeId: tree.id },
+    );
   };
 
   const handleMapClick = (latlng) => {
@@ -75,13 +123,16 @@ export function AdminOrchardWorkspace({
     if (selectedTree == null) {
       setFeedback({
         tone: "warning",
-        message: "Select a tree first, then click the map to place a draft point.",
+        message: repositionMode
+          ? "Select a tree from queue or mapped list before clicking the map."
+          : "Select a tree first, then click the map to place a draft point.",
       });
       return;
     }
 
     setPendingPlacement({
       latlng,
+      scope: selectedTreeScope,
       tree: selectedTree,
     });
   };
@@ -91,7 +142,7 @@ export function AdminOrchardWorkspace({
       return;
     }
 
-    const { latlng, tree } = pendingPlacement;
+    const { latlng, scope, tree } = pendingPlacement;
 
     if (dataSource === "supabase") {
       setIsSavingPlacement(true);
@@ -103,22 +154,23 @@ export function AdminOrchardWorkspace({
           longitude: latlng.lng,
         });
 
-        setConfirmedPlacements((currentValue) => [
-          ...currentValue,
-          {
-            latlng: {
-              lat: savedPlacement.latitude,
-              lng: savedPlacement.longitude,
-            },
-            tree,
-          },
-        ]);
-        setQueueTrees((currentValue) => currentValue.filter((item) => item.id !== tree.id));
+        setMappedPlacements((currentValue) =>
+          upsertMappedPlacement(currentValue, tree, {
+            lat: savedPlacement.latitude,
+            lng: savedPlacement.longitude,
+          }),
+        );
+        setQueueTrees((currentValue) =>
+          scope === "queue" ? currentValue.filter((item) => item.id !== tree.id) : currentValue,
+        );
         setPendingPlacement(null);
-        setSelectedTreeId(null);
+        setSelectedTreeSelection(null);
         setFeedback({
           tone: "success",
-          message: `Position saved for ${tree.treeIdDisplay}.`,
+          message:
+            scope === "mapped"
+              ? `Position updated for ${tree.treeIdDisplay}.`
+              : `Position saved for ${tree.treeIdDisplay}.`,
         });
       } catch (error) {
         setFeedback({
@@ -133,19 +185,18 @@ export function AdminOrchardWorkspace({
       return;
     }
 
-    setConfirmedPlacements((currentValue) => [
-      ...currentValue,
-      {
-        latlng,
-        tree,
-      },
-    ]);
-    setQueueTrees((currentValue) => currentValue.filter((item) => item.id !== tree.id));
+    setMappedPlacements((currentValue) => upsertMappedPlacement(currentValue, tree, latlng));
+    setQueueTrees((currentValue) =>
+      scope === "queue" ? currentValue.filter((item) => item.id !== tree.id) : currentValue,
+    );
     setPendingPlacement(null);
-    setSelectedTreeId(null);
+    setSelectedTreeSelection(null);
     setFeedback({
       tone: "success",
-      message: `Position staged locally for ${tree.treeIdDisplay}. Supabase sync is not configured yet.`,
+      message:
+        scope === "mapped"
+          ? `Position staged locally for ${tree.treeIdDisplay}.`
+          : `Position staged locally for ${tree.treeIdDisplay}. Supabase sync is not configured yet.`,
     });
   };
 
@@ -161,9 +212,18 @@ export function AdminOrchardWorkspace({
     setPendingPlacement(null);
   };
 
+  const handleRepositionToggle = () => {
+    setRepositionMode((currentValue) => !currentValue);
+    setPendingPlacement(null);
+    setFeedback(null);
+    setSelectedTreeSelection((currentValue) =>
+      currentValue?.scope === "mapped" ? null : currentValue,
+    );
+  };
+
   return (
     <main className="admin-workspace">
-      <aside className="admin-panel admin-panel--sidebar" aria-label="Admin Unmapped Tree Queue">
+      <aside className="admin-panel admin-panel--sidebar" aria-label="Admin Tree Workspace">
         <div className="admin-panel__header">
           <div>
             <p className="section-kicker">Queue</p>
@@ -191,13 +251,17 @@ export function AdminOrchardWorkspace({
           ) : (
             queueTrees.map((tree) => (
               <article
-                className={`admin-tree-row ${selectedTreeId === tree.id ? "admin-tree-row--selected" : ""} ${isSavingPlacement ? "admin-tree-row--disabled" : ""}`}
+                className={`admin-tree-row ${
+                  selectedTreeSelection?.scope === "queue" && selectedTreeSelection.treeId === tree.id
+                    ? "admin-tree-row--selected"
+                    : ""
+                } ${isSavingPlacement ? "admin-tree-row--disabled" : ""}`}
                 key={tree.id}
-                onClick={() => handleTreeSelect(tree)}
+                onClick={() => handleTreeSelect(tree, "queue")}
                 onKeyDown={(event) => {
                   if (event.key === "Enter" || event.key === " ") {
                     event.preventDefault();
-                    handleTreeSelect(tree);
+                    handleTreeSelect(tree, "queue");
                   }
                 }}
                 role="button"
@@ -216,6 +280,62 @@ export function AdminOrchardWorkspace({
             ))
           )}
         </div>
+
+        {repositionMode ? (
+          <>
+            <div className="admin-map-divider" />
+
+            <div className="admin-panel__header admin-panel__header--compact">
+              <div>
+                <p className="section-kicker">Reposition</p>
+                <h2>Mapped Trees</h2>
+              </div>
+              <span className="admin-count-pill admin-count-pill--map">{mappedPlacements.length} Active</span>
+            </div>
+
+            <div className="admin-tree-list admin-tree-list--mapped" role="list">
+              {mappedPlacements.length === 0 ? (
+                <div className="admin-empty-state">
+                  <strong>No mapped trees</strong>
+                  <span>Load a mapped dataset to enable repositioning.</span>
+                </div>
+              ) : (
+                mappedPlacements.map((placement) => (
+                  <article
+                    className={`admin-tree-row admin-tree-row--mapped ${
+                      selectedTreeSelection?.scope === "mapped" &&
+                      selectedTreeSelection.treeId === placement.id
+                        ? "admin-tree-row--selected"
+                        : ""
+                    } ${isSavingPlacement ? "admin-tree-row--disabled" : ""}`}
+                    key={placement.id}
+                    onClick={() => handleTreeSelect(placement, "mapped")}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault();
+                        handleTreeSelect(placement, "mapped");
+                      }
+                    }}
+                    role="button"
+                    tabIndex={0}
+                  >
+                    <div className="admin-tree-row__header">
+                      <strong className="mono">{placement.treeIdDisplay}</strong>
+                      <span className="admin-tree-badge admin-tree-badge--mapped">Mapped</span>
+                    </div>
+                    <span className="admin-tree-name">{placement.plantName}</span>
+                    <div className="admin-tree-meta">
+                      <span>{placement.plantTypeLabel}</span>
+                      <span>
+                        {placement.latlng.lat.toFixed(6)} / {placement.latlng.lng.toFixed(6)}
+                      </span>
+                    </div>
+                  </article>
+                ))
+              )}
+            </div>
+          </>
+        ) : null}
       </aside>
 
       <section className="admin-panel admin-panel--map" aria-label="Admin Map Workspace">
@@ -237,6 +357,18 @@ export function AdminOrchardWorkspace({
               </span>
               <span className="admin-toggle__label">Show Map Info</span>
             </label>
+            <label className="admin-toggle" htmlFor="admin-reposition-toggle">
+              <input
+                id="admin-reposition-toggle"
+                type="checkbox"
+                checked={repositionMode}
+                onChange={handleRepositionToggle}
+              />
+              <span className="admin-toggle__track" aria-hidden="true">
+                <span className="admin-toggle__thumb" />
+              </span>
+              <span className="admin-toggle__label">Reposition Existing</span>
+            </label>
             <span className="admin-count-pill admin-count-pill--map">Leaflet Ready</span>
             <span className="admin-count-pill admin-count-pill--map">
               {dataSource === "supabase" ? "Supabase Sync" : "Session Only"}
@@ -245,16 +377,22 @@ export function AdminOrchardWorkspace({
         </div>
 
         <div className={`admin-mapping-banner ${isPlottingMode ? "admin-mapping-banner--active" : ""}`}>
-          <p className="overlay-label">Plotting Mode</p>
+          <p className="overlay-label">{repositionMode ? "Reposition Mode" : "Plotting Mode"}</p>
           <strong>
             {selectedTree
               ? `Currently Mapping: ${selectedTree.treeIdDisplay}`
-              : "Select a tree to begin plotting."}
+              : repositionMode
+                ? "Enable repositioning and select an existing marker."
+                : "Select a tree to begin plotting."}
           </strong>
           <span>
             {selectedTree
-              ? "Click the drone image to place a draft point, then confirm the popup."
-              : "Tree selection activates crosshair mode on the map."}
+              ? selectedTreeScope === "mapped"
+                ? "Click the drone image to move this mapped tree, then confirm the popup."
+                : "Click the drone image to place a draft point, then confirm the popup."
+              : repositionMode
+                ? "Existing dots become selectable when reposition mode is active."
+                : "Tree selection activates crosshair mode on the map."}
           </span>
         </div>
 
@@ -270,7 +408,9 @@ export function AdminOrchardWorkspace({
               attributionControl={false}
               bounds={imageBounds}
               boundsOptions={{ padding: FIT_BOUNDS_PADDING }}
-              className={`admin-map-leaflet ${isPlottingMode ? "admin-map-leaflet--plotting" : ""}`}
+              className={`admin-map-leaflet ${isPlottingMode ? "admin-map-leaflet--plotting" : ""} ${
+                repositionMode ? "admin-map-leaflet--repositioning" : ""
+              }`}
               maxBounds={imageBounds}
               maxBoundsViscosity={1}
               maxZoom={24}
@@ -283,19 +423,35 @@ export function AdminOrchardWorkspace({
               <ZoomControl position="topright" />
               <ImageOverlay bounds={imageBounds} opacity={1} url={DRONE_IMAGE_URL} />
               <AdminPlottingBridge onMapClick={handleMapClick} />
-              {confirmedPlacements.map((placement) => (
-                <CircleMarker
-                  center={placement.latlng}
-                  key={placement.tree.id}
-                  pathOptions={{
-                    color: "#57f287",
-                    fillColor: "#57f287",
-                    fillOpacity: 0.88,
-                    weight: 2,
-                  }}
-                  radius={7}
-                />
-              ))}
+              {mappedPlacements.map((placement) => {
+                const isSelectedMappedTree =
+                  selectedTreeSelection?.scope === "mapped" &&
+                  selectedTreeSelection.treeId === placement.id;
+
+                return (
+                  <CircleMarker
+                    center={placement.latlng}
+                    eventHandlers={
+                      repositionMode
+                        ? {
+                            click(event) {
+                              event.originalEvent?.stopPropagation();
+                              handleTreeSelect(placement, "mapped");
+                            },
+                          }
+                        : undefined
+                    }
+                    key={placement.id}
+                    pathOptions={{
+                      color: isSelectedMappedTree ? "#ffca5f" : "#57f287",
+                      fillColor: isSelectedMappedTree ? "#ffca5f" : "#57f287",
+                      fillOpacity: isSelectedMappedTree ? 0.96 : 0.88,
+                      weight: 2,
+                    }}
+                    radius={isSelectedMappedTree ? 8 : 7}
+                  />
+                );
+              })}
               {pendingPlacement ? (
                 <>
                   <CircleMarker
@@ -317,7 +473,9 @@ export function AdminOrchardWorkspace({
                   >
                     <div className="admin-confirm-popup">
                       <strong>
-                        Confirm position for {pendingPlacement.tree.treeIdDisplay}?
+                        {pendingPlacement.scope === "mapped"
+                          ? `Confirm new position for ${pendingPlacement.tree.treeIdDisplay}?`
+                          : `Confirm position for ${pendingPlacement.tree.treeIdDisplay}?`}
                       </strong>
                       <span>
                         Lat {pendingPlacement.latlng.lat.toFixed(6)}

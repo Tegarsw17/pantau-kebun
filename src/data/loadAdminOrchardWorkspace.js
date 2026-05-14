@@ -1,5 +1,6 @@
 import { loadMonitoringMapSnapshot } from "./loadMonitoringMapSnapshot.js";
 import {
+  fetchAdminMappedPlants,
   fetchAdminUnmappedPlants,
   getAdminPersistenceMode,
   isAdminSupabaseConfigured,
@@ -46,17 +47,64 @@ function normalizeUnmappedPlants(payload) {
     }));
 }
 
+function normalizeMappedPlants(payload) {
+  const plants = Array.isArray(payload) ? payload : [];
+
+  return plants
+    .filter(
+      (plant) =>
+        plant.garden_id === ADMIN_GARDEN_SCOPE &&
+        typeof plant.latitude === "number" &&
+        typeof plant.longitude === "number",
+    )
+    .map((plant) => ({
+      id: plant.id,
+      treeIdDisplay: formatTreeId(plant.id),
+      plantName: plant.plant_name,
+      plantTypeLabel: PLANT_TYPE_LABELS[plant.plant_type_id] ?? "Unknown",
+      createdAtLabel: formatCreatedAt(plant.created_at),
+      latlng: {
+        lat: plant.latitude,
+        lng: plant.longitude,
+      },
+    }));
+}
+
+function normalizeSyntheticMappedTrees(dots) {
+  const mappedDots = Array.isArray(dots) ? dots : [];
+
+  return mappedDots.map((dot) => ({
+    id: dot.id,
+    treeIdDisplay: dot.treeIdDisplay,
+    plantName: dot.plantName,
+    plantTypeLabel: dot.plantType.label,
+    createdAtLabel: "Preview Seed",
+    latlng: {
+      lat: dot.latitude,
+      lng: dot.longitude,
+    },
+  }));
+}
+
 export async function loadAdminOrchardWorkspace() {
   const monitoringSnapshot = await loadMonitoringMapSnapshot();
-  const unmappedPayload = isAdminSupabaseConfigured()
-    ? await fetchAdminUnmappedPlants(ADMIN_GARDEN_SCOPE)
-    : await fetchStaticUnmappedPlants();
+  const isSupabaseReady = isAdminSupabaseConfigured();
+  const [unmappedPayload, mappedPayload] = isSupabaseReady
+    ? await Promise.all([
+        fetchAdminUnmappedPlants(ADMIN_GARDEN_SCOPE),
+        fetchAdminMappedPlants(ADMIN_GARDEN_SCOPE),
+      ])
+    : await Promise.all([
+        fetchStaticUnmappedPlants(),
+        Promise.resolve(normalizeSyntheticMappedTrees(monitoringSnapshot.dots)),
+      ]);
   const unmappedTrees = normalizeUnmappedPlants(unmappedPayload);
+  const mappedTrees = isSupabaseReady ? normalizeMappedPlants(mappedPayload) : mappedPayload;
 
   return {
     dataSource: getAdminPersistenceMode(),
     imageBounds: monitoringSnapshot.mapBounds,
-    totalUnmappedTrees: unmappedTrees.length,
+    mappedTrees,
     unmappedTrees,
   };
 }

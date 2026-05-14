@@ -83,6 +83,31 @@ export async function fetchAdminUnmappedPlants(gardenId) {
   return response.json();
 }
 
+export async function fetchAdminMappedPlants(gardenId) {
+  if (!isAdminSupabaseConfigured()) {
+    throw new Error("Supabase admin connection is not configured.");
+  }
+
+  const response = await fetch(
+    buildSupabaseUrl("/rest/v1/plants", {
+      select: "id,garden_id,plant_type_id,plant_name,created_at,latitude,longitude",
+      garden_id: `eq.${gardenId}`,
+      latitude: "not.is.null",
+      longitude: "not.is.null",
+      order: "created_at.asc",
+    }),
+    {
+      headers: buildSupabaseHeaders(),
+    },
+  );
+
+  if (!response.ok) {
+    throw new Error(await extractSupabaseError(response));
+  }
+
+  return response.json();
+}
+
 export async function saveAdminTreePlacement({ plantId, latitude, longitude }) {
   if (!isAdminSupabaseConfigured()) {
     throw new Error(
