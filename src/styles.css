@@ -345,7 +345,7 @@ body::before {
   border: 1px solid rgba(255, 202, 95, 0.22);
   background: rgba(17, 12, 8, 0.82);
   backdrop-filter: blur(8px);
-  z-index: 10;
+  z-index: 1000;
   pointer-events: none;
 }
 
