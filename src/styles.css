@@ -175,6 +175,13 @@ body::before {
   padding: 22px 24px 24px;
 }
 
+.admin-panel__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+}
+
 .admin-panel--sidebar {
   border-color: rgba(255, 155, 84, 0.34);
 }
@@ -183,9 +190,122 @@ body::before {
   border-color: rgba(255, 202, 95, 0.3);
 }
 
-.admin-panel__placeholder,
-.admin-map-placeholder {
+.admin-count-pill {
+  display: inline-flex;
+  align-items: center;
+  min-height: 34px;
+  padding: 0 12px;
+  border: 1px solid rgba(255, 155, 84, 0.28);
+  background: rgba(33, 18, 9, 0.78);
+  color: #fff1d4;
+}
+
+.admin-count-pill--map {
+  border-color: rgba(255, 202, 95, 0.28);
+}
+
+.admin-tree-list {
+  display: grid;
+  gap: 12px;
   margin-top: 18px;
+  max-height: 560px;
+  overflow: auto;
+  padding-right: 4px;
+}
+
+.admin-tree-row {
+  display: grid;
+  gap: 10px;
+  padding: 14px 16px;
+  border: 1px solid rgba(255, 202, 95, 0.16);
+  background: rgba(17, 12, 8, 0.74);
+}
+
+.admin-tree-row__header,
+.admin-tree-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.admin-tree-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 0 10px;
+  border: 1px solid rgba(255, 155, 84, 0.24);
+  background: rgba(58, 28, 12, 0.74);
+  color: #ffdcb0;
+  white-space: nowrap;
+}
+
+.admin-tree-name {
+  color: var(--text);
+  line-height: 1.35;
+}
+
+.admin-tree-meta {
+  color: #cfbf97;
+  font-size: 0.88rem;
+}
+
+.admin-empty-state {
+  display: grid;
+  gap: 8px;
+  place-items: center;
+  min-height: 200px;
+  border: 1px dashed rgba(255, 202, 95, 0.18);
+  background: rgba(17, 12, 8, 0.74);
+  text-align: center;
+  padding: 20px;
+}
+
+.admin-empty-state span {
+  color: #cfbf97;
+  line-height: 1.45;
+}
+
+.admin-map-viewport {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1600 / 900;
+  margin-top: 18px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 202, 95, 0.2);
+  background: #080604;
+  isolation: isolate;
+}
+
+.admin-map-leaflet {
+  width: 100%;
+  height: 100%;
+  background: #080604;
+  outline: none;
+}
+
+.admin-map-leaflet .leaflet-image-layer {
+  filter: saturate(0.84) brightness(0.78) contrast(1.04);
+}
+
+.admin-map-leaflet .leaflet-control-zoom {
+  border: 1px solid rgba(255, 202, 95, 0.22);
+  background: rgba(17, 12, 8, 0.92);
+  box-shadow: var(--shadow);
+}
+
+.admin-map-leaflet .leaflet-control-zoom a {
+  width: 34px;
+  height: 34px;
+  line-height: 34px;
+  border-bottom: 1px solid rgba(255, 202, 95, 0.14);
+  color: #fff1d4;
+  background: rgba(17, 12, 8, 0.92);
+}
+
+.admin-map-placeholder {
+  width: 100%;
+  height: 100%;
   border: 1px dashed rgba(255, 202, 95, 0.24);
   background:
     linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
@@ -194,12 +314,54 @@ body::before {
   background-size: 24px 24px, 24px 24px, auto;
 }
 
-.admin-panel__placeholder {
-  min-height: 520px;
+.admin-map-scrim,
+.admin-map-grid {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
 }
 
-.admin-map-placeholder {
-  min-height: 520px;
+.admin-map-scrim {
+  z-index: 1;
+  background:
+    linear-gradient(180deg, rgba(21, 15, 9, 0.08), rgba(8, 6, 4, 0.5)),
+    radial-gradient(circle at center, rgba(255, 202, 95, 0.05), transparent 54%);
+}
+
+.admin-map-grid {
+  z-index: 1;
+  background-image:
+    linear-gradient(rgba(255, 227, 163, 0.08) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 227, 163, 0.08) 1px, transparent 1px);
+  background-size: 48px 48px;
+}
+
+.admin-map-overlay {
+  position: absolute;
+  display: grid;
+  gap: 6px;
+  max-width: min(280px, calc(100% - 32px));
+  padding: 14px 16px;
+  border: 1px solid rgba(255, 202, 95, 0.22);
+  background: rgba(17, 12, 8, 0.82);
+  backdrop-filter: blur(8px);
+  z-index: 10;
+  pointer-events: none;
+}
+
+.admin-map-overlay span {
+  color: #d5c6a2;
+  line-height: 1.45;
+}
+
+.admin-map-overlay--top-left {
+  top: 16px;
+  left: 16px;
+}
+
+.admin-map-overlay--bottom-right {
+  right: 16px;
+  bottom: 16px;
 }
 
 .topbar,

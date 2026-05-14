@@ -1,4 +1,6 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { AdminOrchardWorkspace } from "./AdminOrchardWorkspace.jsx";
+import { loadAdminOrchardWorkspace } from "../data/loadAdminOrchardWorkspace.js";
 
 const ADMIN_ACCESS_KEY = (
   import.meta.env.VITE_ADMIN_ACCESS_KEY ?? (import.meta.env.DEV ? "pantaukebun-admin" : "")
@@ -30,8 +32,52 @@ export function AdminOrchardRoute() {
   const [accessKeyInput, setAccessKeyInput] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const [isAuthenticated, setIsAuthenticated] = useState(readAdminSession);
+  const [workspaceSnapshot, setWorkspaceSnapshot] = useState({
+    imageBounds: null,
+    loadState: "loading",
+    totalUnmappedTrees: 0,
+    unmappedTrees: [],
+  });
 
   const isAccessKeyConfigured = ADMIN_ACCESS_KEY.length > 0;
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      return undefined;
+    }
+
+    let isMounted = true;
+
+    loadAdminOrchardWorkspace()
+      .then((snapshot) => {
+        if (!isMounted) {
+          return;
+        }
+
+        setWorkspaceSnapshot({
+          imageBounds: snapshot.imageBounds,
+          loadState: "ready",
+          totalUnmappedTrees: snapshot.totalUnmappedTrees,
+          unmappedTrees: snapshot.unmappedTrees,
+        });
+      })
+      .catch(() => {
+        if (!isMounted) {
+          return;
+        }
+
+        setWorkspaceSnapshot({
+          imageBounds: null,
+          loadState: "error",
+          totalUnmappedTrees: 0,
+          unmappedTrees: [],
+        });
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [isAuthenticated]);
 
   const handleUnlock = (event) => {
     event.preventDefault();
@@ -121,19 +167,12 @@ export function AdminOrchardRoute() {
         </div>
       </header>
 
-      <main className="admin-workspace">
-        <aside className="admin-panel admin-panel--sidebar" aria-label="Admin Sidebar Shell">
-          <p className="section-kicker">Queue</p>
-          <h2>Unmapped Trees</h2>
-          <div className="admin-panel__placeholder" />
-        </aside>
-
-        <section className="admin-panel admin-panel--map" aria-label="Admin Map Shell">
-          <p className="section-kicker">Plotting Surface</p>
-          <h2>Map Canvas</h2>
-          <div className="admin-map-placeholder" />
-        </section>
-      </main>
+      <AdminOrchardWorkspace
+        imageBounds={workspaceSnapshot.imageBounds}
+        loadState={workspaceSnapshot.loadState}
+        totalUnmappedTrees={workspaceSnapshot.totalUnmappedTrees}
+        unmappedTrees={workspaceSnapshot.unmappedTrees}
+      />
     </div>
   );
 }

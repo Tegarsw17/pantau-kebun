@@ -1,0 +1,245 @@
+[
+  {
+    "id": 13,
+    "garden_id": 3,
+    "plant_type_id": 9,
+    "plant_name": "Bawor 1",
+    "created_at": "2026-02-14 02:49:17.474039+00",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "id": 14,
+    "garden_id": 3,
+    "plant_type_id": 9,
+    "plant_name": "Bawor 2",
+    "created_at": "2026-02-14 02:49:35.674838+00",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "id": 15,
+    "garden_id": 3,
+    "plant_type_id": 9,
+    "plant_name": "Bawor 3",
+    "created_at": "2026-02-14 02:49:53.216127+00",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "id": 16,
+    "garden_id": 3,
+    "plant_type_id": 9,
+    "plant_name": "Bawor 4",
+    "created_at": "2026-02-14 02:50:06.167216+00",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "id": 17,
+    "garden_id": 3,
+    "plant_type_id": 9,
+    "plant_name": "Bawor 5",
+    "created_at": "2026-02-14 02:50:16.987939+00",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "id": 18,
+    "garden_id": 3,
+    "plant_type_id": 9,
+    "plant_name": "Bawor 6",
+    "created_at": "2026-02-14 02:50:31.847967+00",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "id": 19,
+    "garden_id": 3,
+    "plant_type_id": 9,
+    "plant_name": "Bawor 7",
+    "created_at": "2026-02-14 02:50:44.113377+00",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "id": 20,
+    "garden_id": 3,
+    "plant_type_id": 9,
+    "plant_name": "Bawor 8",
+    "created_at": "2026-02-14 02:51:00.840073+00",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "id": 21,
+    "garden_id": 3,
+    "plant_type_id": 9,
+    "plant_name": "Bawor 9",
+    "created_at": "2026-02-14 02:51:13.673906+00",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "id": 22,
+    "garden_id": 3,
+    "plant_type_id": 9,
+    "plant_name": "Bawor 10",
+    "created_at": "2026-02-14 02:51:27.706926+00",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "id": 23,
+    "garden_id": 3,
+    "plant_type_id": 7,
+    "plant_name": "Musangking 1",
+    "created_at": "2026-02-14 02:51:53.748974+00",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "id": 24,
+    "garden_id": 3,
+    "plant_type_id": 7,
+    "plant_name": "Musangking 2",
+    "created_at": "2026-02-14 02:52:06.184084+00",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "id": 25,
+    "garden_id": 3,
+    "plant_type_id": 7,
+    "plant_name": "Musangking 3",
+    "created_at": "2026-02-14 02:52:17.332375+00",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "id": 26,
+    "garden_id": 3,
+    "plant_type_id": 7,
+    "plant_name": "Musangking 4",
+    "created_at": "2026-02-14 02:52:27.969572+00",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "id": 27,
+    "garden_id": 3,
+    "plant_type_id": 7,
+    "plant_name": "Musangking 5",
+    "created_at": "2026-02-14 02:52:38.869674+00",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "id": 28,
+    "garden_id": 3,
+    "plant_type_id": 7,
+    "plant_name": "Musangking 6",
+    "created_at": "2026-02-14 02:53:15.998029+00",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "id": 29,
+    "garden_id": 3,
+    "plant_type_id": 7,
+    "plant_name": "Musangking 7",
+    "created_at": "2026-02-14 03:00:26.064146+00",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "id": 30,
+    "garden_id": 3,
+    "plant_type_id": 7,
+    "plant_name": "Musangking 8",
+    "created_at": "2026-02-14 03:00:41.54854+00",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "id": 31,
+    "garden_id": 3,
+    "plant_type_id": 7,
+    "plant_name": "Musangking 9",
+    "created_at": "2026-02-14 03:01:02.623069+00",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "id": 32,
+    "garden_id": 3,
+    "plant_type_id": 7,
+    "plant_name": "Musangking 10",
+    "created_at": "2026-02-14 03:01:15.17116+00",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "id": 33,
+    "garden_id": 3,
+    "plant_type_id": 8,
+    "plant_name": "Duri Hitam 149",
+    "created_at": "2026-02-15 01:06:23.380507+00",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "id": 34,
+    "garden_id": 3,
+    "plant_type_id": 8,
+    "plant_name": "Duri Hitam 142",
+    "created_at": "2026-02-15 01:09:44.121115+00",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "id": 35,
+    "garden_id": 3,
+    "plant_type_id": 8,
+    "plant_name": "Duri Hitam 138",
+    "created_at": "2026-02-15 01:12:42.472785+00",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "id": 36,
+    "garden_id": 3,
+    "plant_type_id": 8,
+    "plant_name": "Duri Hitam 135",
+    "created_at": "2026-02-15 01:14:52.242493+00",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "id": 37,
+    "garden_id": 3,
+    "plant_type_id": 8,
+    "plant_name": "Duri Hitam 124",
+    "created_at": "2026-02-15 01:19:04.334338+00",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "id": 38,
+    "garden_id": 3,
+    "plant_type_id": 9,
+    "plant_name": "Bawor 18",
+    "created_at": "2026-02-15 02:02:48.079451+00",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "id": 39,
+    "garden_id": 3,
+    "plant_type_id": 9,
+    "plant_name": "Bawor 19",
+    "created_at": "2026-02-15 02:02:59.186866+00",
+    "latitude": null,
+    "longitude": null
+  }
+]
