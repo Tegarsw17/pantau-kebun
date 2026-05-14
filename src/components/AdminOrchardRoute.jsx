@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { AdminOrchardWorkspace } from "./AdminOrchardWorkspace.jsx";
 import { loadAdminOrchardWorkspace } from "../data/loadAdminOrchardWorkspace.js";
+import { getAdminPersistenceMode } from "../data/adminOrchardSupabase.js";
 
 const ADMIN_ACCESS_KEY = (
   import.meta.env.VITE_ADMIN_ACCESS_KEY ?? (import.meta.env.DEV ? "pantaukebun-admin" : "")
@@ -33,9 +34,9 @@ export function AdminOrchardRoute() {
   const [errorMessage, setErrorMessage] = useState("");
   const [isAuthenticated, setIsAuthenticated] = useState(readAdminSession);
   const [workspaceSnapshot, setWorkspaceSnapshot] = useState({
+    dataSource: getAdminPersistenceMode(),
     imageBounds: null,
     loadState: "loading",
-    totalUnmappedTrees: 0,
     unmappedTrees: [],
   });
 
@@ -55,9 +56,9 @@ export function AdminOrchardRoute() {
         }
 
         setWorkspaceSnapshot({
+          dataSource: snapshot.dataSource,
           imageBounds: snapshot.imageBounds,
           loadState: "ready",
-          totalUnmappedTrees: snapshot.totalUnmappedTrees,
           unmappedTrees: snapshot.unmappedTrees,
         });
       })
@@ -67,9 +68,9 @@ export function AdminOrchardRoute() {
         }
 
         setWorkspaceSnapshot({
+          dataSource: getAdminPersistenceMode(),
           imageBounds: null,
           loadState: "error",
-          totalUnmappedTrees: 0,
           unmappedTrees: [],
         });
       });
@@ -168,6 +169,7 @@ export function AdminOrchardRoute() {
       </header>
 
       <AdminOrchardWorkspace
+        dataSource={workspaceSnapshot.dataSource}
         imageBounds={workspaceSnapshot.imageBounds}
         loadState={workspaceSnapshot.loadState}
         unmappedTrees={workspaceSnapshot.unmappedTrees}

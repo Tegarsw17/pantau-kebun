@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { CircleMarker, ImageOverlay, MapContainer, Popup, ZoomControl, useMapEvents } from "react-leaflet";
+import { saveAdminTreePlacement } from "../data/adminOrchardSupabase.js";
 
 const DRONE_IMAGE_URL = "/dronentak.jpeg";
 const FIT_BOUNDS_PADDING = [36, 36];
@@ -15,6 +16,7 @@ function AdminPlottingBridge({ onMapClick }) {
 }
 
 export function AdminOrchardWorkspace({
+  dataSource,
   imageBounds,
   loadState,
   unmappedTrees,
@@ -25,6 +27,7 @@ export function AdminOrchardWorkspace({
   const [pendingPlacement, setPendingPlacement] = useState(null);
   const [confirmedPlacements, setConfirmedPlacements] = useState([]);
   const [feedback, setFeedback] = useState(null);
+  const [isSavingPlacement, setIsSavingPlacement] = useState(false);
 
   useEffect(() => {
     setQueueTrees(unmappedTrees);
@@ -32,6 +35,7 @@ export function AdminOrchardWorkspace({
     setPendingPlacement(null);
     setConfirmedPlacements([]);
     setFeedback(null);
+    setIsSavingPlacement(false);
   }, [unmappedTrees]);
 
   useEffect(() => {
@@ -54,12 +58,20 @@ export function AdminOrchardWorkspace({
   }, [selectedTree, selectedTreeId]);
 
   const handleTreeSelect = (tree) => {
+    if (isSavingPlacement) {
+      return;
+    }
+
     setFeedback(null);
     setPendingPlacement(null);
     setSelectedTreeId((currentValue) => (currentValue === tree.id ? null : tree.id));
   };
 
   const handleMapClick = (latlng) => {
+    if (isSavingPlacement) {
+      return;
+    }
+
     if (selectedTree == null) {
       setFeedback({
         tone: "warning",
@@ -74,12 +86,52 @@ export function AdminOrchardWorkspace({
     });
   };
 
-  const handleConfirmPlacement = () => {
+  const handleConfirmPlacement = async () => {
     if (pendingPlacement == null) {
       return;
     }
 
     const { latlng, tree } = pendingPlacement;
+
+    if (dataSource === "supabase") {
+      setIsSavingPlacement(true);
+
+      try {
+        const savedPlacement = await saveAdminTreePlacement({
+          plantId: tree.id,
+          latitude: latlng.lat,
+          longitude: latlng.lng,
+        });
+
+        setConfirmedPlacements((currentValue) => [
+          ...currentValue,
+          {
+            latlng: {
+              lat: savedPlacement.latitude,
+              lng: savedPlacement.longitude,
+            },
+            tree,
+          },
+        ]);
+        setQueueTrees((currentValue) => currentValue.filter((item) => item.id !== tree.id));
+        setPendingPlacement(null);
+        setSelectedTreeId(null);
+        setFeedback({
+          tone: "success",
+          message: `Position saved for ${tree.treeIdDisplay}.`,
+        });
+      } catch (error) {
+        setFeedback({
+          tone: "error",
+          message:
+            error instanceof Error ? error.message : `Failed to save position for ${tree.treeIdDisplay}.`,
+        });
+      } finally {
+        setIsSavingPlacement(false);
+      }
+
+      return;
+    }
 
     setConfirmedPlacements((currentValue) => [
       ...currentValue,
@@ -93,12 +145,12 @@ export function AdminOrchardWorkspace({
     setSelectedTreeId(null);
     setFeedback({
       tone: "success",
-      message: `Position confirmed for ${tree.treeIdDisplay}.`,
+      message: `Position staged locally for ${tree.treeIdDisplay}. Supabase sync is not configured yet.`,
     });
   };
 
   const handleCancelPlacement = () => {
-    if (pendingPlacement == null) {
+    if (pendingPlacement == null || isSavingPlacement) {
       return;
     }
 
@@ -124,22 +176,22 @@ export function AdminOrchardWorkspace({
           {loadState === "loading" ? (
             <div className="admin-empty-state">
               <strong>Loading queue</strong>
-              <span>Garden 3 seed data is being prepared.</span>
+              <span>Garden 3 queue data is being prepared.</span>
             </div>
           ) : loadState === "error" ? (
             <div className="admin-empty-state">
               <strong>Queue unavailable</strong>
-              <span>Static unmapped tree snapshot could not be loaded.</span>
+              <span>Orchard queue data could not be loaded.</span>
             </div>
           ) : queueTrees.length === 0 ? (
             <div className="admin-empty-state">
               <strong>Queue complete</strong>
-              <span>All Garden 3 trees are mapped in this prototype session.</span>
+              <span>All Garden 3 trees are mapped in this workspace.</span>
             </div>
           ) : (
             queueTrees.map((tree) => (
               <article
-                className={`admin-tree-row ${selectedTreeId === tree.id ? "admin-tree-row--selected" : ""}`}
+                className={`admin-tree-row ${selectedTreeId === tree.id ? "admin-tree-row--selected" : ""} ${isSavingPlacement ? "admin-tree-row--disabled" : ""}`}
                 key={tree.id}
                 onClick={() => handleTreeSelect(tree)}
                 onKeyDown={(event) => {
@@ -186,6 +238,9 @@ export function AdminOrchardWorkspace({
               <span className="admin-toggle__label">Show Map Info</span>
             </label>
             <span className="admin-count-pill admin-count-pill--map">Leaflet Ready</span>
+            <span className="admin-count-pill admin-count-pill--map">
+              {dataSource === "supabase" ? "Supabase Sync" : "Session Only"}
+            </span>
           </div>
         </div>
 
@@ -275,13 +330,15 @@ export function AdminOrchardWorkspace({
                           className="admin-confirm-button admin-confirm-button--primary"
                           type="button"
                           onClick={handleConfirmPlacement}
+                          disabled={isSavingPlacement}
                         >
-                          Confirm
+                          {isSavingPlacement ? "Saving..." : "Confirm"}
                         </button>
                         <button
                           className="admin-confirm-button"
                           type="button"
                           onClick={handleCancelPlacement}
+                          disabled={isSavingPlacement}
                         >
                           Cancel
                         </button>
@@ -306,7 +363,9 @@ export function AdminOrchardWorkspace({
                 <span>
                   {selectedTree
                     ? `Currently mapping ${selectedTree.treeIdDisplay}.`
-                    : "Click-to-plot will attach here in the next step."}
+                    : dataSource === "supabase"
+                      ? "Confirmed points will write directly to plants.latitude and plants.longitude."
+                      : "Confirmed points stay local until Supabase credentials are configured."}
                 </span>
               </div>
 

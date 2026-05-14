@@ -1,4 +1,9 @@
 import { loadMonitoringMapSnapshot } from "./loadMonitoringMapSnapshot.js";
+import {
+  fetchAdminUnmappedPlants,
+  getAdminPersistenceMode,
+  isAdminSupabaseConfigured,
+} from "./adminOrchardSupabase.js";
 
 const PLANT_TYPE_LABELS = {
   7: "Musangking",
@@ -42,21 +47,26 @@ function normalizeUnmappedPlants(payload) {
 }
 
 export async function loadAdminOrchardWorkspace() {
-  const [monitoringSnapshot, unmappedResponse] = await Promise.all([
-    loadMonitoringMapSnapshot(),
-    fetch("/garden3_unmapped_plants.json"),
-  ]);
+  const monitoringSnapshot = await loadMonitoringMapSnapshot();
+  const unmappedPayload = isAdminSupabaseConfigured()
+    ? await fetchAdminUnmappedPlants(ADMIN_GARDEN_SCOPE)
+    : await fetchStaticUnmappedPlants();
+  const unmappedTrees = normalizeUnmappedPlants(unmappedPayload);
+
+  return {
+    dataSource: getAdminPersistenceMode(),
+    imageBounds: monitoringSnapshot.mapBounds,
+    totalUnmappedTrees: unmappedTrees.length,
+    unmappedTrees,
+  };
+}
+
+async function fetchStaticUnmappedPlants() {
+  const unmappedResponse = await fetch("/garden3_unmapped_plants.json");
 
   if (!unmappedResponse.ok) {
     throw new Error(`Failed to load unmapped plants snapshot: ${unmappedResponse.status}`);
   }
 
-  const unmappedPayload = await unmappedResponse.json();
-  const unmappedTrees = normalizeUnmappedPlants(unmappedPayload);
-
-  return {
-    imageBounds: monitoringSnapshot.mapBounds,
-    totalUnmappedTrees: unmappedTrees.length,
-    unmappedTrees,
-  };
+  return unmappedResponse.json();
 }
