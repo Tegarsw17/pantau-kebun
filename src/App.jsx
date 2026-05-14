@@ -1,7 +1,9 @@
 import { useDeferredValue, useEffect, useState } from "react";
+import { AdminOrchardRoute } from "./components/AdminOrchardRoute.jsx";
 import { MonitoringMapStage } from "./components/MonitoringMapStage.jsx";
 import { loadMonitoringMapSnapshot } from "./data/loadMonitoringMapSnapshot.js";
 
+const ADMIN_ORCHARD_PATH = "/admin-orchard";
 const ALL_VALUES = "Tampilkan Semua";
 const CATEGORY_OPTIONS = {
   plantType: {
@@ -12,7 +14,34 @@ const CATEGORY_OPTIONS = {
   },
 };
 
-function App() {
+function normalizePathname(pathname) {
+  if (!pathname) {
+    return "/";
+  }
+
+  const normalizedPathname = pathname.replace(/\/+$/, "");
+  return normalizedPathname === "" ? "/" : normalizedPathname;
+}
+
+function usePathname() {
+  const [pathname, setPathname] = useState(() => normalizePathname(window.location.pathname));
+
+  useEffect(() => {
+    const syncPathname = () => {
+      setPathname(normalizePathname(window.location.pathname));
+    };
+
+    window.addEventListener("popstate", syncPathname);
+
+    return () => {
+      window.removeEventListener("popstate", syncPathname);
+    };
+  }, []);
+
+  return pathname;
+}
+
+function MonitoringDashboard() {
   const [mapSnapshot, setMapSnapshot] = useState({
     loadState: "loading",
     dots: [],
@@ -247,6 +276,16 @@ function App() {
       </main>
     </div>
   );
+}
+
+function App() {
+  const pathname = usePathname();
+
+  if (pathname === ADMIN_ORCHARD_PATH) {
+    return <AdminOrchardRoute />;
+  }
+
+  return <MonitoringDashboard />;
 }
 
 export default App;
