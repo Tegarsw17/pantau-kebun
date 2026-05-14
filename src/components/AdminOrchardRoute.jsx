@@ -170,7 +170,6 @@ export function AdminOrchardRoute() {
       <AdminOrchardWorkspace
         imageBounds={workspaceSnapshot.imageBounds}
         loadState={workspaceSnapshot.loadState}
-        totalUnmappedTrees={workspaceSnapshot.totalUnmappedTrees}
         unmappedTrees={workspaceSnapshot.unmappedTrees}
       />
     </div>

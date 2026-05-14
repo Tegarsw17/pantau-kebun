@@ -274,9 +274,15 @@ body::before {
 .admin-tree-row {
   display: grid;
   gap: 10px;
+  width: 100%;
   padding: 14px 16px;
   border: 1px solid rgba(255, 202, 95, 0.16);
   background: rgba(17, 12, 8, 0.74);
+  cursor: pointer;
+  transition:
+    border-color 140ms ease,
+    background 140ms ease,
+    transform 140ms ease;
 }
 
 .admin-tree-row__header,
@@ -285,6 +291,22 @@ body::before {
   justify-content: space-between;
   align-items: center;
   gap: 12px;
+}
+
+.admin-tree-row:hover {
+  border-color: rgba(255, 202, 95, 0.28);
+  background: rgba(23, 15, 10, 0.82);
+}
+
+.admin-tree-row:focus-visible {
+  outline: 2px solid rgba(255, 202, 95, 0.48);
+  outline-offset: 2px;
+}
+
+.admin-tree-row--selected {
+  border-color: rgba(255, 202, 95, 0.42);
+  background: rgba(49, 29, 14, 0.86);
+  transform: translateY(-1px);
 }
 
 .admin-tree-badge {
@@ -340,6 +362,17 @@ body::before {
   height: 100%;
   background: #080604;
   outline: none;
+}
+
+.admin-map-leaflet--plotting {
+  cursor: crosshair;
+}
+
+.admin-map-leaflet--plotting.leaflet-container,
+.admin-map-leaflet--plotting .leaflet-interactive,
+.admin-map-leaflet--plotting .leaflet-image-layer,
+.admin-map-leaflet--plotting .leaflet-pane {
+  cursor: crosshair;
 }
 
 .admin-map-leaflet .leaflet-image-layer {
@@ -420,6 +453,80 @@ body::before {
 .admin-map-overlay--bottom-right {
   right: 16px;
   bottom: 16px;
+}
+
+.admin-mapping-banner {
+  display: grid;
+  gap: 6px;
+  margin-top: 18px;
+  padding: 14px 16px;
+  border: 1px solid rgba(255, 202, 95, 0.16);
+  background: rgba(17, 12, 8, 0.72);
+}
+
+.admin-mapping-banner span {
+  color: #d5c6a2;
+  line-height: 1.45;
+}
+
+.admin-mapping-banner--active {
+  border-color: rgba(255, 202, 95, 0.34);
+  background: rgba(43, 25, 12, 0.82);
+}
+
+.admin-toast {
+  margin-top: 12px;
+  padding: 12px 14px;
+  border: 1px solid rgba(255, 202, 95, 0.18);
+  background: rgba(17, 12, 8, 0.74);
+  color: #fff1d4;
+}
+
+.admin-toast--success {
+  border-color: rgba(87, 242, 135, 0.26);
+  color: #d5ffd9;
+}
+
+.admin-toast--warning {
+  border-color: rgba(255, 155, 84, 0.3);
+  color: #ffdcb0;
+}
+
+.admin-toast--neutral {
+  border-color: rgba(255, 202, 95, 0.22);
+  color: #fff1d4;
+}
+
+.admin-confirm-popup {
+  display: grid;
+  gap: 8px;
+  min-width: 220px;
+}
+
+.admin-confirm-popup span {
+  color: #cfbf97;
+  line-height: 1.35;
+}
+
+.admin-confirm-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.admin-confirm-button {
+  min-height: 34px;
+  border: 1px solid rgba(255, 202, 95, 0.26);
+  background: rgba(30, 18, 10, 0.88);
+  color: #fff1d4;
+  font: inherit;
+  padding: 0 12px;
+  cursor: pointer;
+}
+
+.admin-confirm-button--primary {
+  border-color: rgba(255, 155, 84, 0.32);
+  background: rgba(76, 38, 14, 0.92);
 }
 
 .topbar,
