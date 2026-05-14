@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { ImageOverlay, MapContainer, ZoomControl } from "react-leaflet";
 
 const DRONE_IMAGE_URL = "/dronentak.jpeg";
@@ -9,6 +10,8 @@ export function AdminOrchardWorkspace({
   totalUnmappedTrees,
   unmappedTrees,
 }) {
+  const [showMapInfo, setShowMapInfo] = useState(false);
+
   return (
     <main className="admin-workspace">
       <aside className="admin-panel admin-panel--sidebar" aria-label="Admin Unmapped Tree Queue">
@@ -55,7 +58,21 @@ export function AdminOrchardWorkspace({
             <p className="section-kicker">Plotting Surface</p>
             <h2>Garden 3 Calibration Canvas</h2>
           </div>
-          <span className="admin-count-pill admin-count-pill--map">Leaflet Ready</span>
+          <div className="admin-panel__actions">
+            <label className="admin-toggle" htmlFor="admin-map-info-toggle">
+              <input
+                id="admin-map-info-toggle"
+                type="checkbox"
+                checked={showMapInfo}
+                onChange={() => setShowMapInfo((currentValue) => !currentValue)}
+              />
+              <span className="admin-toggle__track" aria-hidden="true">
+                <span className="admin-toggle__thumb" />
+              </span>
+              <span className="admin-toggle__label">Show Map Info</span>
+            </label>
+            <span className="admin-count-pill admin-count-pill--map">Leaflet Ready</span>
+          </div>
         </div>
 
         <div className="admin-map-viewport">
@@ -84,17 +101,23 @@ export function AdminOrchardWorkspace({
           <div className="admin-map-scrim" />
           <div className="admin-map-grid" />
 
-          <div className="admin-map-overlay admin-map-overlay--top-left">
-            <p className="overlay-label">Mapping Status</p>
-            <strong>{loadState === "ready" ? "Awaiting tree selection" : "Loading workspace"}</strong>
-            <span>Click-to-plot will attach here in the next step.</span>
-          </div>
+          {showMapInfo ? (
+            <>
+              <div className="admin-map-overlay admin-map-overlay--top-left">
+                <p className="overlay-label">Mapping Status</p>
+                <strong>
+                  {loadState === "ready" ? "Awaiting tree selection" : "Loading workspace"}
+                </strong>
+                <span>Click-to-plot will attach here in the next step.</span>
+              </div>
 
-          <div className="admin-map-overlay admin-map-overlay--bottom-right">
-            <p className="overlay-label">Pending Queue</p>
-            <strong>{totalUnmappedTrees} Trees</strong>
-            <span>Garden 3 remains in setup mode.</span>
-          </div>
+              <div className="admin-map-overlay admin-map-overlay--bottom-right">
+                <p className="overlay-label">Pending Queue</p>
+                <strong>{totalUnmappedTrees} Trees</strong>
+                <span>Garden 3 remains in setup mode.</span>
+              </div>
+            </>
+          ) : null}
         </div>
       </section>
     </main>

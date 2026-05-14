@@ -182,6 +182,13 @@ body::before {
   gap: 16px;
 }
 
+.admin-panel__actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
 .admin-panel--sidebar {
   border-color: rgba(255, 155, 84, 0.34);
 }
@@ -202,6 +209,57 @@ body::before {
 
 .admin-count-pill--map {
   border-color: rgba(255, 202, 95, 0.28);
+}
+
+.admin-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 34px;
+  cursor: pointer;
+  color: #fff1d4;
+}
+
+.admin-toggle input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.admin-toggle__track {
+  position: relative;
+  width: 44px;
+  height: 24px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 202, 95, 0.3);
+  background: rgba(58, 28, 12, 0.74);
+  transition: background 140ms ease, border-color 140ms ease;
+}
+
+.admin-toggle__thumb {
+  position: absolute;
+  top: 50%;
+  left: 3px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  transform: translateY(-50%);
+  background: #ffdcb0;
+  transition: left 140ms ease, background 140ms ease;
+}
+
+.admin-toggle input:checked + .admin-toggle__track {
+  border-color: rgba(255, 202, 95, 0.48);
+  background: rgba(94, 62, 13, 0.78);
+}
+
+.admin-toggle input:checked + .admin-toggle__track .admin-toggle__thumb {
+  left: 22px;
+  background: #ffca5f;
+}
+
+.admin-toggle__label {
+  color: #d5c6a2;
 }
 
 .admin-tree-list {
