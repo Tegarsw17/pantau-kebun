@@ -427,6 +427,42 @@ body::before {
   font-size: 0.9rem;
 }
 
+.admin-calibration-quicktools {
+  display: grid;
+  gap: 12px;
+}
+
+.admin-calibration-step-group {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid rgba(255, 202, 95, 0.16);
+  background: rgba(18, 12, 8, 0.68);
+}
+
+.admin-calibration-step-group__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.admin-calibration-step-meta {
+  color: #cfbf97;
+  font-size: 0.82rem;
+}
+
+.admin-calibration-step-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.admin-calibration-step-grid--center {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
 .admin-calibration-actions {
   display: flex;
   flex-wrap: wrap;
@@ -451,6 +487,11 @@ body::before {
 .admin-secondary-button--primary {
   border-color: rgba(255, 155, 84, 0.34);
   background: rgba(76, 38, 14, 0.92);
+}
+
+.admin-secondary-button--compact {
+  min-height: 36px;
+  padding: 0 10px;
 }
 
 .admin-map-viewport {
@@ -1302,6 +1343,10 @@ tbody tr + tr td {
 
   .search-shell {
     width: 100%;
+  }
+
+  .admin-calibration-step-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   th,

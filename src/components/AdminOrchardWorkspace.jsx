@@ -25,6 +25,12 @@ import {
 } from "../data/loadDroneCalibration.js";
 
 const FIT_BOUNDS_PADDING = [36, 36];
+const EARTH_RADIUS_METERS = 6378137;
+const CALIBRATION_CENTER_NUDGE_METERS = 1;
+const CALIBRATION_HEADING_FINE_STEP = 1;
+const CALIBRATION_HEADING_COARSE_STEP = 5;
+const CALIBRATION_SIZE_NUDGE_METERS = 5;
+const CALIBRATION_SIZE_MIN_METERS = 1;
 
 function AdminMapBridge({ imageBounds, onMapClick }) {
   const map = useMap();
@@ -117,6 +123,33 @@ function updateCalibrationField(currentCalibration, patch) {
     ...serializeDroneCalibration(currentCalibration),
     ...patch,
   });
+}
+
+function normalizeBearingDegrees(value) {
+  return ((value % 360) + 360) % 360;
+}
+
+function offsetPointByMeters(point, bearingDegrees, distanceMeters) {
+  const angularDistance = distanceMeters / EARTH_RADIUS_METERS;
+  const bearingRadians = (bearingDegrees * Math.PI) / 180;
+  const startLatitude = (point.lat * Math.PI) / 180;
+  const startLongitude = (point.lng * Math.PI) / 180;
+
+  const destinationLatitude = Math.asin(
+    Math.sin(startLatitude) * Math.cos(angularDistance) +
+      Math.cos(startLatitude) * Math.sin(angularDistance) * Math.cos(bearingRadians),
+  );
+  const destinationLongitude =
+    startLongitude +
+    Math.atan2(
+      Math.sin(bearingRadians) * Math.sin(angularDistance) * Math.cos(startLatitude),
+      Math.cos(angularDistance) - Math.sin(startLatitude) * Math.sin(destinationLatitude),
+    );
+
+  return {
+    lat: (destinationLatitude * 180) / Math.PI,
+    lng: ((destinationLongitude * 180) / Math.PI + 540) % 360 - 180,
+  };
 }
 
 export function AdminOrchardWorkspace({
@@ -355,6 +388,46 @@ export function AdminOrchardWorkspace({
     setPendingPlacement(null);
     setFeedback(null);
     setSelectedTreeSelection(null);
+  };
+
+  const applyCalibrationNudge = (updater) => {
+    if (isSavingCalibration) {
+      return;
+    }
+
+    setWorkingCalibration((currentCalibration) => updater(currentCalibration));
+    setFeedback(null);
+  };
+
+  const handleCenterNudge = (bearingDegrees) => {
+    applyCalibrationNudge((currentCalibration) =>
+      updateCalibrationField(currentCalibration, {
+        center: offsetPointByMeters(
+          currentCalibration.center,
+          bearingDegrees,
+          CALIBRATION_CENTER_NUDGE_METERS,
+        ),
+      }),
+    );
+  };
+
+  const handleHeadingNudge = (deltaDegrees) => {
+    applyCalibrationNudge((currentCalibration) =>
+      updateCalibrationField(currentCalibration, {
+        heading_degrees: normalizeBearingDegrees(currentCalibration.headingDegrees + deltaDegrees),
+      }),
+    );
+  };
+
+  const handleSizeNudge = (dimensionKey, deltaMeters) => {
+    applyCalibrationNudge((currentCalibration) => {
+      const currentSize = currentCalibration.sizeMeters?.[dimensionKey] ?? CALIBRATION_SIZE_MIN_METERS;
+      const nextSize = Math.max(CALIBRATION_SIZE_MIN_METERS, currentSize + deltaMeters);
+
+      return updateCalibrationField(currentCalibration, {
+        [dimensionKey === "width" ? "width_meters" : "height_meters"]: nextSize,
+      });
+    });
   };
 
   const handleCalibrationSave = () => {
@@ -702,6 +775,135 @@ export function AdminOrchardWorkspace({
                     }}
                   />
                 </label>
+              </div>
+
+              <div className="admin-calibration-quicktools" aria-label="Calibration Nudge Controls">
+                <div className="admin-calibration-step-group">
+                  <div className="admin-calibration-step-group__header">
+                    <span className="control-label">Center Nudge</span>
+                    <span className="admin-calibration-step-meta">
+                      {CALIBRATION_CENTER_NUDGE_METERS}m step
+                    </span>
+                  </div>
+                  <div className="admin-calibration-step-grid admin-calibration-step-grid--center">
+                    <button
+                      className="admin-secondary-button admin-secondary-button--compact"
+                      type="button"
+                      onClick={() => handleCenterNudge(0)}
+                      disabled={isSavingCalibration}
+                    >
+                      N
+                    </button>
+                    <button
+                      className="admin-secondary-button admin-secondary-button--compact"
+                      type="button"
+                      onClick={() => handleCenterNudge(270)}
+                      disabled={isSavingCalibration}
+                    >
+                      W
+                    </button>
+                    <button
+                      className="admin-secondary-button admin-secondary-button--compact"
+                      type="button"
+                      onClick={() => handleCenterNudge(90)}
+                      disabled={isSavingCalibration}
+                    >
+                      E
+                    </button>
+                    <button
+                      className="admin-secondary-button admin-secondary-button--compact"
+                      type="button"
+                      onClick={() => handleCenterNudge(180)}
+                      disabled={isSavingCalibration}
+                    >
+                      S
+                    </button>
+                  </div>
+                </div>
+
+                <div className="admin-calibration-step-group">
+                  <div className="admin-calibration-step-group__header">
+                    <span className="control-label">Heading Nudge</span>
+                    <span className="admin-calibration-step-meta">1° and 5° steps</span>
+                  </div>
+                  <div className="admin-calibration-step-grid">
+                    <button
+                      className="admin-secondary-button admin-secondary-button--compact"
+                      type="button"
+                      onClick={() => handleHeadingNudge(-CALIBRATION_HEADING_COARSE_STEP)}
+                      disabled={isSavingCalibration}
+                    >
+                      -5°
+                    </button>
+                    <button
+                      className="admin-secondary-button admin-secondary-button--compact"
+                      type="button"
+                      onClick={() => handleHeadingNudge(-CALIBRATION_HEADING_FINE_STEP)}
+                      disabled={isSavingCalibration}
+                    >
+                      -1°
+                    </button>
+                    <button
+                      className="admin-secondary-button admin-secondary-button--compact"
+                      type="button"
+                      onClick={() => handleHeadingNudge(CALIBRATION_HEADING_FINE_STEP)}
+                      disabled={isSavingCalibration}
+                    >
+                      +1°
+                    </button>
+                    <button
+                      className="admin-secondary-button admin-secondary-button--compact"
+                      type="button"
+                      onClick={() => handleHeadingNudge(CALIBRATION_HEADING_COARSE_STEP)}
+                      disabled={isSavingCalibration}
+                    >
+                      +5°
+                    </button>
+                  </div>
+                </div>
+
+                <div className="admin-calibration-step-group">
+                  <div className="admin-calibration-step-group__header">
+                    <span className="control-label">Footprint Nudge</span>
+                    <span className="admin-calibration-step-meta">
+                      {CALIBRATION_SIZE_NUDGE_METERS}m size step
+                    </span>
+                  </div>
+                  <div className="admin-calibration-step-grid">
+                    <button
+                      className="admin-secondary-button admin-secondary-button--compact"
+                      type="button"
+                      onClick={() => handleSizeNudge("width", -CALIBRATION_SIZE_NUDGE_METERS)}
+                      disabled={isSavingCalibration}
+                    >
+                      Width -5m
+                    </button>
+                    <button
+                      className="admin-secondary-button admin-secondary-button--compact"
+                      type="button"
+                      onClick={() => handleSizeNudge("width", CALIBRATION_SIZE_NUDGE_METERS)}
+                      disabled={isSavingCalibration}
+                    >
+                      Width +5m
+                    </button>
+                    <button
+                      className="admin-secondary-button admin-secondary-button--compact"
+                      type="button"
+                      onClick={() => handleSizeNudge("height", -CALIBRATION_SIZE_NUDGE_METERS)}
+                      disabled={isSavingCalibration}
+                    >
+                      Height -5m
+                    </button>
+                    <button
+                      className="admin-secondary-button admin-secondary-button--compact"
+                      type="button"
+                      onClick={() => handleSizeNudge("height", CALIBRATION_SIZE_NUDGE_METERS)}
+                      disabled={isSavingCalibration}
+                    >
+                      Height +5m
+                    </button>
+                  </div>
+                </div>
               </div>
 
               <div className="admin-calibration-meta">
