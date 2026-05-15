@@ -76,7 +76,7 @@ function MonitoringDashboard() {
           totalTrees: snapshot.totalTrees,
           filters: snapshot.filters,
           reportRows: snapshot.reportRows,
-          message: "Calibrated 4-corner drone overlay loaded",
+          message: "Center-based calibrated drone overlay loaded",
         });
       })
       .catch(() => {

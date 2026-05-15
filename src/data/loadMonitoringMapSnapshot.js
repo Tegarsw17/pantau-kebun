@@ -120,7 +120,7 @@ function normalizeSnapshot(payload, calibration) {
               y: plant.y_m,
             },
             layoutExtent,
-            calibration.corners,
+            calibration,
           )
         : {
             lat: plant.latitude,

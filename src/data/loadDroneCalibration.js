@@ -1,26 +1,34 @@
 const DRONE_CALIBRATION_URL = "/garden3_drone_calibration.json";
 const DEFAULT_IMAGE_URL = "/dronentak.jpeg";
 const DEFAULT_PADDING_RATIO = 0.06;
-const LAYOUT_EDGE_INSET_RATIO = 0.08;
+const EARTH_RADIUS_METERS = 6378137;
 
-const DEFAULT_GARDEN_3_CORNERS = {
-  northWest: {
-    lat: -7.006962,
-    lng: 109.601791,
+const DEFAULT_GARDEN_3_CALIBRATION = {
+  anchorQuality: "approximate",
+  center: {
+    lat: -7.007853,
+    lng: 109.602477,
   },
-  northEast: {
-    lat: -7.006951,
-    lng: 109.602754,
+  calibrationMode: "center_heading_size",
+  confidenceNote:
+    "Initial center-based calibration is active and can be refined later in admin.",
+  gardenId: 3,
+  headingDegrees: 219,
+  imageUrl: DEFAULT_IMAGE_URL,
+  layoutOffsetMeters: {
+    x: 0,
+    y: 0,
   },
-  southEast: {
-    lat: -7.008749,
-    lng: 109.60314,
-  },
-  southWest: {
-    lat: -7.008866,
-    lng: 109.602091,
+  sizeMeters: {
+    height: 100,
+    width: 300,
   },
 };
+
+function normalizeNumber(value, fallbackValue) {
+  const parsedValue = Number(value);
+  return Number.isFinite(parsedValue) ? parsedValue : fallbackValue;
+}
 
 function normalizePoint(point, fallbackPoint) {
   const latitude = Number(point?.lat ?? point?.latitude ?? fallbackPoint.lat);
@@ -29,6 +37,34 @@ function normalizePoint(point, fallbackPoint) {
   return {
     lat: Number.isFinite(latitude) ? latitude : fallbackPoint.lat,
     lng: Number.isFinite(longitude) ? longitude : fallbackPoint.lng,
+  };
+}
+
+function normalizeBearingDegrees(value, fallbackValue) {
+  const parsedValue = normalizeNumber(value, fallbackValue);
+  return ((parsedValue % 360) + 360) % 360;
+}
+
+function offsetPointByMeters(point, bearingDegrees, distanceMeters) {
+  const angularDistance = distanceMeters / EARTH_RADIUS_METERS;
+  const bearingRadians = (bearingDegrees * Math.PI) / 180;
+  const startLatitude = (point.lat * Math.PI) / 180;
+  const startLongitude = (point.lng * Math.PI) / 180;
+
+  const destinationLatitude = Math.asin(
+    Math.sin(startLatitude) * Math.cos(angularDistance) +
+      Math.cos(startLatitude) * Math.sin(angularDistance) * Math.cos(bearingRadians),
+  );
+  const destinationLongitude =
+    startLongitude +
+    Math.atan2(
+      Math.sin(bearingRadians) * Math.sin(angularDistance) * Math.cos(startLatitude),
+      Math.cos(angularDistance) - Math.sin(startLatitude) * Math.sin(destinationLatitude),
+    );
+
+  return {
+    lat: (destinationLatitude * 180) / Math.PI,
+    lng: ((destinationLongitude * 180) / Math.PI + 540) % 360 - 180,
   };
 }
 
@@ -50,52 +86,147 @@ export function buildBoundsFromCorners(corners, paddingRatio = DEFAULT_PADDING_R
   ];
 }
 
+function buildRectangleCornersFromCenterModel(center, headingDegrees, widthMeters, heightMeters) {
+  const halfWidth = widthMeters / 2;
+  const halfHeight = heightMeters / 2;
+  const topHeading = normalizeBearingDegrees(headingDegrees, DEFAULT_GARDEN_3_CALIBRATION.headingDegrees);
+  const rightHeading = normalizeBearingDegrees(topHeading + 90, topHeading + 90);
+  const leftHeading = normalizeBearingDegrees(topHeading - 90, topHeading - 90);
+  const topMidpoint = offsetPointByMeters(center, topHeading, halfHeight);
+  const bottomMidpoint = offsetPointByMeters(center, topHeading + 180, halfHeight);
+
+  const topLeft = offsetPointByMeters(topMidpoint, leftHeading, halfWidth);
+  const topRight = offsetPointByMeters(topMidpoint, rightHeading, halfWidth);
+  const bottomRight = offsetPointByMeters(bottomMidpoint, rightHeading, halfWidth);
+  const bottomLeft = offsetPointByMeters(bottomMidpoint, leftHeading, halfWidth);
+
+  return [topLeft, topRight, bottomRight, bottomLeft];
+}
+
 export function projectNormalizedPointToCorners(corners, normalizedX, normalizedY) {
   const clampedX = Math.min(1, Math.max(0, normalizedX));
   const clampedY = Math.min(1, Math.max(0, normalizedY));
-  const [northWest, northEast, southEast, southWest] = corners;
-  const northWeight = 1 - clampedY;
-  const southWeight = clampedY;
-  const westWeight = 1 - clampedX;
-  const eastWeight = clampedX;
+  const [topLeft, topRight, bottomRight, bottomLeft] = corners;
+  const topWeight = 1 - clampedY;
+  const bottomWeight = clampedY;
+  const leftWeight = 1 - clampedX;
+  const rightWeight = clampedX;
 
   return {
     lat:
-      northWest.lat * westWeight * northWeight +
-      northEast.lat * eastWeight * northWeight +
-      southEast.lat * eastWeight * southWeight +
-      southWest.lat * westWeight * southWeight,
+      topLeft.lat * leftWeight * topWeight +
+      topRight.lat * rightWeight * topWeight +
+      bottomRight.lat * rightWeight * bottomWeight +
+      bottomLeft.lat * leftWeight * bottomWeight,
     lng:
-      northWest.lng * westWeight * northWeight +
-      northEast.lng * eastWeight * northWeight +
-      southEast.lng * eastWeight * southWeight +
-      southWest.lng * westWeight * southWeight,
+      topLeft.lng * leftWeight * topWeight +
+      topRight.lng * rightWeight * topWeight +
+      bottomRight.lng * rightWeight * bottomWeight +
+      bottomLeft.lng * leftWeight * bottomWeight,
   };
 }
 
-export function projectLayoutPointToCalibration(layoutPoint, layoutExtent, corners) {
+function projectLayoutPointByCenterModel(layoutPoint, layoutExtent, calibration) {
+  const centerX = (layoutExtent.minX + layoutExtent.maxX) / 2;
+  const centerY = (layoutExtent.minY + layoutExtent.maxY) / 2;
+  const offsetXMeters = layoutPoint.x - centerX + (calibration.layoutOffsetMeters?.x ?? 0);
+  const offsetYMeters = layoutPoint.y - centerY + (calibration.layoutOffsetMeters?.y ?? 0);
+  const topHeading = normalizeBearingDegrees(
+    calibration.headingDegrees,
+    DEFAULT_GARDEN_3_CALIBRATION.headingDegrees,
+  );
+
+  let point = offsetPointByMeters(calibration.center, normalizeBearingDegrees(topHeading + 90, 90), offsetXMeters);
+  point = offsetPointByMeters(point, normalizeBearingDegrees(topHeading + 180, 180), offsetYMeters);
+
+  return point;
+}
+
+export function projectLayoutPointToCalibration(layoutPoint, layoutExtent, calibration) {
+  if (calibration?.calibrationMode === "center_heading_size") {
+    return projectLayoutPointByCenterModel(layoutPoint, layoutExtent, calibration);
+  }
+
   const xRange = Math.max(layoutExtent.maxX - layoutExtent.minX, 1);
   const yRange = Math.max(layoutExtent.maxY - layoutExtent.minY, 1);
-  const normalizedX =
-    LAYOUT_EDGE_INSET_RATIO +
-    ((layoutPoint.x - layoutExtent.minX) / xRange) * (1 - LAYOUT_EDGE_INSET_RATIO * 2);
-  const normalizedY =
-    LAYOUT_EDGE_INSET_RATIO +
-    ((layoutPoint.y - layoutExtent.minY) / yRange) * (1 - LAYOUT_EDGE_INSET_RATIO * 2);
+  const normalizedX = (layoutPoint.x - layoutExtent.minX) / xRange;
+  const normalizedY = (layoutPoint.y - layoutExtent.minY) / yRange;
 
-  return projectNormalizedPointToCorners(corners, normalizedX, normalizedY);
+  return projectNormalizedPointToCorners(calibration.corners, normalizedX, normalizedY);
 }
 
 function normalizeCalibration(payload) {
+  const calibrationMode =
+    payload?.calibration_mode ??
+    payload?.calibrationMode ??
+    (payload?.center != null ? "center_heading_size" : "four_corner");
+
+  if (calibrationMode === "center_heading_size") {
+    const center = normalizePoint(payload?.center, DEFAULT_GARDEN_3_CALIBRATION.center);
+    const headingDegrees = normalizeBearingDegrees(
+      payload?.heading_degrees ?? payload?.headingDegrees,
+      DEFAULT_GARDEN_3_CALIBRATION.headingDegrees,
+    );
+    const widthMeters = normalizeNumber(
+      payload?.width_meters ?? payload?.widthMeters,
+      DEFAULT_GARDEN_3_CALIBRATION.sizeMeters.width,
+    );
+    const heightMeters = normalizeNumber(
+      payload?.height_meters ?? payload?.heightMeters,
+      DEFAULT_GARDEN_3_CALIBRATION.sizeMeters.height,
+    );
+    const layoutOffsetMeters = {
+      x: normalizeNumber(payload?.layout_offset_meters?.x ?? payload?.layoutOffsetMeters?.x, 0),
+      y: normalizeNumber(payload?.layout_offset_meters?.y ?? payload?.layoutOffsetMeters?.y, 0),
+    };
+    const corners = buildRectangleCornersFromCenterModel(center, headingDegrees, widthMeters, heightMeters);
+
+    return {
+      anchorQuality: payload?.anchor_quality ?? "approximate",
+      calibrationMode: "center_heading_size",
+      center,
+      confidenceNote:
+        payload?.confidence_note ??
+        "Initial center-based calibration is active and can be refined later in admin.",
+      corners,
+      gardenId: payload?.garden_id ?? 3,
+      headingDegrees,
+      imageUrl:
+        typeof payload?.image_url === "string" && payload.image_url.trim() !== ""
+          ? payload.image_url.trim()
+          : DEFAULT_IMAGE_URL,
+      layoutOffsetMeters,
+      mapBounds: buildBoundsFromCorners(corners),
+      notes: Array.isArray(payload?.notes) ? payload.notes : [],
+      sizeMeters: {
+        height: heightMeters,
+        width: widthMeters,
+      },
+    };
+  }
+
   const payloadCorners = payload?.corners ?? {};
-  const northWest = normalizePoint(payloadCorners.northWest, DEFAULT_GARDEN_3_CORNERS.northWest);
-  const northEast = normalizePoint(payloadCorners.northEast, DEFAULT_GARDEN_3_CORNERS.northEast);
-  const southEast = normalizePoint(payloadCorners.southEast, DEFAULT_GARDEN_3_CORNERS.southEast);
-  const southWest = normalizePoint(payloadCorners.southWest, DEFAULT_GARDEN_3_CORNERS.southWest);
-  const corners = [northWest, northEast, southEast, southWest];
+  const topLeft = normalizePoint(payloadCorners.topLeft ?? payloadCorners.northWest, {
+    lat: -7.006962,
+    lng: 109.601791,
+  });
+  const topRight = normalizePoint(payloadCorners.topRight ?? payloadCorners.northEast, {
+    lat: -7.006951,
+    lng: 109.602754,
+  });
+  const bottomRight = normalizePoint(payloadCorners.bottomRight ?? payloadCorners.southEast, {
+    lat: -7.008749,
+    lng: 109.60314,
+  });
+  const bottomLeft = normalizePoint(payloadCorners.bottomLeft ?? payloadCorners.southWest, {
+    lat: -7.008866,
+    lng: 109.602091,
+  });
+  const corners = [topLeft, topRight, bottomRight, bottomLeft];
 
   return {
     anchorQuality: payload?.anchor_quality ?? "approximate",
+    calibrationMode: "four_corner",
     confidenceNote:
       payload?.confidence_note ??
       "Initial four-corner calibration is active and can be refined later in admin.",
@@ -111,18 +242,26 @@ function normalizeCalibration(payload) {
 }
 
 export const DEFAULT_GARDEN_3_DRONE_CALIBRATION = normalizeCalibration({
-  corners: DEFAULT_GARDEN_3_CORNERS,
+  calibration_mode: "center_heading_size",
+  center: DEFAULT_GARDEN_3_CALIBRATION.center,
   garden_id: 3,
+  heading_degrees: DEFAULT_GARDEN_3_CALIBRATION.headingDegrees,
+  height_meters: DEFAULT_GARDEN_3_CALIBRATION.sizeMeters.height,
   image_url: DEFAULT_IMAGE_URL,
+  width_meters: DEFAULT_GARDEN_3_CALIBRATION.sizeMeters.width,
 });
 
 export async function loadGarden3DroneCalibration() {
-  const response = await fetch(DRONE_CALIBRATION_URL);
+  try {
+    const response = await fetch(DRONE_CALIBRATION_URL);
 
-  if (!response.ok) {
+    if (!response.ok) {
+      return DEFAULT_GARDEN_3_DRONE_CALIBRATION;
+    }
+
+    const payload = await response.json();
+    return normalizeCalibration(payload);
+  } catch {
     return DEFAULT_GARDEN_3_DRONE_CALIBRATION;
   }
-
-  const payload = await response.json();
-  return normalizeCalibration(payload);
 }
