@@ -11,6 +11,11 @@ const PLANT_TYPE_LABELS = {
   8: "Duri Hitam",
   9: "Bawor",
 };
+const PLANT_TYPE_COLORS = {
+  7: "#3ce6ff",
+  8: "#ffca5f",
+  9: "#57f287",
+};
 
 const ADMIN_GARDEN_SCOPE = 3;
 const CREATED_AT_FORMATTER = new Intl.DateTimeFormat("en-GB", {
@@ -33,7 +38,21 @@ function formatCreatedAt(createdAt) {
   return CREATED_AT_FORMATTER.format(parsedDate);
 }
 
-function normalizeUnmappedPlants(payload) {
+function buildPlantPresentationById(dots) {
+  const mappedDots = Array.isArray(dots) ? dots : [];
+  const plantPresentationById = new Map();
+
+  mappedDots.forEach((dot) => {
+    plantPresentationById.set(dot.id, {
+      plantTypeColor: dot.plantType?.color ?? PLANT_TYPE_COLORS[dot.plantTypeId] ?? "#94a3b8",
+      plantTypeLabel: dot.plantType?.label ?? "Unknown",
+    });
+  });
+
+  return plantPresentationById;
+}
+
+function normalizeUnmappedPlants(payload, plantPresentationById) {
   const plants = Array.isArray(payload) ? payload : [];
 
   return plants
@@ -42,12 +61,19 @@ function normalizeUnmappedPlants(payload) {
       id: plant.id,
       treeIdDisplay: formatTreeId(plant.id),
       plantName: plant.plant_name,
-      plantTypeLabel: PLANT_TYPE_LABELS[plant.plant_type_id] ?? "Unknown",
+      plantTypeColor:
+        plantPresentationById.get(plant.id)?.plantTypeColor ??
+        PLANT_TYPE_COLORS[plant.plant_type_id] ??
+        "#94a3b8",
+      plantTypeLabel:
+        plantPresentationById.get(plant.id)?.plantTypeLabel ??
+        PLANT_TYPE_LABELS[plant.plant_type_id] ??
+        "Unknown",
       createdAtLabel: formatCreatedAt(plant.created_at),
     }));
 }
 
-function normalizeMappedPlants(payload) {
+function normalizeMappedPlants(payload, plantPresentationById) {
   const plants = Array.isArray(payload) ? payload : [];
 
   return plants
@@ -61,7 +87,14 @@ function normalizeMappedPlants(payload) {
       id: plant.id,
       treeIdDisplay: formatTreeId(plant.id),
       plantName: plant.plant_name,
-      plantTypeLabel: PLANT_TYPE_LABELS[plant.plant_type_id] ?? "Unknown",
+      plantTypeColor:
+        plantPresentationById.get(plant.id)?.plantTypeColor ??
+        PLANT_TYPE_COLORS[plant.plant_type_id] ??
+        "#94a3b8",
+      plantTypeLabel:
+        plantPresentationById.get(plant.id)?.plantTypeLabel ??
+        PLANT_TYPE_LABELS[plant.plant_type_id] ??
+        "Unknown",
       createdAtLabel: formatCreatedAt(plant.created_at),
       latlng: {
         lat: plant.latitude,
@@ -77,6 +110,7 @@ function normalizeSyntheticMappedTrees(dots) {
     id: dot.id,
     treeIdDisplay: dot.treeIdDisplay,
     plantName: dot.plantName,
+    plantTypeColor: dot.plantType.color,
     plantTypeLabel: dot.plantType.label,
     createdAtLabel: "Preview Seed",
     latlng: {
@@ -89,6 +123,7 @@ function normalizeSyntheticMappedTrees(dots) {
 
 export async function loadAdminOrchardWorkspace() {
   const monitoringSnapshot = await loadMonitoringMapSnapshot();
+  const plantPresentationById = buildPlantPresentationById(monitoringSnapshot.dots);
   const isSupabaseReady = isAdminSupabaseConfigured();
   const [unmappedPayload, mappedPayload] = isSupabaseReady
     ? await Promise.all([
@@ -99,8 +134,10 @@ export async function loadAdminOrchardWorkspace() {
         fetchStaticUnmappedPlants(),
         Promise.resolve(normalizeSyntheticMappedTrees(monitoringSnapshot.dots)),
       ]);
-  const unmappedTrees = normalizeUnmappedPlants(unmappedPayload);
-  const mappedTrees = isSupabaseReady ? normalizeMappedPlants(mappedPayload) : mappedPayload;
+  const unmappedTrees = normalizeUnmappedPlants(unmappedPayload, plantPresentationById);
+  const mappedTrees = isSupabaseReady
+    ? normalizeMappedPlants(mappedPayload, plantPresentationById)
+    : mappedPayload;
 
   return {
     dataSource: getAdminPersistenceMode(),

@@ -1180,6 +1180,7 @@ export function AdminOrchardWorkspace({
                 const isSelectedMappedTree =
                   selectedTreeSelection?.scope === "mapped" &&
                   selectedTreeSelection.treeId === placement.id;
+                const mappedTreeColor = placement.plantTypeColor ?? "#57f287";
 
                 return (
                   <CircleMarker
@@ -1196,8 +1197,8 @@ export function AdminOrchardWorkspace({
                     }
                     key={placement.id}
                     pathOptions={{
-                      color: isSelectedMappedTree ? "#ffca5f" : "#57f287",
-                      fillColor: isSelectedMappedTree ? "#ffca5f" : "#57f287",
+                      color: isSelectedMappedTree ? "#ffca5f" : mappedTreeColor,
+                      fillColor: isSelectedMappedTree ? "#ffca5f" : mappedTreeColor,
                       fillOpacity: isSelectedMappedTree ? 0.96 : 0.88,
                       weight: 2,
                     }}
