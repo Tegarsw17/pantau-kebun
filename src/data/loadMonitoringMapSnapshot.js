@@ -40,20 +40,20 @@ const STATIC_PLANT_TYPES = {
 };
 
 const STATIC_CONDITIONS = {
-  Baik: {
+  Healthy: {
     color: "#10B981",
     icon: "✅",
-    label: "Baik",
+    label: "Healthy",
   },
-  Buruk: {
-    color: "#EF4444",
-    icon: "⚠️",
-    label: "Buruk",
-  },
-  "Perlu Cek": {
+  "Needs Treatment": {
     color: "#F59E0B",
-    icon: "🟡",
-    label: "Perlu Cek",
+    icon: "💊",
+    label: "Needs Treatment",
+  },
+  Dead: {
+    color: "#EF4444",
+    icon: "❌",
+    label: "Dead",
   },
 };
 
@@ -106,11 +106,12 @@ function buildPlantTypePresentation({ color, label }) {
 }
 
 function buildConditionPresentation({ color, icon, label }) {
-  const resolvedColor = normalizeColor(color, STATIC_CONDITIONS.Baik.color);
+  const resolvedColor = normalizeColor(color, STATIC_CONDITIONS.Healthy.color);
   return {
     badgeStyle: buildBadgeStyle(resolvedColor),
     color: resolvedColor,
-    icon: typeof icon === "string" && icon.trim() !== "" ? icon.trim() : STATIC_CONDITIONS.Baik.icon,
+    icon:
+      typeof icon === "string" && icon.trim() !== "" ? icon.trim() : STATIC_CONDITIONS.Healthy.icon,
     label,
     value: label,
   };
@@ -121,18 +122,18 @@ const DEFAULT_PLANT_TYPE_PRESENTATION = buildPlantTypePresentation({
   label: "Unknown",
 });
 
-const DEFAULT_CONDITION_PRESENTATION = buildConditionPresentation(STATIC_CONDITIONS.Baik);
+const DEFAULT_CONDITION_PRESENTATION = buildConditionPresentation(STATIC_CONDITIONS.Healthy);
 
 function deriveStaticConditionFromLayout(plant) {
   if (plant.layout_row <= 2) {
-    return buildConditionPresentation(STATIC_CONDITIONS.Baik);
+    return buildConditionPresentation(STATIC_CONDITIONS.Healthy);
   }
 
   if (plant.layout_row <= 4) {
-    return buildConditionPresentation(STATIC_CONDITIONS["Perlu Cek"]);
+    return buildConditionPresentation(STATIC_CONDITIONS["Needs Treatment"]);
   }
 
-  return buildConditionPresentation(STATIC_CONDITIONS.Buruk);
+  return buildConditionPresentation(STATIC_CONDITIONS.Dead);
 }
 
 function buildFilterOptions(dots, attributeKey) {
@@ -155,11 +156,11 @@ function buildFilterOptions(dots, attributeKey) {
 }
 
 function deriveSyntheticNote(plantType, condition, plant) {
-  if (condition.value === "Baik") {
+  if (condition.value === "Healthy") {
     return `${plantType.label} block stable, routine observation complete for ${plant.plant_name}.`;
   }
 
-  if (condition.value === "Perlu Cek") {
+  if (condition.value === "Needs Treatment") {
     return `Check canopy response and branch health near ${plant.plant_name}.`;
   }
 
@@ -220,19 +221,19 @@ function buildConditionLookup(conditions) {
   (Array.isArray(conditions) ? conditions : []).forEach((condition) => {
     const numericId = Number(condition?.id);
 
-    if (!Number.isFinite(numericId)) {
+    if (!Number.isFinite(numericId) || condition?.is_active === false) {
       return;
     }
 
     lookup.set(
       numericId,
       buildConditionPresentation({
-        color: condition?.color ?? STATIC_CONDITIONS.Baik.color,
-        icon: condition?.icon ?? STATIC_CONDITIONS.Baik.icon,
+        color: condition?.color ?? STATIC_CONDITIONS.Healthy.color,
+        icon: condition?.icon ?? STATIC_CONDITIONS.Healthy.icon,
         label:
           typeof condition?.name === "string" && condition.name.trim() !== ""
             ? condition.name.trim()
-            : STATIC_CONDITIONS.Baik.label,
+            : STATIC_CONDITIONS.Healthy.label,
       }),
     );
   });
@@ -241,11 +242,15 @@ function buildConditionLookup(conditions) {
 }
 
 function resolveDefaultConditionPresentation(conditionLookup) {
-  const defaultCondition = Array.from(conditionLookup.values()).find(
-    (condition) => condition.label.toLowerCase() === "baik",
+  const defaultCondition = Array.from(conditionLookup.values()).find((condition) =>
+    ["baik", "healthy"].includes(normalizeReferenceValue(condition.label)),
   );
 
   return defaultCondition ?? DEFAULT_CONDITION_PRESENTATION;
+}
+
+function normalizeReferenceValue(value) {
+  return typeof value === "string" ? value.trim().toLowerCase().replace(/\s+/g, " ") : "";
 }
 
 function normalizeConditionIds(conditionIds) {
@@ -258,14 +263,58 @@ function normalizeConditionIds(conditionIds) {
     .filter((conditionId) => Number.isFinite(conditionId));
 }
 
-function buildLatestUpdateByPlantId(updates, validPlantIds) {
+function buildPlantReferenceIndex(plants) {
+  const plantById = new Map();
+  const plantByReference = new Map();
+
+  (Array.isArray(plants) ? plants : []).forEach((plant) => {
+    const plantId = String(plant.id);
+    plantById.set(plantId, plant);
+
+    const referenceKeys = [
+      plantId,
+      typeof plant?.plant_name === "string" ? plant.plant_name : "",
+      typeof plant?.tree_id_display === "string" ? plant.tree_id_display : "",
+    ];
+
+    referenceKeys.forEach((referenceKey) => {
+      const normalizedReference = normalizeReferenceValue(referenceKey);
+
+      if (normalizedReference !== "" && !plantByReference.has(normalizedReference)) {
+        plantByReference.set(normalizedReference, plant);
+      }
+    });
+  });
+
+  return {
+    plantById,
+    plantByReference,
+  };
+}
+
+function resolvePlantFromReference(plantReferenceIndex, referenceValue) {
+  const normalizedReference = normalizeReferenceValue(referenceValue);
+
+  if (normalizedReference === "") {
+    return null;
+  }
+
+  return plantReferenceIndex.plantByReference.get(normalizedReference) ?? null;
+}
+
+function buildLatestUpdateByPlantId(updates, plantReferenceIndex) {
   const latestUpdateByPlantId = new Map();
-  const validPlantIdSet = new Set(validPlantIds.map((plantId) => String(plantId)));
 
   (Array.isArray(updates) ? updates : []).forEach((update) => {
-    const plantId = String(update?.plant_id ?? "").trim();
+    const plant = resolvePlantFromReference(plantReferenceIndex, update?.plant_id);
 
-    if (plantId === "" || latestUpdateByPlantId.has(plantId) || !validPlantIdSet.has(plantId)) {
+    if (plant == null) {
+      return;
+    }
+
+    const plantId = String(plant.id);
+
+    if (latestUpdateByPlantId.has(plantId)) {
       return;
     }
 
@@ -273,16 +322,6 @@ function buildLatestUpdateByPlantId(updates, validPlantIds) {
   });
 
   return latestUpdateByPlantId;
-}
-
-function buildPlantById(plants) {
-  const plantById = new Map();
-
-  (Array.isArray(plants) ? plants : []).forEach((plant) => {
-    plantById.set(String(plant.id), plant);
-  });
-
-  return plantById;
 }
 
 function buildLayoutMetadataByPlantId(payload) {
@@ -402,10 +441,10 @@ function buildDotRecord({ condition, plant, plantType, resolvedLatLng }) {
   };
 }
 
-function buildUpdateReportRows({ conditionLookup, plantById, plantTypeLookup, updates }) {
+function buildUpdateReportRows({ conditionLookup, plantReferenceIndex, plantTypeLookup, updates }) {
   return (Array.isArray(updates) ? updates : []).map((update) => {
     const plantId = String(update?.plant_id ?? "").trim();
-    const plant = plantById.get(plantId) ?? null;
+    const plant = resolvePlantFromReference(plantReferenceIndex, plantId);
     const plantType =
       plant != null
         ? resolvePlantType(plant, plantTypeLookup)
@@ -428,7 +467,7 @@ function buildUpdateReportRows({ conditionLookup, plantById, plantTypeLookup, up
       kondisi: condition.label,
       jenis: plantType.label,
       note: resolveLatestNote(update),
-      plantName: plant?.plant_name ?? UNKNOWN_PLANT_NAME,
+      plantName: plant?.plant_name ?? (plantId || UNKNOWN_PLANT_NAME),
       treeId:
         plant?.tree_id_display ??
         (Number.isFinite(numericPlantId) ? formatTreeId(numericPlantId) : plantId || "Unknown"),
@@ -515,15 +554,12 @@ function buildSupabaseSnapshot({ calibration, conditions, layoutPayload, plantTy
   const layoutExtent = deriveLayoutExtent(scopedPlants);
   const plantTypeLookup = buildPlantTypeLookup(plantTypes);
   const conditionLookup = buildConditionLookup(conditions);
-  const plantById = buildPlantById(scopedPlants);
-  const latestUpdateByPlantId = buildLatestUpdateByPlantId(
-    updates,
-    scopedPlants.map((plant) => plant.id),
-  );
+  const plantReferenceIndex = buildPlantReferenceIndex(scopedPlants);
+  const latestUpdateByPlantId = buildLatestUpdateByPlantId(updates, plantReferenceIndex);
   const dots = [];
   const reportRows = buildUpdateReportRows({
     conditionLookup,
-    plantById,
+    plantReferenceIndex,
     plantTypeLookup,
     updates,
   });
