@@ -189,7 +189,7 @@ function buildStaticPlantTypeLookup() {
 }
 
 function buildPlantTypeLookup(plantTypes) {
-  const lookup = buildStaticPlantTypeLookup();
+  const lookup = new Map();
 
   (Array.isArray(plantTypes) ? plantTypes : []).forEach((plantType) => {
     const numericId = Number(plantType?.id);
@@ -198,15 +198,15 @@ function buildPlantTypeLookup(plantTypes) {
       return;
     }
 
-    const fallbackPresentation = lookup.get(numericId) ?? DEFAULT_PLANT_TYPE_PRESENTATION;
+    const staticPresentation = STATIC_PLANT_TYPES[numericId];
     lookup.set(
       numericId,
       buildPlantTypePresentation({
-        color: plantType?.color ?? fallbackPresentation.color,
+        color: plantType?.color ?? UNKNOWN_PLANT_TYPE_COLOR,
         label:
           typeof plantType?.name === "string" && plantType.name.trim() !== ""
             ? plantType.name.trim()
-            : fallbackPresentation.label,
+            : staticPresentation?.label ?? DEFAULT_PLANT_TYPE_PRESENTATION.label,
       }),
     );
   });
@@ -238,6 +238,14 @@ function buildConditionLookup(conditions) {
   });
 
   return lookup;
+}
+
+function resolveDefaultConditionPresentation(conditionLookup) {
+  const defaultCondition = Array.from(conditionLookup.values()).find(
+    (condition) => condition.label.toLowerCase() === "baik",
+  );
+
+  return defaultCondition ?? DEFAULT_CONDITION_PRESENTATION;
 }
 
 function normalizeConditionIds(conditionIds) {
@@ -325,7 +333,7 @@ function resolveCondition(latestUpdate, conditionLookup) {
     }
   }
 
-  return DEFAULT_CONDITION_PRESENTATION;
+  return resolveDefaultConditionPresentation(conditionLookup);
 }
 
 function resolveLatestNote(latestUpdate) {
