@@ -1,0 +1,29 @@
+{
+  "garden_id": 3,
+  "image_url": "/dronentak.jpeg",
+  "calibration_mode": "four_corner",
+  "anchor_quality": "approximate",
+  "confidence_note": "Initial calibration normalized from field-estimated anchors. Fine adjustment is still expected in admin.",
+  "corners": {
+    "northWest": {
+      "lat": -7.006962,
+      "lng": 109.601791
+    },
+    "northEast": {
+      "lat": -7.006951,
+      "lng": 109.602754
+    },
+    "southEast": {
+      "lat": -7.008749,
+      "lng": 109.60314
+    },
+    "southWest": {
+      "lat": -7.008866,
+      "lng": 109.602091
+    }
+  },
+  "notes": [
+    "These anchor points are approximate and intentionally kept adjustable.",
+    "The overlay should be treated as field-ready preview calibration, not final survey-grade control."
+  ]
+}

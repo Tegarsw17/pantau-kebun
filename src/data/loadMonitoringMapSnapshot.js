@@ -1,7 +1,9 @@
+import {
+  loadGarden3DroneCalibration,
+  projectLayoutPointToCalibration,
+} from "./loadDroneCalibration.js";
+
 const GARDEN_SCOPE = 3;
-const EDGE_PADDING_PERCENT = 5;
-const IMAGE_ASPECT_RATIO = 1600 / 900;
-const IMAGE_PADDING_RATIO = 0.08;
 
 const plantTypePresentation = {
   7: {
@@ -48,26 +50,6 @@ const conditionPresentation = {
   },
 };
 
-function clampPercent(value) {
-  return Math.min(100 - EDGE_PADDING_PERCENT, Math.max(EDGE_PADDING_PERCENT, value));
-}
-
-function projectDotPosition(plant, bounds) {
-  const latRange = bounds.max_latitude - bounds.min_latitude;
-  const lngRange = bounds.max_longitude - bounds.min_longitude;
-
-  const normalizedX = lngRange === 0 ? 0.5 : (plant.longitude - bounds.min_longitude) / lngRange;
-  const normalizedY = latRange === 0 ? 0.5 : (bounds.max_latitude - plant.latitude) / latRange;
-
-  const leftPercent = EDGE_PADDING_PERCENT + normalizedX * (100 - EDGE_PADDING_PERCENT * 2);
-  const topPercent = EDGE_PADDING_PERCENT + normalizedY * (100 - EDGE_PADDING_PERCENT * 2);
-
-  return {
-    leftPercent: clampPercent(leftPercent),
-    topPercent: clampPercent(topPercent),
-  };
-}
-
 function deriveSyntheticCondition(plant) {
   if (plant.layout_row <= 2) {
     return conditionPresentation.Baik;
@@ -111,62 +93,39 @@ function deriveSyntheticNote(plantType, condition, plant) {
   return `Inspect leaf stress and root-zone moisture around ${plant.plant_name}.`;
 }
 
-function buildImageBounds(plants, fallbackBounds) {
-  if (plants.length === 0) {
-    if (!fallbackBounds) {
-      throw new Error("Unable to derive map bounds without plants or fallback bounds");
-    }
-
-    return fallbackBounds;
-  }
-
-  const latitudes = plants.map((plant) => plant.latitude);
-  const longitudes = plants.map((plant) => plant.longitude);
-  const minLatitude = Math.min(...latitudes);
-  const maxLatitude = Math.max(...latitudes);
-  const minLongitude = Math.min(...longitudes);
-  const maxLongitude = Math.max(...longitudes);
-  const centerLatitude = (minLatitude + maxLatitude) / 2;
-  const centerLongitude = (minLongitude + maxLongitude) / 2;
-  const longitudeScale = Math.max(Math.cos((centerLatitude * Math.PI) / 180), 0.000001);
-
-  let normalizedWidth = Math.max((maxLongitude - minLongitude) * longitudeScale, 0.0000001);
-  let normalizedHeight = Math.max(maxLatitude - minLatitude, 0.0000001);
-
-  normalizedWidth *= 1 + IMAGE_PADDING_RATIO * 2;
-  normalizedHeight *= 1 + IMAGE_PADDING_RATIO * 2;
-
-  if (normalizedWidth / normalizedHeight < IMAGE_ASPECT_RATIO) {
-    normalizedWidth = normalizedHeight * IMAGE_ASPECT_RATIO;
-  } else {
-    normalizedHeight = normalizedWidth / IMAGE_ASPECT_RATIO;
-  }
-
-  const latitudeRange = normalizedHeight;
-  const longitudeRange = normalizedWidth / longitudeScale;
+function deriveLayoutExtent(plants) {
+  const xValues = plants.map((plant) => plant.x_m).filter((value) => typeof value === "number");
+  const yValues = plants.map((plant) => plant.y_m).filter((value) => typeof value === "number");
 
   return {
-    min_latitude: centerLatitude - latitudeRange / 2,
-    max_latitude: centerLatitude + latitudeRange / 2,
-    min_longitude: centerLongitude - longitudeRange / 2,
-    max_longitude: centerLongitude + longitudeRange / 2,
+    maxX: xValues.length > 0 ? Math.max(...xValues) : 1,
+    maxY: yValues.length > 0 ? Math.max(...yValues) : 1,
+    minX: xValues.length > 0 ? Math.min(...xValues) : 0,
+    minY: yValues.length > 0 ? Math.min(...yValues) : 0,
   };
 }
 
-function normalizeSnapshot(payload) {
-  const fallbackBounds = payload?.meta?.bounds_hint;
+function normalizeSnapshot(payload, calibration) {
   const plants = Array.isArray(payload?.plants) ? payload.plants : [];
 
-  const scopedPlants = plants.filter(
-    (plant) =>
-      plant.garden_id === GARDEN_SCOPE &&
-      typeof plant.latitude === "number" &&
-      typeof plant.longitude === "number",
-  );
-  const calibratedBounds = buildImageBounds(scopedPlants, fallbackBounds);
+  const scopedPlants = plants.filter((plant) => plant.garden_id === GARDEN_SCOPE);
+  const layoutExtent = deriveLayoutExtent(scopedPlants);
 
   const dots = scopedPlants.map((plant) => {
-    const position = projectDotPosition(plant, calibratedBounds);
+    const resolvedLatLng =
+      typeof plant.x_m === "number" && typeof plant.y_m === "number"
+        ? projectLayoutPointToCalibration(
+            {
+              x: plant.x_m,
+              y: plant.y_m,
+            },
+            layoutExtent,
+            calibration.corners,
+          )
+        : {
+            lat: plant.latitude,
+            lng: plant.longitude,
+          };
     const plantType =
       plantTypePresentation[plant.plant_type_id] ?? {
         value: "Unknown",
@@ -182,9 +141,8 @@ function normalizeSnapshot(payload) {
       plantName: plant.plant_name,
       plantType,
       condition,
-      latitude: plant.latitude,
-      longitude: plant.longitude,
-      ...position,
+      latitude: resolvedLatLng.lat,
+      longitude: resolvedLatLng.lng,
     };
   });
 
@@ -199,13 +157,11 @@ function normalizeSnapshot(payload) {
   }));
 
   return {
+    imageCalibration: calibration,
     totalTrees: dots.length,
     dots,
     reportRows,
-    mapBounds: [
-      [calibratedBounds.min_latitude, calibratedBounds.min_longitude],
-      [calibratedBounds.max_latitude, calibratedBounds.max_longitude],
-    ],
+    mapBounds: calibration.mapBounds,
     filters: {
       plantType: buildFilterOptions(dots, "plantType"),
       condition: buildFilterOptions(dots, "condition"),
@@ -214,12 +170,15 @@ function normalizeSnapshot(payload) {
 }
 
 export async function loadMonitoringMapSnapshot() {
-  const response = await fetch("/garden3_synthetic_latlng.json");
+  const [response, calibration] = await Promise.all([
+    fetch("/garden3_synthetic_latlng.json"),
+    loadGarden3DroneCalibration(),
+  ]);
 
   if (!response.ok) {
     throw new Error(`Failed to load monitoring map snapshot: ${response.status}`);
   }
 
   const payload = await response.json();
-  return normalizeSnapshot(payload);
+  return normalizeSnapshot(payload, calibration);
 }

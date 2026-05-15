@@ -1,15 +1,15 @@
 import { useEffect, useState } from "react";
 import {
   CircleMarker,
-  ImageOverlay,
   MapContainer,
   Popup,
   ZoomControl,
   useMapEvents,
 } from "react-leaflet";
 import { saveAdminTreePlacement } from "../data/adminOrchardSupabase.js";
+import { CalibratedImageOverlay } from "./CalibratedImageOverlay.jsx";
+import { DEFAULT_GARDEN_3_DRONE_CALIBRATION } from "../data/loadDroneCalibration.js";
 
-const DRONE_IMAGE_URL = "/dronentak.jpeg";
 const FIT_BOUNDS_PADDING = [36, 36];
 
 function AdminPlottingBridge({ onMapClick }) {
@@ -38,6 +38,7 @@ function upsertMappedPlacement(currentPlacements, tree, latlng) {
 
 export function AdminOrchardWorkspace({
   dataSource,
+  imageCalibration,
   imageBounds,
   loadState,
   mappedTrees,
@@ -78,6 +79,7 @@ export function AdminOrchardWorkspace({
         : null;
   const selectedTreeScope = selectedTreeSelection?.scope ?? null;
   const isPlottingMode = Boolean(selectedTree);
+  const resolvedCalibration = imageCalibration ?? DEFAULT_GARDEN_3_DRONE_CALIBRATION;
 
   useEffect(() => {
     if (selectedTreeSelection == null) {
@@ -421,7 +423,11 @@ export function AdminOrchardWorkspace({
               zoomSnap={0.25}
             >
               <ZoomControl position="topright" />
-              <ImageOverlay bounds={imageBounds} opacity={1} url={DRONE_IMAGE_URL} />
+              <CalibratedImageOverlay
+                corners={resolvedCalibration.corners}
+                imageUrl={resolvedCalibration.imageUrl}
+                opacity={1}
+              />
               <AdminPlottingBridge onMapClick={handleMapClick} />
               {mappedPlacements.map((placement) => {
                 const isSelectedMappedTree =

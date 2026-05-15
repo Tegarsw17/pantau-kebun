@@ -399,12 +399,12 @@ body::before {
 
 .admin-map-leaflet--plotting.leaflet-container,
 .admin-map-leaflet--plotting .leaflet-interactive,
-.admin-map-leaflet--plotting .leaflet-image-layer,
+.admin-map-leaflet--plotting .calibrated-image-overlay,
 .admin-map-leaflet--plotting .leaflet-pane {
   cursor: crosshair;
 }
 
-.admin-map-leaflet .leaflet-image-layer {
+.admin-map-leaflet .calibrated-image-overlay {
   filter: saturate(0.84) brightness(0.78) contrast(1.04);
 }
 
@@ -802,7 +802,7 @@ select:disabled,
   outline: none;
 }
 
-.map-leaflet .leaflet-image-layer {
+.map-leaflet .calibrated-image-overlay {
   filter: saturate(0.86) brightness(0.75) contrast(1.05);
 }
 

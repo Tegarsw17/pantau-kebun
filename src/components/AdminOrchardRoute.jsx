@@ -35,6 +35,7 @@ export function AdminOrchardRoute() {
   const [isAuthenticated, setIsAuthenticated] = useState(readAdminSession);
   const [workspaceSnapshot, setWorkspaceSnapshot] = useState({
     dataSource: getAdminPersistenceMode(),
+    imageCalibration: null,
     imageBounds: null,
     loadState: "loading",
     mappedTrees: [],
@@ -58,6 +59,7 @@ export function AdminOrchardRoute() {
 
         setWorkspaceSnapshot({
           dataSource: snapshot.dataSource,
+          imageCalibration: snapshot.imageCalibration,
           imageBounds: snapshot.imageBounds,
           loadState: "ready",
           mappedTrees: snapshot.mappedTrees,
@@ -71,6 +73,7 @@ export function AdminOrchardRoute() {
 
         setWorkspaceSnapshot({
           dataSource: getAdminPersistenceMode(),
+          imageCalibration: null,
           imageBounds: null,
           loadState: "error",
           mappedTrees: [],
@@ -173,6 +176,7 @@ export function AdminOrchardRoute() {
 
       <AdminOrchardWorkspace
         dataSource={workspaceSnapshot.dataSource}
+        imageCalibration={workspaceSnapshot.imageCalibration}
         imageBounds={workspaceSnapshot.imageBounds}
         loadState={workspaceSnapshot.loadState}
         mappedTrees={workspaceSnapshot.mappedTrees}

@@ -45,6 +45,7 @@ function MonitoringDashboard() {
   const [mapSnapshot, setMapSnapshot] = useState({
     loadState: "loading",
     dots: [],
+    imageCalibration: null,
     mapBounds: null,
     totalTrees: 0,
     filters: {
@@ -70,11 +71,12 @@ function MonitoringDashboard() {
         setMapSnapshot({
           loadState: "ready",
           dots: snapshot.dots,
+          imageCalibration: snapshot.imageCalibration,
           mapBounds: snapshot.mapBounds,
           totalTrees: snapshot.totalTrees,
           filters: snapshot.filters,
           reportRows: snapshot.reportRows,
-          message: "Leaflet image overlay loaded from JSON",
+          message: "Calibrated 4-corner drone overlay loaded",
         });
       })
       .catch(() => {
@@ -85,6 +87,7 @@ function MonitoringDashboard() {
         setMapSnapshot({
           loadState: "error",
           dots: [],
+          imageCalibration: null,
           mapBounds: null,
           totalTrees: 0,
           filters: {
@@ -206,6 +209,7 @@ function MonitoringDashboard() {
 
         <MonitoringMapStage
           allValues={ALL_VALUES}
+          imageCalibration={mapSnapshot.imageCalibration}
           imageBounds={mapSnapshot.mapBounds}
           legendItems={legendItems}
           loadState={mapSnapshot.loadState}

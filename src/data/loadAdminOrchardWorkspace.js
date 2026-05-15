@@ -103,6 +103,7 @@ export async function loadAdminOrchardWorkspace() {
 
   return {
     dataSource: getAdminPersistenceMode(),
+    imageCalibration: monitoringSnapshot.imageCalibration,
     imageBounds: monitoringSnapshot.mapBounds,
     mappedTrees,
     unmappedTrees,

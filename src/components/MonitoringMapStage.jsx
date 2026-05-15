@@ -1,13 +1,11 @@
 import { useEffect, useState } from "react";
-import { ImageOverlay, MapContainer, ZoomControl, useMap, useMapEvents } from "react-leaflet";
+import { MapContainer, ZoomControl, useMap, useMapEvents } from "react-leaflet";
+import { CalibratedImageOverlay } from "./CalibratedImageOverlay.jsx";
+import { DEFAULT_GARDEN_3_DRONE_CALIBRATION } from "../data/loadDroneCalibration.js";
 
-const DRONE_IMAGE_URL = "/dronentak.jpeg";
 const FIT_BOUNDS_PADDING = [36, 36];
 const OVERLAY_DOT_MARGIN = 28;
-const DEFAULT_IMAGE_BOUNDS = [
-  [-2.25, 112.75],
-  [-2.249640676, 112.750323642],
-];
+const DEFAULT_IMAGE_BOUNDS = DEFAULT_GARDEN_3_DRONE_CALIBRATION.mapBounds;
 
 function MapViewportBridge({ imageBounds, visibleDots, onViewportSync }) {
   const map = useMap();
@@ -69,6 +67,7 @@ function clampTooltipPosition(value, min, max) {
 
 export function MonitoringMapStage({
   allValues,
+  imageCalibration,
   imageBounds,
   legendItems,
   loadState,
@@ -85,6 +84,7 @@ export function MonitoringMapStage({
     projectedDots: [],
   });
 
+  const resolvedCalibration = imageCalibration ?? DEFAULT_GARDEN_3_DRONE_CALIBRATION;
   const resolvedImageBounds = imageBounds ?? DEFAULT_IMAGE_BOUNDS;
 
   useEffect(() => {
@@ -166,7 +166,11 @@ export function MonitoringMapStage({
             zoomSnap={0.25}
           >
             <ZoomControl position="topright" />
-            <ImageOverlay bounds={resolvedImageBounds} opacity={1} url={DRONE_IMAGE_URL} />
+            <CalibratedImageOverlay
+              corners={resolvedCalibration.corners}
+              imageUrl={resolvedCalibration.imageUrl}
+              opacity={1}
+            />
             <MapViewportBridge
               imageBounds={resolvedImageBounds}
               onViewportSync={setViewportState}
