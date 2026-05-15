@@ -538,6 +538,22 @@ export function AdminOrchardWorkspace({
     })();
   };
 
+  const handleCalibrationBaseline = () => {
+    if (isSavingCalibration) {
+      return;
+    }
+
+    const baselineCalibration = normalizeDroneCalibration(
+      serializeDroneCalibration(DEFAULT_GARDEN_3_DRONE_CALIBRATION),
+    );
+
+    setWorkingCalibration(baselineCalibration);
+    setFeedback({
+      tone: "neutral",
+      message: "Original field baseline loaded into the draft. Save to persist it.",
+    });
+  };
+
   const handleCalibrationReset = () => {
     if (isSavingCalibration) {
       return;
@@ -930,6 +946,14 @@ export function AdminOrchardWorkspace({
                   disabled={!hasCalibrationChanges || isSavingCalibration}
                 >
                   Revert
+                </button>
+                <button
+                  className="admin-secondary-button"
+                  type="button"
+                  onClick={handleCalibrationBaseline}
+                  disabled={isSavingCalibration}
+                >
+                  Use Field Baseline
                 </button>
                 <button
                   className="admin-secondary-button"
