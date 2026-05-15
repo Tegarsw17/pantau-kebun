@@ -11,9 +11,11 @@ import {
 } from "./loadDroneCalibration.js";
 
 const GARDEN_SCOPE = 3;
+const GARDEN_NAME = "Kebun Ntak-Ntak";
 const NO_REPORT_NOTE = "No field report submitted yet.";
 const NO_REPORT_UPDATED_AT = "No report yet";
 const UNKNOWN_PLANT_TYPE_COLOR = "#94a3b8";
+const UNKNOWN_PLANT_NAME = "Unknown Plant";
 const REPORT_DATE_FORMATTER = new Intl.DateTimeFormat("en-GB", {
   day: "2-digit",
   hour: "2-digit",
@@ -265,6 +267,16 @@ function buildLatestUpdateByPlantId(updates, validPlantIds) {
   return latestUpdateByPlantId;
 }
 
+function buildPlantById(plants) {
+  const plantById = new Map();
+
+  (Array.isArray(plants) ? plants : []).forEach((plant) => {
+    plantById.set(String(plant.id), plant);
+  });
+
+  return plantById;
+}
+
 function buildLayoutMetadataByPlantId(payload) {
   const layoutByPlantId = new Map();
   const plants = Array.isArray(payload?.plants) ? payload.plants : [];
@@ -382,17 +394,39 @@ function buildDotRecord({ condition, plant, plantType, resolvedLatLng }) {
   };
 }
 
-function buildReportRow({ condition, latestUpdate, plant, plantType }) {
-  return {
-    badgeStyle: condition.badgeStyle,
-    conditionIcon: condition.icon,
-    kondisi: condition.label,
-    jenis: plantType.label,
-    note: resolveLatestNote(latestUpdate),
-    plantName: plant.plant_name,
-    treeId: plant.tree_id_display,
-    updatedAt: formatUpdatedAt(latestUpdate),
-  };
+function buildUpdateReportRows({ conditionLookup, plantById, plantTypeLookup, updates }) {
+  return (Array.isArray(updates) ? updates : []).map((update) => {
+    const plantId = String(update?.plant_id ?? "").trim();
+    const plant = plantById.get(plantId) ?? null;
+    const plantType =
+      plant != null
+        ? resolvePlantType(plant, plantTypeLookup)
+        : buildPlantTypePresentation({
+            color: UNKNOWN_PLANT_TYPE_COLOR,
+            label:
+              typeof update?.type === "string" && update.type.trim() !== ""
+                ? update.type.trim()
+                : "Unknown",
+          });
+    const condition = resolveCondition(update, conditionLookup);
+    const numericPlantId = Number(plantId);
+
+    return {
+      id:
+        update?.id ??
+        `${plantId !== "" ? plantId : "unknown"}-${update?.created_at ?? update?.date ?? "report"}`,
+      badgeStyle: condition.badgeStyle,
+      conditionIcon: condition.icon,
+      kondisi: condition.label,
+      jenis: plantType.label,
+      note: resolveLatestNote(update),
+      plantName: plant?.plant_name ?? UNKNOWN_PLANT_NAME,
+      treeId:
+        plant?.tree_id_display ??
+        (Number.isFinite(numericPlantId) ? formatTreeId(numericPlantId) : plantId || "Unknown"),
+      updatedAt: formatUpdatedAt(update),
+    };
+  });
 }
 
 function buildStaticSnapshot(payload, calibration) {
@@ -439,6 +473,7 @@ function buildStaticSnapshot(payload, calibration) {
     const condition = deriveStaticConditionFromLayout(plant);
 
     return {
+      id: plant.id,
       badgeStyle: condition.badgeStyle,
       conditionIcon: condition.icon,
       kondisi: condition.label,
@@ -472,12 +507,20 @@ function buildSupabaseSnapshot({ calibration, conditions, layoutPayload, plantTy
   const layoutExtent = deriveLayoutExtent(scopedPlants);
   const plantTypeLookup = buildPlantTypeLookup(plantTypes);
   const conditionLookup = buildConditionLookup(conditions);
+  const plantById = buildPlantById(scopedPlants);
   const latestUpdateByPlantId = buildLatestUpdateByPlantId(
     updates,
     scopedPlants.map((plant) => plant.id),
   );
   const dots = [];
-  const reportRows = scopedPlants.map((plant) => {
+  const reportRows = buildUpdateReportRows({
+    conditionLookup,
+    plantById,
+    plantTypeLookup,
+    updates,
+  });
+
+  scopedPlants.forEach((plant) => {
     const plantType = resolvePlantType(plant, plantTypeLookup);
     const latestUpdate = latestUpdateByPlantId.get(String(plant.id)) ?? null;
     const condition = resolveCondition(latestUpdate, conditionLookup);
@@ -493,13 +536,6 @@ function buildSupabaseSnapshot({ calibration, conditions, layoutPayload, plantTy
         }),
       );
     }
-
-    return buildReportRow({
-      condition,
-      latestUpdate,
-      plant,
-      plantType,
-    });
   });
   const previewLayoutCount = dots.filter((dot) => dot.coordinateSource === "layout").length;
 
@@ -542,7 +578,7 @@ export async function loadMonitoringMapSnapshot() {
         fetchGardenPlants(GARDEN_SCOPE),
         fetchPlantTypes(),
         fetchConditions(),
-        fetchPlantUpdates(),
+        fetchPlantUpdates(GARDEN_NAME),
       ]);
 
       return buildSupabaseSnapshot({

@@ -261,7 +261,7 @@ function MonitoringDashboard() {
                 </thead>
                 <tbody>
                   {filteredReportRows.map((row) => (
-                    <tr key={row.treeId}>
+                    <tr key={row.id ?? `${row.treeId}-${row.updatedAt}`}>
                       <td className="mono">{row.treeId}</td>
                       <td>{row.plantName}</td>
                       <td>{row.jenis}</td>

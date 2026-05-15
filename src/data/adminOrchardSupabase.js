@@ -128,16 +128,22 @@ export async function fetchConditions() {
   return response.json();
 }
 
-export async function fetchPlantUpdates() {
+export async function fetchPlantUpdates(gardenName) {
   if (!isAdminSupabaseConfigured()) {
     throw new Error("Supabase admin connection is not configured.");
   }
 
+  const searchParams = {
+    select: "id,garden,type,plant_id,desc,date,created_at,condition_ids",
+    order: "created_at.desc",
+  };
+
+  if (typeof gardenName === "string" && gardenName.trim() !== "") {
+    searchParams.garden = `eq.${gardenName.trim()}`;
+  }
+
   const response = await fetch(
-    buildSupabaseUrl("/rest/v1/updates", {
-      select: "id,plant_id,desc,date,created_at,condition_ids",
-      order: "created_at.desc",
-    }),
+    buildSupabaseUrl("/rest/v1/updates", searchParams),
     {
       headers: buildSupabaseHeaders(),
     },
