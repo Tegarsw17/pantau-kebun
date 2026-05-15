@@ -10,6 +10,7 @@ import {
 } from "react-leaflet";
 import {
   deleteGardenDroneCalibrationRecord,
+  fetchGardenDroneCalibrationRecord,
   saveAdminTreePlacement,
   saveGardenDroneCalibrationRecord,
 } from "../data/adminOrchardSupabase.js";
@@ -420,6 +421,50 @@ export function AdminOrchardWorkspace({
     });
   };
 
+  const handleCalibrationReload = () => {
+    if (isSavingCalibration || dataSource !== "supabase") {
+      return;
+    }
+
+    void (async () => {
+      setIsSavingCalibration(true);
+
+      try {
+        const calibrationRecord = await fetchGardenDroneCalibrationRecord(
+          DEFAULT_GARDEN_3_DRONE_CALIBRATION.gardenId,
+        );
+
+        if (calibrationRecord?.calibration == null) {
+          clearStoredGarden3DroneCalibration();
+          setPersistedCalibration(DEFAULT_GARDEN_3_DRONE_CALIBRATION);
+          setWorkingCalibration(DEFAULT_GARDEN_3_DRONE_CALIBRATION);
+          setFeedback({
+            tone: "neutral",
+            message: "No saved Supabase calibration was found. Bundled default reloaded.",
+          });
+          return;
+        }
+
+        const normalizedCalibration = normalizeDroneCalibration(calibrationRecord.calibration);
+        persistGarden3DroneCalibration(normalizedCalibration);
+        setPersistedCalibration(normalizedCalibration);
+        setWorkingCalibration(normalizedCalibration);
+        setFeedback({
+          tone: "success",
+          message: "Calibration reloaded from Supabase.",
+        });
+      } catch (error) {
+        setFeedback({
+          tone: "error",
+          message:
+            error instanceof Error ? error.message : "Calibration could not be reloaded from Supabase.",
+        });
+      } finally {
+        setIsSavingCalibration(false);
+      }
+    })();
+  };
+
   const handleCalibrationReset = () => {
     if (isSavingCalibration) {
       return;
@@ -683,6 +728,14 @@ export function AdminOrchardWorkspace({
                   disabled={!hasCalibrationChanges || isSavingCalibration}
                 >
                   Revert
+                </button>
+                <button
+                  className="admin-secondary-button"
+                  type="button"
+                  onClick={handleCalibrationReload}
+                  disabled={isSavingCalibration || dataSource !== "supabase"}
+                >
+                  Reload Saved
                 </button>
                 <button
                   className="admin-secondary-button"
