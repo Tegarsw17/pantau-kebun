@@ -1,3 +1,8 @@
+import {
+  fetchGardenDroneCalibrationRecord,
+  isAdminSupabaseConfigured,
+} from "./adminOrchardSupabase.js";
+
 const DRONE_CALIBRATION_URL = "/garden3_drone_calibration.json";
 const DRONE_CALIBRATION_STORAGE_KEY = "pantaukebun.garden3.drone-calibration";
 const DEFAULT_IMAGE_URL = "/dronentak.jpeg";
@@ -395,6 +400,20 @@ export function clearStoredGarden3DroneCalibration() {
 }
 
 export async function loadGarden3DroneCalibration() {
+  if (isAdminSupabaseConfigured()) {
+    try {
+      const calibrationRecord = await fetchGardenDroneCalibrationRecord(
+        DEFAULT_GARDEN_3_DRONE_CALIBRATION.gardenId,
+      );
+
+      if (calibrationRecord?.calibration != null) {
+        return normalizeCalibration(calibrationRecord.calibration);
+      }
+    } catch {
+      // Fall through to local and bundled calibration sources.
+    }
+  }
+
   const storedCalibration = readStoredGarden3DroneCalibration();
 
   if (storedCalibration != null) {

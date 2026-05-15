@@ -8,7 +8,11 @@ import {
   useMap,
   useMapEvents,
 } from "react-leaflet";
-import { saveAdminTreePlacement } from "../data/adminOrchardSupabase.js";
+import {
+  deleteGardenDroneCalibrationRecord,
+  saveAdminTreePlacement,
+  saveGardenDroneCalibrationRecord,
+} from "../data/adminOrchardSupabase.js";
 import { CalibratedImageOverlay } from "./CalibratedImageOverlay.jsx";
 import {
   clearStoredGarden3DroneCalibration,
@@ -137,6 +141,7 @@ export function AdminOrchardWorkspace({
   const [pendingPlacement, setPendingPlacement] = useState(null);
   const [feedback, setFeedback] = useState(null);
   const [isSavingPlacement, setIsSavingPlacement] = useState(false);
+  const [isSavingCalibration, setIsSavingCalibration] = useState(false);
 
   useEffect(() => {
     setQueueTrees(unmappedTrees);
@@ -147,6 +152,7 @@ export function AdminOrchardWorkspace({
     setPendingPlacement(null);
     setFeedback(null);
     setIsSavingPlacement(false);
+    setIsSavingCalibration(false);
   }, [imageCalibration, mappedTrees, unmappedTrees]);
 
   useEffect(() => {
@@ -178,7 +184,7 @@ export function AdminOrchardWorkspace({
         : null;
   const selectedTreeScope = selectedTreeSelection?.scope ?? null;
   const isPlottingMode = Boolean(selectedTree);
-  const isTreeSelectionLocked = isSavingPlacement || calibrationMode;
+  const isTreeSelectionLocked = isSavingPlacement || isSavingCalibration || calibrationMode;
   const hasCalibrationChanges = !calibrationSignaturesMatch(workingCalibration, persistedCalibration);
 
   useEffect(() => {
@@ -224,7 +230,7 @@ export function AdminOrchardWorkspace({
   };
 
   const handleMapClick = (latlng) => {
-    if (isSavingPlacement) {
+    if (isSavingPlacement || isSavingCalibration) {
       return;
     }
 
@@ -351,24 +357,62 @@ export function AdminOrchardWorkspace({
   };
 
   const handleCalibrationSave = () => {
-    const didPersist = persistGarden3DroneCalibration(workingCalibration);
-
-    if (!didPersist) {
-      setFeedback({
-        tone: "error",
-        message: "Calibration override could not be stored in this browser.",
-      });
+    if (isSavingCalibration) {
       return;
     }
 
-    setPersistedCalibration(workingCalibration);
-    setFeedback({
-      tone: "success",
-      message: "Calibration override saved to browser storage.",
-    });
+    void (async () => {
+      setIsSavingCalibration(true);
+
+      try {
+        if (dataSource === "supabase") {
+          const savedRecord = await saveGardenDroneCalibrationRecord({
+            calibration: serializeDroneCalibration(workingCalibration),
+            gardenId: workingCalibration.gardenId ?? DEFAULT_GARDEN_3_DRONE_CALIBRATION.gardenId,
+          });
+          const normalizedCalibration = normalizeDroneCalibration(savedRecord.calibration);
+          persistGarden3DroneCalibration(normalizedCalibration);
+          setPersistedCalibration(normalizedCalibration);
+          setWorkingCalibration(normalizedCalibration);
+          setFeedback({
+            tone: "success",
+            message: "Calibration saved to Supabase.",
+          });
+          return;
+        }
+
+        const didPersist = persistGarden3DroneCalibration(workingCalibration);
+
+        if (!didPersist) {
+          setFeedback({
+            tone: "error",
+            message: "Calibration override could not be stored in this browser.",
+          });
+          return;
+        }
+
+        setPersistedCalibration(workingCalibration);
+        setFeedback({
+          tone: "success",
+          message: "Calibration override saved to browser storage.",
+        });
+      } catch (error) {
+        setFeedback({
+          tone: "error",
+          message:
+            error instanceof Error ? error.message : "Calibration could not be saved.",
+        });
+      } finally {
+        setIsSavingCalibration(false);
+      }
+    })();
   };
 
   const handleCalibrationRevert = () => {
+    if (isSavingCalibration) {
+      return;
+    }
+
     setWorkingCalibration(persistedCalibration);
     setFeedback({
       tone: "neutral",
@@ -377,22 +421,49 @@ export function AdminOrchardWorkspace({
   };
 
   const handleCalibrationReset = () => {
-    const didClearStorage = clearStoredGarden3DroneCalibration();
-
-    if (!didClearStorage) {
-      setFeedback({
-        tone: "error",
-        message: "Calibration override could not be cleared from this browser.",
-      });
+    if (isSavingCalibration) {
       return;
     }
 
-    setPersistedCalibration(DEFAULT_GARDEN_3_DRONE_CALIBRATION);
-    setWorkingCalibration(DEFAULT_GARDEN_3_DRONE_CALIBRATION);
-    setFeedback({
-      tone: "success",
-      message: "Calibration reset to the bundled Garden 3 default.",
-    });
+    void (async () => {
+      setIsSavingCalibration(true);
+
+      try {
+        const didClearStorage = clearStoredGarden3DroneCalibration();
+
+        if (!didClearStorage && dataSource !== "supabase") {
+          setFeedback({
+            tone: "error",
+            message: "Calibration override could not be cleared from this browser.",
+          });
+          return;
+        }
+
+        if (dataSource === "supabase") {
+          await deleteGardenDroneCalibrationRecord(
+            DEFAULT_GARDEN_3_DRONE_CALIBRATION.gardenId,
+          );
+        }
+
+        setPersistedCalibration(DEFAULT_GARDEN_3_DRONE_CALIBRATION);
+        setWorkingCalibration(DEFAULT_GARDEN_3_DRONE_CALIBRATION);
+        setFeedback({
+          tone: "success",
+          message:
+            dataSource === "supabase"
+              ? "Calibration reset to the bundled default and cleared from Supabase."
+              : "Calibration reset to the bundled Garden 3 default.",
+        });
+      } catch (error) {
+        setFeedback({
+          tone: "error",
+          message:
+            error instanceof Error ? error.message : "Calibration could not be reset.",
+        });
+      } finally {
+        setIsSavingCalibration(false);
+      }
+    })();
   };
 
   return (
@@ -481,6 +552,7 @@ export function AdminOrchardWorkspace({
                     className="admin-calibration-input"
                     type="number"
                     step="0.000001"
+                    disabled={isSavingCalibration}
                     value={resolvedCalibration.center.lat}
                     onChange={(event) => {
                       const latitude = Number(event.target.value);
@@ -503,6 +575,7 @@ export function AdminOrchardWorkspace({
                     className="admin-calibration-input"
                     type="number"
                     step="0.000001"
+                    disabled={isSavingCalibration}
                     value={resolvedCalibration.center.lng}
                     onChange={(event) => {
                       const longitude = Number(event.target.value);
@@ -527,6 +600,7 @@ export function AdminOrchardWorkspace({
                     min="0"
                     max="359"
                     step="1"
+                    disabled={isSavingCalibration}
                     value={resolvedCalibration.headingDegrees}
                     onChange={(event) => {
                       const heading = Number(event.target.value);
@@ -549,6 +623,7 @@ export function AdminOrchardWorkspace({
                     type="number"
                     min="1"
                     step="1"
+                    disabled={isSavingCalibration}
                     value={resolvedCalibration.sizeMeters.width}
                     onChange={(event) => {
                       const width = Number(event.target.value);
@@ -569,6 +644,7 @@ export function AdminOrchardWorkspace({
                     type="number"
                     min="1"
                     step="1"
+                    disabled={isSavingCalibration}
                     value={resolvedCalibration.sizeMeters.height}
                     onChange={(event) => {
                       const height = Number(event.target.value);
@@ -596,15 +672,15 @@ export function AdminOrchardWorkspace({
                   className="admin-secondary-button admin-secondary-button--primary"
                   type="button"
                   onClick={handleCalibrationSave}
-                  disabled={!hasCalibrationChanges}
+                  disabled={!hasCalibrationChanges || isSavingCalibration}
                 >
-                  Save Calibration
+                  {isSavingCalibration ? "Saving..." : "Save Calibration"}
                 </button>
                 <button
                   className="admin-secondary-button"
                   type="button"
                   onClick={handleCalibrationRevert}
-                  disabled={!hasCalibrationChanges}
+                  disabled={!hasCalibrationChanges || isSavingCalibration}
                 >
                   Revert
                 </button>
@@ -612,6 +688,7 @@ export function AdminOrchardWorkspace({
                   className="admin-secondary-button"
                   type="button"
                   onClick={handleCalibrationReset}
+                  disabled={isSavingCalibration}
                 >
                   Reset Default
                 </button>
