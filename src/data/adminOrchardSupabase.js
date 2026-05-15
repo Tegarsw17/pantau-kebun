@@ -60,6 +60,96 @@ export function getAdminPersistenceMode() {
   return isAdminSupabaseConfigured() ? "supabase" : "static";
 }
 
+export async function fetchGardenPlants(gardenId) {
+  if (!isAdminSupabaseConfigured()) {
+    throw new Error("Supabase admin connection is not configured.");
+  }
+
+  const response = await fetch(
+    buildSupabaseUrl("/rest/v1/plants", {
+      select: "id,garden_id,plant_type_id,plant_name,created_at,latitude,longitude",
+      garden_id: `eq.${gardenId}`,
+      order: "created_at.asc",
+    }),
+    {
+      headers: buildSupabaseHeaders(),
+    },
+  );
+
+  if (!response.ok) {
+    throw new Error(await extractSupabaseError(response));
+  }
+
+  return response.json();
+}
+
+export async function fetchPlantTypes() {
+  if (!isAdminSupabaseConfigured()) {
+    throw new Error("Supabase admin connection is not configured.");
+  }
+
+  const response = await fetch(
+    buildSupabaseUrl("/rest/v1/plant_types", {
+      select: "id,name,color",
+      order: "name.asc",
+    }),
+    {
+      headers: buildSupabaseHeaders(),
+    },
+  );
+
+  if (!response.ok) {
+    throw new Error(await extractSupabaseError(response));
+  }
+
+  return response.json();
+}
+
+export async function fetchConditions() {
+  if (!isAdminSupabaseConfigured()) {
+    throw new Error("Supabase admin connection is not configured.");
+  }
+
+  const response = await fetch(
+    buildSupabaseUrl("/rest/v1/conditions", {
+      select: "id,name,color,icon,display_order,is_active",
+      is_active: "eq.true",
+      order: "display_order.asc,id.asc",
+    }),
+    {
+      headers: buildSupabaseHeaders(),
+    },
+  );
+
+  if (!response.ok) {
+    throw new Error(await extractSupabaseError(response));
+  }
+
+  return response.json();
+}
+
+export async function fetchPlantUpdates() {
+  if (!isAdminSupabaseConfigured()) {
+    throw new Error("Supabase admin connection is not configured.");
+  }
+
+  const response = await fetch(
+    buildSupabaseUrl("/rest/v1/updates", {
+      select: "id,plant_id,desc,date,created_at,condition_ids",
+      order: "created_at.desc",
+    }),
+    {
+      headers: buildSupabaseHeaders(),
+    },
+  );
+
+  if (!response.ok) {
+    throw new Error(await extractSupabaseError(response));
+  }
+
+  return response.json();
+}
+
 export async function fetchAdminUnmappedPlants(gardenId) {
   if (!isAdminSupabaseConfigured()) {
     throw new Error("Supabase admin connection is not configured.");

@@ -142,7 +142,17 @@ export function MonitoringMapStage({
               }`}
               key={item.value}
             >
-              <span className={`legend-swatch ${item.legendClassName}`} />
+              <span
+                className={`legend-swatch ${item.legendClassName ?? ""}`}
+                style={
+                  item.color
+                    ? {
+                        background: item.color,
+                        color: item.color,
+                      }
+                    : undefined
+                }
+              />
               {item.label}
             </span>
           ))}
@@ -189,11 +199,20 @@ export function MonitoringMapStage({
 
               return (
                 <span
-                  className={`map-dot ${presentation.dotClassName} ${
+                  className={`map-dot ${presentation.dotClassName ?? ""} ${
                     isSelected ? "map-dot--selected" : ""
                   } ${isHovered ? "map-dot--hovered" : ""}`}
                   key={dot.id}
-                  style={{ left: `${dot.leftPx}px`, top: `${dot.topPx}px` }}
+                  style={{
+                    ...(presentation.color
+                      ? {
+                          background: presentation.color,
+                          color: presentation.color,
+                        }
+                      : {}),
+                    left: `${dot.leftPx}px`,
+                    top: `${dot.topPx}px`,
+                  }}
                   aria-label={`${dot.treeIdDisplay}, ${dot.plantName}, ${dot.plantType.label}, ${dot.condition.label}`}
                   onMouseEnter={() => setHoveredDotId(dot.id)}
                   onMouseLeave={() => setHoveredDotId(null)}

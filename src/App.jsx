@@ -76,7 +76,7 @@ function MonitoringDashboard() {
           totalTrees: snapshot.totalTrees,
           filters: snapshot.filters,
           reportRows: snapshot.reportRows,
-          message: "Center-based calibrated drone overlay loaded",
+          message: snapshot.message,
         });
       })
       .catch(() => {
@@ -266,7 +266,9 @@ function MonitoringDashboard() {
                       <td>{row.plantName}</td>
                       <td>{row.jenis}</td>
                       <td>
-                        <span className={`status-badge ${row.badgeClass}`}>● {row.kondisi}</span>
+                        <span className="status-badge" style={row.badgeStyle}>
+                          {row.conditionIcon ?? "●"} {row.kondisi}
+                        </span>
                       </td>
                       <td>{row.note}</td>
                       <td>{row.updatedAt}</td>

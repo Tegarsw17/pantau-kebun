@@ -1,65 +1,136 @@
 import {
+  fetchConditions,
+  fetchGardenPlants,
+  fetchPlantTypes,
+  fetchPlantUpdates,
+  isAdminSupabaseConfigured,
+} from "./adminOrchardSupabase.js";
+import {
   loadGarden3DroneCalibration,
   projectLayoutPointToCalibration,
 } from "./loadDroneCalibration.js";
 
 const GARDEN_SCOPE = 3;
+const NO_REPORT_NOTE = "No field report submitted yet.";
+const NO_REPORT_UPDATED_AT = "No report yet";
+const UNKNOWN_PLANT_TYPE_COLOR = "#94a3b8";
+const REPORT_DATE_FORMATTER = new Intl.DateTimeFormat("en-GB", {
+  day: "2-digit",
+  hour: "2-digit",
+  minute: "2-digit",
+  month: "short",
+  year: "numeric",
+});
 
-const plantTypePresentation = {
+const STATIC_PLANT_TYPES = {
   7: {
-    value: "Musangking",
+    color: "#3ce6ff",
     label: "Musangking",
-    dotClassName: "map-dot--cyan",
-    legendClassName: "legend-swatch--cyan",
   },
   8: {
-    value: "Duri Hitam",
+    color: "#ffca5f",
     label: "Duri Hitam",
-    dotClassName: "map-dot--amber",
-    legendClassName: "legend-swatch--amber",
   },
   9: {
-    value: "Bawor",
+    color: "#57f287",
     label: "Bawor",
-    dotClassName: "map-dot--green",
-    legendClassName: "legend-swatch--green",
   },
 };
 
-const conditionPresentation = {
+const STATIC_CONDITIONS = {
   Baik: {
-    value: "Baik",
+    color: "#10B981",
+    icon: "✅",
     label: "Baik",
-    dotClassName: "map-dot--green",
-    legendClassName: "legend-swatch--green",
-    badgeClassName: "status-badge--green",
-  },
-  "Perlu Cek": {
-    value: "Perlu Cek",
-    label: "Perlu Cek",
-    dotClassName: "map-dot--amber",
-    legendClassName: "legend-swatch--amber",
-    badgeClassName: "status-badge--amber",
   },
   Buruk: {
-    value: "Buruk",
+    color: "#EF4444",
+    icon: "⚠️",
     label: "Buruk",
-    dotClassName: "map-dot--red",
-    legendClassName: "legend-swatch--red",
-    badgeClassName: "status-badge--red",
+  },
+  "Perlu Cek": {
+    color: "#F59E0B",
+    icon: "🟡",
+    label: "Perlu Cek",
   },
 };
 
-function deriveSyntheticCondition(plant) {
+function formatTreeId(id) {
+  return `G03-P${String(id).padStart(6, "0")}`;
+}
+
+function normalizeColor(value, fallbackColor) {
+  const normalizedValue = typeof value === "string" ? value.trim() : "";
+  return /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(normalizedValue) ? normalizedValue : fallbackColor;
+}
+
+function colorToRgbComponents(color) {
+  const normalizedColor = normalizeColor(color, "#64748b").slice(1);
+  const expandedColor =
+    normalizedColor.length === 3
+      ? normalizedColor
+          .split("")
+          .map((character) => character + character)
+          .join("")
+      : normalizedColor;
+
+  return {
+    blue: Number.parseInt(expandedColor.slice(4, 6), 16),
+    green: Number.parseInt(expandedColor.slice(2, 4), 16),
+    red: Number.parseInt(expandedColor.slice(0, 2), 16),
+  };
+}
+
+function buildAlphaColor(color, alpha) {
+  const { blue, green, red } = colorToRgbComponents(color);
+  return `rgba(${red}, ${green}, ${blue}, ${alpha})`;
+}
+
+function buildBadgeStyle(color) {
+  return {
+    backgroundColor: buildAlphaColor(color, 0.2),
+    borderColor: color,
+    color,
+  };
+}
+
+function buildPlantTypePresentation({ color, label }) {
+  const resolvedColor = normalizeColor(color, UNKNOWN_PLANT_TYPE_COLOR);
+  return {
+    color: resolvedColor,
+    label,
+    value: label,
+  };
+}
+
+function buildConditionPresentation({ color, icon, label }) {
+  const resolvedColor = normalizeColor(color, STATIC_CONDITIONS.Baik.color);
+  return {
+    badgeStyle: buildBadgeStyle(resolvedColor),
+    color: resolvedColor,
+    icon: typeof icon === "string" && icon.trim() !== "" ? icon.trim() : STATIC_CONDITIONS.Baik.icon,
+    label,
+    value: label,
+  };
+}
+
+const DEFAULT_PLANT_TYPE_PRESENTATION = buildPlantTypePresentation({
+  color: UNKNOWN_PLANT_TYPE_COLOR,
+  label: "Unknown",
+});
+
+const DEFAULT_CONDITION_PRESENTATION = buildConditionPresentation(STATIC_CONDITIONS.Baik);
+
+function deriveStaticConditionFromLayout(plant) {
   if (plant.layout_row <= 2) {
-    return conditionPresentation.Baik;
+    return buildConditionPresentation(STATIC_CONDITIONS.Baik);
   }
 
   if (plant.layout_row <= 4) {
-    return conditionPresentation["Perlu Cek"];
+    return buildConditionPresentation(STATIC_CONDITIONS["Perlu Cek"]);
   }
 
-  return conditionPresentation.Buruk;
+  return buildConditionPresentation(STATIC_CONDITIONS.Buruk);
 }
 
 function buildFilterOptions(dots, attributeKey) {
@@ -70,10 +141,10 @@ function buildFilterOptions(dots, attributeKey) {
 
     if (!uniqueValues.has(attribute.value)) {
       uniqueValues.set(attribute.value, {
-        value: attribute.value,
+        color: attribute.color,
+        icon: attribute.icon ?? null,
         label: attribute.label,
-        dotClassName: attribute.dotClassName,
-        legendClassName: attribute.legendClassName,
+        value: attribute.value,
       });
     }
   });
@@ -105,13 +176,234 @@ function deriveLayoutExtent(plants) {
   };
 }
 
-function normalizeSnapshot(payload, calibration) {
+function buildStaticPlantTypeLookup() {
+  const lookup = new Map();
+
+  Object.entries(STATIC_PLANT_TYPES).forEach(([plantTypeId, presentation]) => {
+    lookup.set(Number(plantTypeId), buildPlantTypePresentation(presentation));
+  });
+
+  return lookup;
+}
+
+function buildPlantTypeLookup(plantTypes) {
+  const lookup = buildStaticPlantTypeLookup();
+
+  (Array.isArray(plantTypes) ? plantTypes : []).forEach((plantType) => {
+    const numericId = Number(plantType?.id);
+
+    if (!Number.isFinite(numericId)) {
+      return;
+    }
+
+    const fallbackPresentation = lookup.get(numericId) ?? DEFAULT_PLANT_TYPE_PRESENTATION;
+    lookup.set(
+      numericId,
+      buildPlantTypePresentation({
+        color: plantType?.color ?? fallbackPresentation.color,
+        label:
+          typeof plantType?.name === "string" && plantType.name.trim() !== ""
+            ? plantType.name.trim()
+            : fallbackPresentation.label,
+      }),
+    );
+  });
+
+  return lookup;
+}
+
+function buildConditionLookup(conditions) {
+  const lookup = new Map();
+
+  (Array.isArray(conditions) ? conditions : []).forEach((condition) => {
+    const numericId = Number(condition?.id);
+
+    if (!Number.isFinite(numericId)) {
+      return;
+    }
+
+    lookup.set(
+      numericId,
+      buildConditionPresentation({
+        color: condition?.color ?? STATIC_CONDITIONS.Baik.color,
+        icon: condition?.icon ?? STATIC_CONDITIONS.Baik.icon,
+        label:
+          typeof condition?.name === "string" && condition.name.trim() !== ""
+            ? condition.name.trim()
+            : STATIC_CONDITIONS.Baik.label,
+      }),
+    );
+  });
+
+  return lookup;
+}
+
+function normalizeConditionIds(conditionIds) {
+  if (!Array.isArray(conditionIds)) {
+    return [];
+  }
+
+  return conditionIds
+    .map((conditionId) => Number(conditionId))
+    .filter((conditionId) => Number.isFinite(conditionId));
+}
+
+function buildLatestUpdateByPlantId(updates, validPlantIds) {
+  const latestUpdateByPlantId = new Map();
+  const validPlantIdSet = new Set(validPlantIds.map((plantId) => String(plantId)));
+
+  (Array.isArray(updates) ? updates : []).forEach((update) => {
+    const plantId = String(update?.plant_id ?? "").trim();
+
+    if (plantId === "" || latestUpdateByPlantId.has(plantId) || !validPlantIdSet.has(plantId)) {
+      return;
+    }
+
+    latestUpdateByPlantId.set(plantId, update);
+  });
+
+  return latestUpdateByPlantId;
+}
+
+function buildLayoutMetadataByPlantId(payload) {
+  const layoutByPlantId = new Map();
   const plants = Array.isArray(payload?.plants) ? payload.plants : [];
 
+  plants.forEach((plant) => {
+    layoutByPlantId.set(String(plant.id), {
+      layout_col: typeof plant.layout_col === "number" ? plant.layout_col : null,
+      layout_row: typeof plant.layout_row === "number" ? plant.layout_row : null,
+      tree_id_display:
+        typeof plant.tree_id_display === "string" && plant.tree_id_display.trim() !== ""
+          ? plant.tree_id_display.trim()
+          : formatTreeId(plant.id),
+      x_m: typeof plant.x_m === "number" ? plant.x_m : null,
+      y_m: typeof plant.y_m === "number" ? plant.y_m : null,
+    });
+  });
+
+  return layoutByPlantId;
+}
+
+function mergePlantWithLayout(plant, layoutByPlantId) {
+  const layoutMetadata = layoutByPlantId.get(String(plant.id));
+
+  return {
+    ...plant,
+    layout_col: layoutMetadata?.layout_col ?? null,
+    layout_row: layoutMetadata?.layout_row ?? null,
+    tree_id_display: layoutMetadata?.tree_id_display ?? formatTreeId(plant.id),
+    x_m: layoutMetadata?.x_m ?? null,
+    y_m: layoutMetadata?.y_m ?? null,
+  };
+}
+
+function resolvePlantType(plant, plantTypeLookup) {
+  return plantTypeLookup.get(Number(plant.plant_type_id)) ?? DEFAULT_PLANT_TYPE_PRESENTATION;
+}
+
+function resolveCondition(latestUpdate, conditionLookup) {
+  const conditionIds = normalizeConditionIds(latestUpdate?.condition_ids);
+
+  for (const conditionId of conditionIds) {
+    const condition = conditionLookup.get(conditionId);
+
+    if (condition != null) {
+      return condition;
+    }
+  }
+
+  return DEFAULT_CONDITION_PRESENTATION;
+}
+
+function resolveLatestNote(latestUpdate) {
+  const note = typeof latestUpdate?.desc === "string" ? latestUpdate.desc.trim() : "";
+  return note !== "" ? note : NO_REPORT_NOTE;
+}
+
+function formatUpdatedAt(latestUpdate) {
+  const createdAt = typeof latestUpdate?.created_at === "string" ? latestUpdate.created_at.trim() : "";
+
+  if (createdAt !== "") {
+    const parsedDate = new Date(createdAt);
+
+    if (!Number.isNaN(parsedDate.getTime())) {
+      return REPORT_DATE_FORMATTER.format(parsedDate);
+    }
+  }
+
+  const fallbackDate = typeof latestUpdate?.date === "string" ? latestUpdate.date.trim() : "";
+  return fallbackDate !== "" ? fallbackDate : NO_REPORT_UPDATED_AT;
+}
+
+function resolvePlantLatLng(plant, calibration, layoutExtent) {
+  if (typeof plant.latitude === "number" && typeof plant.longitude === "number") {
+    return {
+      coordinateSource: "supabase",
+      lat: plant.latitude,
+      lng: plant.longitude,
+    };
+  }
+
+  if (typeof plant.x_m === "number" && typeof plant.y_m === "number") {
+    const projectedPoint = projectLayoutPointToCalibration(
+      {
+        x: plant.x_m,
+        y: plant.y_m,
+      },
+      layoutExtent,
+      calibration,
+    );
+
+    return {
+      coordinateSource: "layout",
+      lat: projectedPoint.lat,
+      lng: projectedPoint.lng,
+    };
+  }
+
+  return null;
+}
+
+function buildDotRecord({ condition, plant, plantType, resolvedLatLng }) {
+  return {
+    condition,
+    coordinateSource: resolvedLatLng.coordinateSource,
+    id: plant.id,
+    latitude: resolvedLatLng.lat,
+    layoutPosition: {
+      x: typeof plant.x_m === "number" ? plant.x_m : null,
+      y: typeof plant.y_m === "number" ? plant.y_m : null,
+    },
+    longitude: resolvedLatLng.lng,
+    plantName: plant.plant_name,
+    plantType,
+    treeIdDisplay: plant.tree_id_display,
+  };
+}
+
+function buildReportRow({ condition, latestUpdate, plant, plantType }) {
+  return {
+    badgeStyle: condition.badgeStyle,
+    conditionIcon: condition.icon,
+    kondisi: condition.label,
+    jenis: plantType.label,
+    note: resolveLatestNote(latestUpdate),
+    plantName: plant.plant_name,
+    treeId: plant.tree_id_display,
+    updatedAt: formatUpdatedAt(latestUpdate),
+  };
+}
+
+function buildStaticSnapshot(payload, calibration) {
+  const plants = Array.isArray(payload?.plants) ? payload.plants : [];
   const scopedPlants = plants.filter((plant) => plant.garden_id === GARDEN_SCOPE);
   const layoutExtent = deriveLayoutExtent(scopedPlants);
+  const plantTypeLookup = buildStaticPlantTypeLookup();
 
   const dots = scopedPlants.map((plant) => {
+    const plantType = resolvePlantType(plant, plantTypeLookup);
+    const condition = deriveStaticConditionFromLayout(plant);
     const resolvedLatLng =
       typeof plant.x_m === "number" && typeof plant.y_m === "number"
         ? projectLayoutPointToCalibration(
@@ -126,63 +418,157 @@ function normalizeSnapshot(payload, calibration) {
             lat: plant.latitude,
             lng: plant.longitude,
           };
-    const plantType =
-      plantTypePresentation[plant.plant_type_id] ?? {
-        value: "Unknown",
-        label: "Unknown",
-        dotClassName: "map-dot--neutral",
-        legendClassName: "legend-swatch--neutral",
-      };
-    const condition = deriveSyntheticCondition(plant);
 
     return {
-      id: plant.id,
-      treeIdDisplay: plant.tree_id_display,
-      plantName: plant.plant_name,
-      plantType,
       condition,
+      id: plant.id,
+      latitude: resolvedLatLng.lat,
       layoutPosition: {
         x: typeof plant.x_m === "number" ? plant.x_m : null,
         y: typeof plant.y_m === "number" ? plant.y_m : null,
       },
-      latitude: resolvedLatLng.lat,
       longitude: resolvedLatLng.lng,
+      plantName: plant.plant_name,
+      plantType,
+      treeIdDisplay: plant.tree_id_display,
     };
   });
 
-  const reportRows = dots.map((dot) => ({
-    treeId: dot.treeIdDisplay,
-    plantName: dot.plantName,
-    jenis: dot.plantType.label,
-    kondisi: dot.condition.label,
-    badgeClass: dot.condition.badgeClassName,
-    note: deriveSyntheticNote(dot.plantType, dot.condition, { plant_name: dot.plantName }),
-    updatedAt: dot.id >= 33 ? "2026-02-15" : "2026-02-14",
-  }));
+  const reportRows = scopedPlants.map((plant) => {
+    const plantType = resolvePlantType(plant, plantTypeLookup);
+    const condition = deriveStaticConditionFromLayout(plant);
+
+    return {
+      badgeStyle: condition.badgeStyle,
+      conditionIcon: condition.icon,
+      kondisi: condition.label,
+      jenis: plantType.label,
+      note: deriveSyntheticNote(plantType, condition, plant),
+      plantName: plant.plant_name,
+      treeId: plant.tree_id_display,
+      updatedAt: plant.id >= 33 ? "15 Feb 2026" : "14 Feb 2026",
+    };
+  });
 
   return {
-    imageCalibration: calibration,
-    totalTrees: dots.length,
     dots,
-    reportRows,
-    mapBounds: calibration.mapBounds,
     filters: {
-      plantType: buildFilterOptions(dots, "plantType"),
       condition: buildFilterOptions(dots, "condition"),
+      plantType: buildFilterOptions(dots, "plantType"),
     },
+    imageCalibration: calibration,
+    mapBounds: calibration.mapBounds,
+    message: "Static orchard preview loaded.",
+    reportRows,
+    totalTrees: scopedPlants.length,
   };
 }
 
-export async function loadMonitoringMapSnapshot() {
-  const [response, calibration] = await Promise.all([
-    fetch("/garden3_synthetic_latlng.json"),
-    loadGarden3DroneCalibration(),
-  ]);
+function buildSupabaseSnapshot({ calibration, conditions, layoutPayload, plantTypes, plants, updates }) {
+  const layoutByPlantId = buildLayoutMetadataByPlantId(layoutPayload);
+  const scopedPlants = (Array.isArray(plants) ? plants : [])
+    .filter((plant) => plant.garden_id === GARDEN_SCOPE)
+    .map((plant) => mergePlantWithLayout(plant, layoutByPlantId));
+  const layoutExtent = deriveLayoutExtent(scopedPlants);
+  const plantTypeLookup = buildPlantTypeLookup(plantTypes);
+  const conditionLookup = buildConditionLookup(conditions);
+  const latestUpdateByPlantId = buildLatestUpdateByPlantId(
+    updates,
+    scopedPlants.map((plant) => plant.id),
+  );
+  const dots = [];
+  const reportRows = scopedPlants.map((plant) => {
+    const plantType = resolvePlantType(plant, plantTypeLookup);
+    const latestUpdate = latestUpdateByPlantId.get(String(plant.id)) ?? null;
+    const condition = resolveCondition(latestUpdate, conditionLookup);
+    const resolvedLatLng = resolvePlantLatLng(plant, calibration, layoutExtent);
+
+    if (resolvedLatLng != null) {
+      dots.push(
+        buildDotRecord({
+          condition,
+          plant,
+          plantType,
+          resolvedLatLng,
+        }),
+      );
+    }
+
+    return buildReportRow({
+      condition,
+      latestUpdate,
+      plant,
+      plantType,
+    });
+  });
+  const previewLayoutCount = dots.filter((dot) => dot.coordinateSource === "layout").length;
+
+  return {
+    dots,
+    filters: {
+      condition: buildFilterOptions(dots, "condition"),
+      plantType: buildFilterOptions(dots, "plantType"),
+    },
+    imageCalibration: calibration,
+    mapBounds: calibration.mapBounds,
+    message:
+      previewLayoutCount > 0
+        ? `Supabase orchard snapshot loaded. ${previewLayoutCount} trees still use preview layout.`
+        : "Supabase orchard snapshot loaded.",
+    reportRows,
+    totalTrees: scopedPlants.length,
+  };
+}
+
+async function loadStaticLayoutPayload() {
+  const response = await fetch("/garden3_synthetic_latlng.json");
 
   if (!response.ok) {
     throw new Error(`Failed to load monitoring map snapshot: ${response.status}`);
   }
 
-  const payload = await response.json();
-  return normalizeSnapshot(payload, calibration);
+  return response.json();
+}
+
+export async function loadMonitoringMapSnapshot() {
+  const [calibration, layoutPayload] = await Promise.all([
+    loadGarden3DroneCalibration(),
+    loadStaticLayoutPayload().catch(() => null),
+  ]);
+
+  if (isAdminSupabaseConfigured()) {
+    try {
+      const [plants, plantTypes, conditions, updates] = await Promise.all([
+        fetchGardenPlants(GARDEN_SCOPE),
+        fetchPlantTypes(),
+        fetchConditions(),
+        fetchPlantUpdates(),
+      ]);
+
+      return buildSupabaseSnapshot({
+        calibration,
+        conditions,
+        layoutPayload,
+        plantTypes,
+        plants,
+        updates,
+      });
+    } catch {
+      if (layoutPayload != null) {
+        const staticSnapshot = buildStaticSnapshot(layoutPayload, calibration);
+        return {
+          ...staticSnapshot,
+          message: "Supabase monitoring data unavailable. Static orchard preview loaded.",
+        };
+      }
+
+      throw new Error("Failed to load monitoring map snapshot from Supabase.");
+    }
+  }
+
+  if (layoutPayload == null) {
+    throw new Error("Failed to load monitoring map snapshot.");
+  }
+
+  return buildStaticSnapshot(layoutPayload, calibration);
 }
