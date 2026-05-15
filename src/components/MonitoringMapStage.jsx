@@ -42,6 +42,7 @@ function MapViewportBridge({ imageBounds, visibleDots, onViewportSync }) {
   });
 
   useEffect(() => {
+    map.setMaxBounds(imageBounds);
     map.fitBounds(imageBounds, {
       padding: FIT_BOUNDS_PADDING,
       animate: false,
