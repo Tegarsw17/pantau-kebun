@@ -1,18 +1,41 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   CircleMarker,
   MapContainer,
+  Polyline,
   Popup,
   ZoomControl,
+  useMap,
   useMapEvents,
 } from "react-leaflet";
 import { saveAdminTreePlacement } from "../data/adminOrchardSupabase.js";
 import { CalibratedImageOverlay } from "./CalibratedImageOverlay.jsx";
-import { DEFAULT_GARDEN_3_DRONE_CALIBRATION } from "../data/loadDroneCalibration.js";
+import {
+  clearStoredGarden3DroneCalibration,
+  DEFAULT_GARDEN_3_DRONE_CALIBRATION,
+  normalizeDroneCalibration,
+  persistGarden3DroneCalibration,
+  projectLayoutPointToCalibration,
+  serializeDroneCalibration,
+} from "../data/loadDroneCalibration.js";
 
 const FIT_BOUNDS_PADDING = [36, 36];
 
-function AdminPlottingBridge({ onMapClick }) {
+function AdminMapBridge({ imageBounds, onMapClick }) {
+  const map = useMap();
+
+  useEffect(() => {
+    if (imageBounds == null) {
+      return;
+    }
+
+    map.fitBounds(imageBounds, {
+      animate: false,
+      padding: FIT_BOUNDS_PADDING,
+    });
+    map.setMaxBounds(imageBounds);
+  }, [imageBounds, map]);
+
   useMapEvents({
     click(event) {
       onMapClick(event.latlng);
@@ -22,9 +45,14 @@ function AdminPlottingBridge({ onMapClick }) {
   return null;
 }
 
+function stripLayoutPosition(tree) {
+  const { layoutPosition, ...treeWithoutLayoutPosition } = tree;
+  return treeWithoutLayoutPosition;
+}
+
 function upsertMappedPlacement(currentPlacements, tree, latlng) {
   const nextPlacement = {
-    ...tree,
+    ...stripLayoutPosition(tree),
     latlng,
   };
   const existingIndex = currentPlacements.findIndex((placement) => placement.id === tree.id);
@@ -34,6 +62,56 @@ function upsertMappedPlacement(currentPlacements, tree, latlng) {
   }
 
   return currentPlacements.map((placement) => (placement.id === tree.id ? nextPlacement : placement));
+}
+
+function deriveLayoutExtent(placements) {
+  const layoutAwarePlacements = placements.filter(
+    (placement) =>
+      typeof placement.layoutPosition?.x === "number" && typeof placement.layoutPosition?.y === "number",
+  );
+
+  if (layoutAwarePlacements.length === 0) {
+    return null;
+  }
+
+  const xValues = layoutAwarePlacements.map((placement) => placement.layoutPosition.x);
+  const yValues = layoutAwarePlacements.map((placement) => placement.layoutPosition.y);
+
+  return {
+    maxX: Math.max(...xValues),
+    maxY: Math.max(...yValues),
+    minX: Math.min(...xValues),
+    minY: Math.min(...yValues),
+  };
+}
+
+function projectPlacementWithCalibration(placement, calibration, layoutExtent) {
+  if (
+    layoutExtent == null ||
+    typeof placement.layoutPosition?.x !== "number" ||
+    typeof placement.layoutPosition?.y !== "number"
+  ) {
+    return placement;
+  }
+
+  return {
+    ...placement,
+    latlng: projectLayoutPointToCalibration(placement.layoutPosition, layoutExtent, calibration),
+  };
+}
+
+function calibrationSignaturesMatch(leftCalibration, rightCalibration) {
+  return (
+    JSON.stringify(serializeDroneCalibration(leftCalibration)) ===
+    JSON.stringify(serializeDroneCalibration(rightCalibration))
+  );
+}
+
+function updateCalibrationField(currentCalibration, patch) {
+  return normalizeDroneCalibration({
+    ...serializeDroneCalibration(currentCalibration),
+    ...patch,
+  });
 }
 
 export function AdminOrchardWorkspace({
@@ -46,8 +124,15 @@ export function AdminOrchardWorkspace({
 }) {
   const [showMapInfo, setShowMapInfo] = useState(false);
   const [repositionMode, setRepositionMode] = useState(false);
+  const [calibrationMode, setCalibrationMode] = useState(false);
   const [queueTrees, setQueueTrees] = useState(unmappedTrees);
   const [mappedPlacements, setMappedPlacements] = useState(mappedTrees);
+  const [persistedCalibration, setPersistedCalibration] = useState(
+    imageCalibration ?? DEFAULT_GARDEN_3_DRONE_CALIBRATION,
+  );
+  const [workingCalibration, setWorkingCalibration] = useState(
+    imageCalibration ?? DEFAULT_GARDEN_3_DRONE_CALIBRATION,
+  );
   const [selectedTreeSelection, setSelectedTreeSelection] = useState(null);
   const [pendingPlacement, setPendingPlacement] = useState(null);
   const [feedback, setFeedback] = useState(null);
@@ -56,11 +141,13 @@ export function AdminOrchardWorkspace({
   useEffect(() => {
     setQueueTrees(unmappedTrees);
     setMappedPlacements(mappedTrees);
+    setPersistedCalibration(imageCalibration ?? DEFAULT_GARDEN_3_DRONE_CALIBRATION);
+    setWorkingCalibration(imageCalibration ?? DEFAULT_GARDEN_3_DRONE_CALIBRATION);
     setSelectedTreeSelection(null);
     setPendingPlacement(null);
     setFeedback(null);
     setIsSavingPlacement(false);
-  }, [mappedTrees, unmappedTrees]);
+  }, [imageCalibration, mappedTrees, unmappedTrees]);
 
   useEffect(() => {
     if (feedback == null) {
@@ -71,18 +158,37 @@ export function AdminOrchardWorkspace({
     return () => window.clearTimeout(timeoutId);
   }, [feedback]);
 
+  const resolvedCalibration = workingCalibration ?? DEFAULT_GARDEN_3_DRONE_CALIBRATION;
+  const resolvedMapBounds = resolvedCalibration.mapBounds ?? imageBounds ?? DEFAULT_GARDEN_3_DRONE_CALIBRATION.mapBounds;
+  const layoutExtent = useMemo(() => deriveLayoutExtent(mappedPlacements), [mappedPlacements]);
+  const renderedMappedPlacements = useMemo(
+    () =>
+      mappedPlacements.map((placement) =>
+        dataSource === "supabase"
+          ? placement
+          : projectPlacementWithCalibration(placement, resolvedCalibration, layoutExtent),
+      ),
+    [dataSource, layoutExtent, mappedPlacements, resolvedCalibration],
+  );
   const selectedTree =
     selectedTreeSelection?.scope === "queue"
       ? queueTrees.find((tree) => tree.id === selectedTreeSelection.treeId) ?? null
       : selectedTreeSelection?.scope === "mapped"
-        ? mappedPlacements.find((tree) => tree.id === selectedTreeSelection.treeId) ?? null
+        ? renderedMappedPlacements.find((tree) => tree.id === selectedTreeSelection.treeId) ?? null
         : null;
   const selectedTreeScope = selectedTreeSelection?.scope ?? null;
   const isPlottingMode = Boolean(selectedTree);
-  const resolvedCalibration = imageCalibration ?? DEFAULT_GARDEN_3_DRONE_CALIBRATION;
+  const isTreeSelectionLocked = isSavingPlacement || calibrationMode;
+  const hasCalibrationChanges = !calibrationSignaturesMatch(workingCalibration, persistedCalibration);
 
   useEffect(() => {
     if (selectedTreeSelection == null) {
+      return;
+    }
+
+    if (calibrationMode) {
+      setSelectedTreeSelection(null);
+      setPendingPlacement(null);
       return;
     }
 
@@ -95,16 +201,16 @@ export function AdminOrchardWorkspace({
     const selectionExists =
       selectedTreeSelection.scope === "queue"
         ? queueTrees.some((tree) => tree.id === selectedTreeSelection.treeId)
-        : mappedPlacements.some((tree) => tree.id === selectedTreeSelection.treeId);
+        : renderedMappedPlacements.some((tree) => tree.id === selectedTreeSelection.treeId);
 
     if (!selectionExists) {
       setSelectedTreeSelection(null);
       setPendingPlacement(null);
     }
-  }, [mappedPlacements, queueTrees, repositionMode, selectedTreeSelection]);
+  }, [calibrationMode, queueTrees, renderedMappedPlacements, repositionMode, selectedTreeSelection]);
 
   const handleTreeSelect = (tree, scope) => {
-    if (isSavingPlacement) {
+    if (isTreeSelectionLocked) {
       return;
     }
 
@@ -119,6 +225,20 @@ export function AdminOrchardWorkspace({
 
   const handleMapClick = (latlng) => {
     if (isSavingPlacement) {
+      return;
+    }
+
+    if (calibrationMode) {
+      setWorkingCalibration((currentCalibration) =>
+        updateCalibrationField(currentCalibration, {
+          center: {
+            lat: latlng.lat,
+            lng: latlng.lng,
+          },
+        }),
+      );
+      setPendingPlacement(null);
+      setSelectedTreeSelection(null);
       return;
     }
 
@@ -216,11 +336,63 @@ export function AdminOrchardWorkspace({
 
   const handleRepositionToggle = () => {
     setRepositionMode((currentValue) => !currentValue);
+    setCalibrationMode(false);
     setPendingPlacement(null);
     setFeedback(null);
-    setSelectedTreeSelection((currentValue) =>
-      currentValue?.scope === "mapped" ? null : currentValue,
-    );
+    setSelectedTreeSelection(null);
+  };
+
+  const handleCalibrationToggle = () => {
+    setCalibrationMode((currentValue) => !currentValue);
+    setRepositionMode(false);
+    setPendingPlacement(null);
+    setFeedback(null);
+    setSelectedTreeSelection(null);
+  };
+
+  const handleCalibrationSave = () => {
+    const didPersist = persistGarden3DroneCalibration(workingCalibration);
+
+    if (!didPersist) {
+      setFeedback({
+        tone: "error",
+        message: "Calibration override could not be stored in this browser.",
+      });
+      return;
+    }
+
+    setPersistedCalibration(workingCalibration);
+    setFeedback({
+      tone: "success",
+      message: "Calibration override saved to browser storage.",
+    });
+  };
+
+  const handleCalibrationRevert = () => {
+    setWorkingCalibration(persistedCalibration);
+    setFeedback({
+      tone: "neutral",
+      message: "Calibration draft reverted to the last saved state.",
+    });
+  };
+
+  const handleCalibrationReset = () => {
+    const didClearStorage = clearStoredGarden3DroneCalibration();
+
+    if (!didClearStorage) {
+      setFeedback({
+        tone: "error",
+        message: "Calibration override could not be cleared from this browser.",
+      });
+      return;
+    }
+
+    setPersistedCalibration(DEFAULT_GARDEN_3_DRONE_CALIBRATION);
+    setWorkingCalibration(DEFAULT_GARDEN_3_DRONE_CALIBRATION);
+    setFeedback({
+      tone: "success",
+      message: "Calibration reset to the bundled Garden 3 default.",
+    });
   };
 
   return (
@@ -257,7 +429,7 @@ export function AdminOrchardWorkspace({
                   selectedTreeSelection?.scope === "queue" && selectedTreeSelection.treeId === tree.id
                     ? "admin-tree-row--selected"
                     : ""
-                } ${isSavingPlacement ? "admin-tree-row--disabled" : ""}`}
+                } ${isTreeSelectionLocked ? "admin-tree-row--disabled" : ""}`}
                 key={tree.id}
                 onClick={() => handleTreeSelect(tree, "queue")}
                 onKeyDown={(event) => {
@@ -283,7 +455,170 @@ export function AdminOrchardWorkspace({
           )}
         </div>
 
-        {repositionMode ? (
+        {calibrationMode ? (
+          <>
+            <div className="admin-map-divider" />
+
+            <section className="admin-calibration-panel" aria-label="Calibration Editor">
+              <div className="admin-panel__header admin-panel__header--compact">
+                <div>
+                  <p className="section-kicker">Calibration</p>
+                  <h2>Drone Editor</h2>
+                </div>
+                <span className={`admin-count-pill admin-count-pill--map ${hasCalibrationChanges ? "admin-count-pill--alert" : ""}`}>
+                  {hasCalibrationChanges ? "Unsaved" : "Saved"}
+                </span>
+              </div>
+
+              <p className="admin-calibration-copy">
+                Click the map to move the image center, then tune heading and footprint size here.
+              </p>
+
+              <div className="admin-calibration-grid">
+                <label className="admin-calibration-field">
+                  <span className="control-label">Center Latitude</span>
+                  <input
+                    className="admin-calibration-input"
+                    type="number"
+                    step="0.000001"
+                    value={resolvedCalibration.center.lat}
+                    onChange={(event) => {
+                      const latitude = Number(event.target.value);
+
+                      setWorkingCalibration((currentCalibration) =>
+                        updateCalibrationField(currentCalibration, {
+                          center: {
+                            ...currentCalibration.center,
+                            lat: Number.isFinite(latitude) ? latitude : currentCalibration.center.lat,
+                          },
+                        }),
+                      );
+                    }}
+                  />
+                </label>
+
+                <label className="admin-calibration-field">
+                  <span className="control-label">Center Longitude</span>
+                  <input
+                    className="admin-calibration-input"
+                    type="number"
+                    step="0.000001"
+                    value={resolvedCalibration.center.lng}
+                    onChange={(event) => {
+                      const longitude = Number(event.target.value);
+
+                      setWorkingCalibration((currentCalibration) =>
+                        updateCalibrationField(currentCalibration, {
+                          center: {
+                            ...currentCalibration.center,
+                            lng: Number.isFinite(longitude) ? longitude : currentCalibration.center.lng,
+                          },
+                        }),
+                      );
+                    }}
+                  />
+                </label>
+
+                <label className="admin-calibration-field">
+                  <span className="control-label">Heading</span>
+                  <input
+                    className="admin-calibration-input"
+                    type="number"
+                    min="0"
+                    max="359"
+                    step="1"
+                    value={resolvedCalibration.headingDegrees}
+                    onChange={(event) => {
+                      const heading = Number(event.target.value);
+
+                      setWorkingCalibration((currentCalibration) =>
+                        updateCalibrationField(currentCalibration, {
+                          heading_degrees: Number.isFinite(heading)
+                            ? heading
+                            : currentCalibration.headingDegrees,
+                        }),
+                      );
+                    }}
+                  />
+                </label>
+
+                <label className="admin-calibration-field">
+                  <span className="control-label">Width (m)</span>
+                  <input
+                    className="admin-calibration-input"
+                    type="number"
+                    min="1"
+                    step="1"
+                    value={resolvedCalibration.sizeMeters.width}
+                    onChange={(event) => {
+                      const width = Number(event.target.value);
+
+                      setWorkingCalibration((currentCalibration) =>
+                        updateCalibrationField(currentCalibration, {
+                          width_meters: Number.isFinite(width) ? width : currentCalibration.sizeMeters.width,
+                        }),
+                      );
+                    }}
+                  />
+                </label>
+
+                <label className="admin-calibration-field">
+                  <span className="control-label">Height (m)</span>
+                  <input
+                    className="admin-calibration-input"
+                    type="number"
+                    min="1"
+                    step="1"
+                    value={resolvedCalibration.sizeMeters.height}
+                    onChange={(event) => {
+                      const height = Number(event.target.value);
+
+                      setWorkingCalibration((currentCalibration) =>
+                        updateCalibrationField(currentCalibration, {
+                          height_meters: Number.isFinite(height) ? height : currentCalibration.sizeMeters.height,
+                        }),
+                      );
+                    }}
+                  />
+                </label>
+              </div>
+
+              <div className="admin-calibration-meta">
+                <span>Mode: center / heading / size</span>
+                <span>Top bearing: {resolvedCalibration.headingDegrees}°</span>
+                <span>
+                  Footprint: {resolvedCalibration.sizeMeters.width}m x {resolvedCalibration.sizeMeters.height}m
+                </span>
+              </div>
+
+              <div className="admin-calibration-actions">
+                <button
+                  className="admin-secondary-button admin-secondary-button--primary"
+                  type="button"
+                  onClick={handleCalibrationSave}
+                  disabled={!hasCalibrationChanges}
+                >
+                  Save Calibration
+                </button>
+                <button
+                  className="admin-secondary-button"
+                  type="button"
+                  onClick={handleCalibrationRevert}
+                  disabled={!hasCalibrationChanges}
+                >
+                  Revert
+                </button>
+                <button
+                  className="admin-secondary-button"
+                  type="button"
+                  onClick={handleCalibrationReset}
+                >
+                  Reset Default
+                </button>
+              </div>
+            </section>
+          </>
+        ) : repositionMode ? (
           <>
             <div className="admin-map-divider" />
 
@@ -292,24 +627,26 @@ export function AdminOrchardWorkspace({
                 <p className="section-kicker">Reposition</p>
                 <h2>Mapped Trees</h2>
               </div>
-              <span className="admin-count-pill admin-count-pill--map">{mappedPlacements.length} Active</span>
+              <span className="admin-count-pill admin-count-pill--map">
+                {renderedMappedPlacements.length} Active
+              </span>
             </div>
 
             <div className="admin-tree-list admin-tree-list--mapped" role="list">
-              {mappedPlacements.length === 0 ? (
+              {renderedMappedPlacements.length === 0 ? (
                 <div className="admin-empty-state">
                   <strong>No mapped trees</strong>
                   <span>Load a mapped dataset to enable repositioning.</span>
                 </div>
               ) : (
-                mappedPlacements.map((placement) => (
+                renderedMappedPlacements.map((placement) => (
                   <article
                     className={`admin-tree-row admin-tree-row--mapped ${
                       selectedTreeSelection?.scope === "mapped" &&
                       selectedTreeSelection.treeId === placement.id
                         ? "admin-tree-row--selected"
                         : ""
-                    } ${isSavingPlacement ? "admin-tree-row--disabled" : ""}`}
+                    } ${isTreeSelectionLocked ? "admin-tree-row--disabled" : ""}`}
                     key={placement.id}
                     onClick={() => handleTreeSelect(placement, "mapped")}
                     onKeyDown={(event) => {
@@ -371,6 +708,18 @@ export function AdminOrchardWorkspace({
               </span>
               <span className="admin-toggle__label">Reposition Existing</span>
             </label>
+            <label className="admin-toggle" htmlFor="admin-calibration-toggle">
+              <input
+                id="admin-calibration-toggle"
+                type="checkbox"
+                checked={calibrationMode}
+                onChange={handleCalibrationToggle}
+              />
+              <span className="admin-toggle__track" aria-hidden="true">
+                <span className="admin-toggle__thumb" />
+              </span>
+              <span className="admin-toggle__label">Calibration Editor</span>
+            </label>
             <span className="admin-count-pill admin-count-pill--map">Leaflet Ready</span>
             <span className="admin-count-pill admin-count-pill--map">
               {dataSource === "supabase" ? "Supabase Sync" : "Session Only"}
@@ -378,23 +727,29 @@ export function AdminOrchardWorkspace({
           </div>
         </div>
 
-        <div className={`admin-mapping-banner ${isPlottingMode ? "admin-mapping-banner--active" : ""}`}>
-          <p className="overlay-label">{repositionMode ? "Reposition Mode" : "Plotting Mode"}</p>
+        <div className={`admin-mapping-banner ${isPlottingMode || calibrationMode ? "admin-mapping-banner--active" : ""}`}>
+          <p className="overlay-label">
+            {calibrationMode ? "Calibration Editor" : repositionMode ? "Reposition Mode" : "Plotting Mode"}
+          </p>
           <strong>
-            {selectedTree
-              ? `Currently Mapping: ${selectedTree.treeIdDisplay}`
-              : repositionMode
-                ? "Enable repositioning and select an existing marker."
-                : "Select a tree to begin plotting."}
+            {calibrationMode
+              ? "Click the map to move the drone image center."
+              : selectedTree
+                ? `Currently Mapping: ${selectedTree.treeIdDisplay}`
+                : repositionMode
+                  ? "Enable repositioning and select an existing marker."
+                  : "Select a tree to begin plotting."}
           </strong>
           <span>
-            {selectedTree
-              ? selectedTreeScope === "mapped"
-                ? "Click the drone image to move this mapped tree, then confirm the popup."
-                : "Click the drone image to place a draft point, then confirm the popup."
-              : repositionMode
-                ? "Existing dots become selectable when reposition mode is active."
-                : "Tree selection activates crosshair mode on the map."}
+            {calibrationMode
+              ? "Tune heading, width, and height from the sidebar, then save the override to this browser."
+              : selectedTree
+                ? selectedTreeScope === "mapped"
+                  ? "Click the drone image to move this mapped tree, then confirm the popup."
+                  : "Click the drone image to place a draft point, then confirm the popup."
+                : repositionMode
+                  ? "Existing dots become selectable when reposition mode is active."
+                  : "Tree selection activates crosshair mode on the map."}
           </span>
         </div>
 
@@ -405,15 +760,13 @@ export function AdminOrchardWorkspace({
         ) : null}
 
         <div className="admin-map-viewport">
-          {imageBounds ? (
+          {resolvedMapBounds ? (
             <MapContainer
               attributionControl={false}
-              bounds={imageBounds}
+              bounds={resolvedMapBounds}
               boundsOptions={{ padding: FIT_BOUNDS_PADDING }}
-              className={`admin-map-leaflet ${isPlottingMode ? "admin-map-leaflet--plotting" : ""} ${
-                repositionMode ? "admin-map-leaflet--repositioning" : ""
-              }`}
-              maxBounds={imageBounds}
+              className={`admin-map-leaflet ${isPlottingMode || calibrationMode ? "admin-map-leaflet--plotting" : ""} ${repositionMode ? "admin-map-leaflet--repositioning" : ""} ${calibrationMode ? "admin-map-leaflet--calibrating" : ""}`}
+              maxBounds={resolvedMapBounds}
               maxBoundsViscosity={1}
               maxZoom={24}
               preferCanvas
@@ -428,8 +781,46 @@ export function AdminOrchardWorkspace({
                 imageUrl={resolvedCalibration.imageUrl}
                 opacity={1}
               />
-              <AdminPlottingBridge onMapClick={handleMapClick} />
-              {mappedPlacements.map((placement) => {
+              <AdminMapBridge imageBounds={resolvedMapBounds} onMapClick={handleMapClick} />
+
+              {calibrationMode ? (
+                <>
+                  <Polyline
+                    pathOptions={{
+                      color: "#ffca5f",
+                      dashArray: "10 8",
+                      fill: false,
+                      weight: 2,
+                    }}
+                    positions={[...resolvedCalibration.corners, resolvedCalibration.corners[0]]}
+                  />
+                  {resolvedCalibration.corners.map((corner, index) => (
+                    <CircleMarker
+                      center={corner}
+                      key={`corner-${index}`}
+                      pathOptions={{
+                        color: "#3ce6ff",
+                        fillColor: "#3ce6ff",
+                        fillOpacity: 0.9,
+                        weight: 2,
+                      }}
+                      radius={5}
+                    />
+                  ))}
+                  <CircleMarker
+                    center={resolvedCalibration.center}
+                    pathOptions={{
+                      color: "#ff9b54",
+                      fillColor: "#ff9b54",
+                      fillOpacity: 0.94,
+                      weight: 2,
+                    }}
+                    radius={8}
+                  />
+                </>
+              ) : null}
+
+              {renderedMappedPlacements.map((placement) => {
                 const isSelectedMappedTree =
                   selectedTreeSelection?.scope === "mapped" &&
                   selectedTreeSelection.treeId === placement.id;
@@ -438,7 +829,7 @@ export function AdminOrchardWorkspace({
                   <CircleMarker
                     center={placement.latlng}
                     eventHandlers={
-                      repositionMode
+                      repositionMode && !calibrationMode
                         ? {
                             click(event) {
                               event.originalEvent?.stopPropagation();
@@ -523,20 +914,36 @@ export function AdminOrchardWorkspace({
             <>
               <div className="admin-map-overlay admin-map-overlay--top-left">
                 <p className="overlay-label">Mapping Status</p>
-                <strong>{loadState === "ready" ? "Awaiting tree selection" : "Loading workspace"}</strong>
+                <strong>
+                  {calibrationMode
+                    ? "Calibration editing active"
+                    : loadState === "ready"
+                      ? "Awaiting tree selection"
+                      : "Loading workspace"}
+                </strong>
                 <span>
-                  {selectedTree
-                    ? `Currently mapping ${selectedTree.treeIdDisplay}.`
-                    : dataSource === "supabase"
-                      ? "Confirmed points will write directly to plants.latitude and plants.longitude."
-                      : "Confirmed points stay local until Supabase credentials are configured."}
+                  {calibrationMode
+                    ? `Center ${resolvedCalibration.center.lat.toFixed(6)}, ${resolvedCalibration.center.lng.toFixed(6)}`
+                    : selectedTree
+                      ? `Currently mapping ${selectedTree.treeIdDisplay}.`
+                      : dataSource === "supabase"
+                        ? "Confirmed points will write directly to plants.latitude and plants.longitude."
+                        : "Confirmed points stay local until Supabase credentials are configured."}
                 </span>
               </div>
 
               <div className="admin-map-overlay admin-map-overlay--bottom-right">
-                <p className="overlay-label">Pending Queue</p>
-                <strong>{queueTrees.length} Trees</strong>
-                <span>Garden 3 remains in setup mode.</span>
+                <p className="overlay-label">{calibrationMode ? "Calibration Draft" : "Pending Queue"}</p>
+                <strong>
+                  {calibrationMode
+                    ? `${resolvedCalibration.sizeMeters.width}m x ${resolvedCalibration.sizeMeters.height}m`
+                    : `${queueTrees.length} Trees`}
+                </strong>
+                <span>
+                  {calibrationMode
+                    ? `${resolvedCalibration.headingDegrees}° top bearing`
+                    : "Garden 3 remains in setup mode."}
+                </span>
               </div>
             </>
           ) : null}

@@ -83,6 +83,7 @@ function normalizeSyntheticMappedTrees(dots) {
       lat: dot.latitude,
       lng: dot.longitude,
     },
+    layoutPosition: dot.layoutPosition,
   }));
 }
 

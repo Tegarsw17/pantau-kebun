@@ -215,6 +215,11 @@ body::before {
   border-color: rgba(255, 202, 95, 0.28);
 }
 
+.admin-count-pill--alert {
+  border-color: rgba(255, 155, 84, 0.38);
+  background: rgba(72, 30, 11, 0.86);
+}
+
 .admin-toggle {
   display: inline-flex;
   align-items: center;
@@ -375,6 +380,79 @@ body::before {
   border-top: 1px solid rgba(255, 202, 95, 0.16);
 }
 
+.admin-calibration-panel {
+  display: grid;
+  gap: 16px;
+  margin-top: 22px;
+}
+
+.admin-calibration-copy {
+  margin: 0;
+  color: #d5c6a2;
+  line-height: 1.5;
+}
+
+.admin-calibration-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.admin-calibration-field {
+  display: grid;
+  gap: 9px;
+}
+
+.admin-calibration-input {
+  width: 100%;
+  height: 44px;
+  border: 1px solid rgba(255, 202, 95, 0.24);
+  background: rgba(12, 10, 7, 0.92);
+  color: var(--text);
+  padding: 0 12px;
+  font: inherit;
+  outline: none;
+}
+
+.admin-calibration-input:focus {
+  border-color: rgba(255, 155, 84, 0.5);
+  box-shadow: 0 0 0 3px rgba(255, 155, 84, 0.12);
+}
+
+.admin-calibration-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  color: #cfbf97;
+  font-size: 0.9rem;
+}
+
+.admin-calibration-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.admin-secondary-button {
+  min-height: 40px;
+  border: 1px solid rgba(255, 202, 95, 0.24);
+  background: rgba(30, 18, 10, 0.88);
+  color: #fff1d4;
+  font: inherit;
+  padding: 0 14px;
+  cursor: pointer;
+}
+
+.admin-secondary-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.56;
+}
+
+.admin-secondary-button--primary {
+  border-color: rgba(255, 155, 84, 0.34);
+  background: rgba(76, 38, 14, 0.92);
+}
+
 .admin-map-viewport {
   position: relative;
   width: 100%;
@@ -401,6 +479,13 @@ body::before {
 .admin-map-leaflet--plotting .leaflet-interactive,
 .admin-map-leaflet--plotting .calibrated-image-overlay,
 .admin-map-leaflet--plotting .leaflet-pane {
+  cursor: crosshair;
+}
+
+.admin-map-leaflet--calibrating.leaflet-container,
+.admin-map-leaflet--calibrating .leaflet-interactive,
+.admin-map-leaflet--calibrating .calibrated-image-overlay,
+.admin-map-leaflet--calibrating .leaflet-pane {
   cursor: crosshair;
 }
 

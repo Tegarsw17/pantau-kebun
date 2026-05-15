@@ -141,6 +141,10 @@ function normalizeSnapshot(payload, calibration) {
       plantName: plant.plant_name,
       plantType,
       condition,
+      layoutPosition: {
+        x: typeof plant.x_m === "number" ? plant.x_m : null,
+        y: typeof plant.y_m === "number" ? plant.y_m : null,
+      },
       latitude: resolvedLatLng.lat,
       longitude: resolvedLatLng.lng,
     };

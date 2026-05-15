@@ -1,4 +1,5 @@
 const DRONE_CALIBRATION_URL = "/garden3_drone_calibration.json";
+const DRONE_CALIBRATION_STORAGE_KEY = "pantaukebun.garden3.drone-calibration";
 const DEFAULT_IMAGE_URL = "/dronentak.jpeg";
 const DEFAULT_PADDING_RATIO = 0.06;
 const EARTH_RADIUS_METERS = 6378137;
@@ -66,6 +67,34 @@ function offsetPointByMeters(point, bearingDegrees, distanceMeters) {
     lat: (destinationLatitude * 180) / Math.PI,
     lng: ((destinationLongitude * 180) / Math.PI + 540) % 360 - 180,
   };
+}
+
+function distanceBetweenPointsMeters(startPoint, endPoint) {
+  const startLatitude = (startPoint.lat * Math.PI) / 180;
+  const endLatitude = (endPoint.lat * Math.PI) / 180;
+  const latitudeDelta = ((endPoint.lat - startPoint.lat) * Math.PI) / 180;
+  const longitudeDelta = ((endPoint.lng - startPoint.lng) * Math.PI) / 180;
+  const a =
+    Math.sin(latitudeDelta / 2) * Math.sin(latitudeDelta / 2) +
+    Math.cos(startLatitude) *
+      Math.cos(endLatitude) *
+      Math.sin(longitudeDelta / 2) *
+      Math.sin(longitudeDelta / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+  return EARTH_RADIUS_METERS * c;
+}
+
+function bearingBetweenPoints(startPoint, endPoint) {
+  const startLatitude = (startPoint.lat * Math.PI) / 180;
+  const endLatitude = (endPoint.lat * Math.PI) / 180;
+  const longitudeDelta = ((endPoint.lng - startPoint.lng) * Math.PI) / 180;
+  const y = Math.sin(longitudeDelta) * Math.cos(endLatitude);
+  const x =
+    Math.cos(startLatitude) * Math.sin(endLatitude) -
+    Math.sin(startLatitude) * Math.cos(endLatitude) * Math.cos(longitudeDelta);
+
+  return normalizeBearingDegrees((Math.atan2(y, x) * 180) / Math.PI, DEFAULT_GARDEN_3_CALIBRATION.headingDegrees);
 }
 
 export function buildBoundsFromCorners(corners, paddingRatio = DEFAULT_PADDING_RATIO) {
@@ -223,22 +252,89 @@ function normalizeCalibration(payload) {
     lng: 109.602091,
   });
   const corners = [topLeft, topRight, bottomRight, bottomLeft];
+  const center = {
+    lat: (topLeft.lat + topRight.lat + bottomRight.lat + bottomLeft.lat) / 4,
+    lng: (topLeft.lng + topRight.lng + bottomRight.lng + bottomLeft.lng) / 4,
+  };
+  const widthMeters =
+    (distanceBetweenPointsMeters(topLeft, topRight) + distanceBetweenPointsMeters(bottomLeft, bottomRight)) /
+    2;
+  const heightMeters =
+    (distanceBetweenPointsMeters(topLeft, bottomLeft) + distanceBetweenPointsMeters(topRight, bottomRight)) /
+    2;
+  const headingDegrees = bearingBetweenPoints(center, {
+    lat: (topLeft.lat + topRight.lat) / 2,
+    lng: (topLeft.lng + topRight.lng) / 2,
+  });
 
   return {
     anchorQuality: payload?.anchor_quality ?? "approximate",
     calibrationMode: "four_corner",
+    center,
     confidenceNote:
       payload?.confidence_note ??
       "Initial four-corner calibration is active and can be refined later in admin.",
     corners,
     gardenId: payload?.garden_id ?? 3,
+    headingDegrees,
     imageUrl:
       typeof payload?.image_url === "string" && payload.image_url.trim() !== ""
         ? payload.image_url.trim()
         : DEFAULT_IMAGE_URL,
+    layoutOffsetMeters: {
+      x: 0,
+      y: 0,
+    },
     mapBounds: buildBoundsFromCorners(corners),
     notes: Array.isArray(payload?.notes) ? payload.notes : [],
+    sizeMeters: {
+      height: heightMeters,
+      width: widthMeters,
+    },
   };
+}
+
+function serializeCorners(corners) {
+  const [topLeft, topRight, bottomRight, bottomLeft] = corners;
+
+  return {
+    bottomLeft,
+    bottomRight,
+    topLeft,
+    topRight,
+  };
+}
+
+export function serializeDroneCalibration(calibration) {
+  if (calibration?.calibrationMode === "center_heading_size") {
+    return {
+      anchor_quality: calibration.anchorQuality ?? "approximate",
+      calibration_mode: "center_heading_size",
+      center: calibration.center,
+      confidence_note: calibration.confidenceNote,
+      garden_id: calibration.gardenId ?? 3,
+      heading_degrees: calibration.headingDegrees,
+      height_meters: calibration.sizeMeters?.height ?? DEFAULT_GARDEN_3_CALIBRATION.sizeMeters.height,
+      image_url: calibration.imageUrl ?? DEFAULT_IMAGE_URL,
+      layout_offset_meters: calibration.layoutOffsetMeters ?? { x: 0, y: 0 },
+      notes: Array.isArray(calibration.notes) ? calibration.notes : [],
+      width_meters: calibration.sizeMeters?.width ?? DEFAULT_GARDEN_3_CALIBRATION.sizeMeters.width,
+    };
+  }
+
+  return {
+    anchor_quality: calibration?.anchorQuality ?? "approximate",
+    calibration_mode: "four_corner",
+    confidence_note: calibration?.confidenceNote,
+    corners: serializeCorners(calibration?.corners ?? DEFAULT_GARDEN_3_DRONE_CALIBRATION.corners),
+    garden_id: calibration?.gardenId ?? 3,
+    image_url: calibration?.imageUrl ?? DEFAULT_IMAGE_URL,
+    notes: Array.isArray(calibration?.notes) ? calibration.notes : [],
+  };
+}
+
+export function normalizeDroneCalibration(payload) {
+  return normalizeCalibration(payload);
 }
 
 export const DEFAULT_GARDEN_3_DRONE_CALIBRATION = normalizeCalibration({
@@ -251,7 +347,60 @@ export const DEFAULT_GARDEN_3_DRONE_CALIBRATION = normalizeCalibration({
   width_meters: DEFAULT_GARDEN_3_CALIBRATION.sizeMeters.width,
 });
 
+export function readStoredGarden3DroneCalibration() {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  try {
+    const storedPayload = window.localStorage.getItem(DRONE_CALIBRATION_STORAGE_KEY);
+
+    if (!storedPayload) {
+      return null;
+    }
+
+    return normalizeCalibration(JSON.parse(storedPayload));
+  } catch {
+    return null;
+  }
+}
+
+export function persistGarden3DroneCalibration(calibration) {
+  if (typeof window === "undefined") {
+    return false;
+  }
+
+  try {
+    window.localStorage.setItem(
+      DRONE_CALIBRATION_STORAGE_KEY,
+      JSON.stringify(serializeDroneCalibration(calibration)),
+    );
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+export function clearStoredGarden3DroneCalibration() {
+  if (typeof window === "undefined") {
+    return false;
+  }
+
+  try {
+    window.localStorage.removeItem(DRONE_CALIBRATION_STORAGE_KEY);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export async function loadGarden3DroneCalibration() {
+  const storedCalibration = readStoredGarden3DroneCalibration();
+
+  if (storedCalibration != null) {
+    return storedCalibration;
+  }
+
   try {
     const response = await fetch(DRONE_CALIBRATION_URL);
 
