@@ -124,7 +124,7 @@ export function MediaViewerDialog({
 
         <div className="media-viewer__body">
           <button
-            className="media-viewer__nav"
+            className="media-viewer__nav media-viewer__nav--prev"
             disabled={isFirstAsset}
             onClick={() => onNavigate(-1)}
             type="button"
@@ -137,7 +137,7 @@ export function MediaViewerDialog({
           </div>
 
           <button
-            className="media-viewer__nav"
+            className="media-viewer__nav media-viewer__nav--next"
             disabled={isLastAsset}
             onClick={() => onNavigate(1)}
             type="button"
