@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { UpdateMediaGallery } from "./UpdateMediaGallery.jsx";
 
 const NO_REPORT_NOTE = "No field report submitted yet.";
@@ -65,6 +65,9 @@ export function TreeHistoryDrawer({
   reportRow,
   selectedTree,
 }) {
+  const [detailMode, setDetailMode] = useState("latest");
+  const [selectedCompareGroupKey, setSelectedCompareGroupKey] = useState("");
+
   useEffect(() => {
     const handleKeyDown = (event) => {
       if (event.key === "Escape") {
@@ -99,6 +102,43 @@ export function TreeHistoryDrawer({
   const mediaCounts = countMediaByKind(mediaAssets);
   const historyCount = Array.isArray(historyEntries) ? historyEntries.length : 0;
   const historyGroups = groupHistoryEntriesByMonth(historyEntries);
+  const comparisonOptions = useMemo(
+    () =>
+      historyGroups.slice(1).map((historyGroup) => ({
+        key: historyGroup.key,
+        label: historyGroup.label,
+        snapshotEntry: historyGroup.entries[0] ?? null,
+        updateCount: historyGroup.entries.length,
+      })),
+    [historyGroups],
+  );
+  const selectedCompareOption =
+    comparisonOptions.find((comparisonOption) => comparisonOption.key === selectedCompareGroupKey) ??
+    comparisonOptions[0] ??
+    null;
+  const comparisonEntry = selectedCompareOption?.snapshotEntry ?? null;
+  const comparisonMediaAssets = Array.isArray(comparisonEntry?.mediaAssets)
+    ? comparisonEntry.mediaAssets
+    : [];
+  const comparisonMediaCounts = countMediaByKind(comparisonMediaAssets);
+
+  useEffect(() => {
+    if (comparisonOptions.length === 0) {
+      setSelectedCompareGroupKey("");
+      if (detailMode === "compare") {
+        setDetailMode("latest");
+      }
+      return;
+    }
+
+    const hasSelectedCompareOption = comparisonOptions.some(
+      (comparisonOption) => comparisonOption.key === selectedCompareGroupKey,
+    );
+
+    if (!hasSelectedCompareOption) {
+      setSelectedCompareGroupKey(comparisonOptions[0].key);
+    }
+  }, [comparisonOptions, detailMode, selectedCompareGroupKey]);
 
   return (
     <div className="history-drawer-backdrop" onClick={onClose}>
@@ -136,6 +176,107 @@ export function TreeHistoryDrawer({
           </span>
         </div>
 
+        <div className="history-drawer__mode-switch" role="tablist" aria-label="Tree detail mode">
+          <button
+            aria-selected={detailMode === "latest"}
+            className={`history-drawer__mode-button ${
+              detailMode === "latest" ? "history-drawer__mode-button--active" : ""
+            }`}
+            onClick={() => setDetailMode("latest")}
+            role="tab"
+            type="button"
+          >
+            Latest
+          </button>
+          <button
+            aria-selected={detailMode === "compare"}
+            className={`history-drawer__mode-button ${
+              detailMode === "compare" ? "history-drawer__mode-button--active" : ""
+            }`}
+            disabled={comparisonOptions.length === 0}
+            onClick={() => setDetailMode("compare")}
+            role="tab"
+            type="button"
+          >
+            Compare
+          </button>
+        </div>
+
+        {detailMode === "compare" ? (
+          <section className="history-drawer__section">
+            <p className="history-drawer__label">Monthly Compare</p>
+
+            {comparisonOptions.length === 0 ? (
+              <div className="history-drawer__empty-state">
+                <strong>No earlier month available</strong>
+                <span>This tree has only one month of history, so no monthly comparison can be shown yet.</span>
+              </div>
+            ) : (
+              <>
+                <label className="history-drawer__compare-field">
+                  <span className="history-drawer__compare-label">Compare Against</span>
+                  <select
+                    className="history-drawer__compare-select"
+                    onChange={(event) => setSelectedCompareGroupKey(event.target.value)}
+                    value={selectedCompareOption?.key ?? ""}
+                  >
+                    {comparisonOptions.map((comparisonOption) => (
+                      <option key={comparisonOption.key} value={comparisonOption.key}>
+                        {comparisonOption.label} ({comparisonOption.updateCount} updates)
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <div className="history-compare">
+                  <section className="history-compare__panel">
+                    <div className="history-compare__panel-header">
+                      <strong>Current</strong>
+                      <span>{resolvedUpdatedAt}</span>
+                    </div>
+                    <span className="status-badge" style={resolvedBadgeStyle ?? undefined}>
+                      {resolvedConditionIcon} {resolvedConditionLabel}
+                    </span>
+                    <p className="history-compare__note">{resolvedNote}</p>
+                    <div className="history-card__meta">
+                      <span className="history-card__meta-chip">{mediaAssets.length} total</span>
+                      <span className="history-card__meta-chip">{mediaCounts.image} images</span>
+                      <span className="history-card__meta-chip">{mediaCounts.video} videos</span>
+                    </div>
+                    <UpdateMediaGallery mediaAssets={mediaAssets} />
+                  </section>
+
+                  <section className="history-compare__panel">
+                    <div className="history-compare__panel-header">
+                      <strong>{selectedCompareOption?.label ?? "Earlier Month"}</strong>
+                      <span>{comparisonEntry?.updatedAt ?? NO_REPORT_UPDATED_AT}</span>
+                    </div>
+                    <span className="status-badge" style={comparisonEntry?.badgeStyle ?? undefined}>
+                      {comparisonEntry?.conditionIcon ?? "●"}{" "}
+                      {comparisonEntry?.kondisi ?? "No historical report"}
+                    </span>
+                    <p className="history-compare__note">
+                      {comparisonEntry?.note ?? "No report stored for the selected comparison month."}
+                    </p>
+                    <div className="history-card__meta">
+                      <span className="history-card__meta-chip">
+                        {comparisonMediaAssets.length} total
+                      </span>
+                      <span className="history-card__meta-chip">
+                        {comparisonMediaCounts.image} images
+                      </span>
+                      <span className="history-card__meta-chip">
+                        {comparisonMediaCounts.video} videos
+                      </span>
+                    </div>
+                    <UpdateMediaGallery mediaAssets={comparisonMediaAssets} />
+                  </section>
+                </div>
+              </>
+            )}
+          </section>
+        ) : (
+          <>
         <section className="history-drawer__section">
           <p className="history-drawer__label">Current Condition</p>
           <div className="history-drawer__status-row">
@@ -161,6 +302,8 @@ export function TreeHistoryDrawer({
 
           <UpdateMediaGallery mediaAssets={mediaAssets} />
         </section>
+          </>
+        )}
 
         <section className="history-drawer__section">
           <p className="history-drawer__label">Update Timeline</p>

@@ -1360,6 +1360,36 @@ tbody tr + tr td {
   gap: 10px;
 }
 
+.history-drawer__mode-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px;
+  border: 1px solid rgba(60, 230, 255, 0.12);
+  background: rgba(10, 22, 28, 0.66);
+}
+
+.history-drawer__mode-button {
+  min-height: 36px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  padding: 0 14px;
+  cursor: pointer;
+}
+
+.history-drawer__mode-button--active {
+  border-color: rgba(60, 230, 255, 0.2);
+  background: rgba(12, 30, 38, 0.84);
+  color: #d6fbff;
+}
+
+.history-drawer__mode-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.48;
+}
+
 .history-drawer__summary-chip {
   display: inline-flex;
   align-items: center;
@@ -1395,6 +1425,25 @@ tbody tr + tr td {
 .media-gallery__meta span {
   color: var(--muted);
   line-height: 1.5;
+}
+
+.history-drawer__compare-field {
+  display: grid;
+  gap: 8px;
+}
+
+.history-drawer__compare-label {
+  color: var(--muted);
+}
+
+.history-drawer__compare-select {
+  width: 100%;
+  min-height: 42px;
+  border: 1px solid rgba(60, 230, 255, 0.18);
+  background: rgba(10, 22, 28, 0.82);
+  color: var(--text);
+  padding: 0 12px;
+  font: inherit;
 }
 
 .media-gallery {
@@ -1538,6 +1587,41 @@ tbody tr + tr td {
   line-height: 1.6;
 }
 
+.history-compare {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.history-compare__panel {
+  display: grid;
+  gap: 12px;
+  padding: 14px 16px;
+  border: 1px solid rgba(114, 144, 156, 0.16);
+  background: rgba(10, 20, 26, 0.72);
+}
+
+.history-compare__panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+}
+
+.history-compare__panel-header span {
+  color: var(--muted);
+}
+
+.history-compare__note {
+  margin: 0;
+  color: var(--text);
+  line-height: 1.6;
+}
+
+.history-compare__panel .media-gallery {
+  grid-template-columns: 1fr;
+}
+
 @media (max-width: 1120px) {
   .filter-grid {
     grid-template-columns: 1fr 1fr;
@@ -1640,8 +1724,23 @@ tbody tr + tr td {
     flex-direction: column;
   }
 
+  .history-drawer__mode-switch,
+  .history-compare,
   .history-timeline__month,
   .history-card__header {
+    flex-direction: column;
+  }
+
+  .history-drawer__mode-switch,
+  .history-compare {
+    display: grid;
+  }
+
+  .history-compare {
+    grid-template-columns: 1fr;
+  }
+
+  .history-compare__panel-header {
     flex-direction: column;
   }
 
