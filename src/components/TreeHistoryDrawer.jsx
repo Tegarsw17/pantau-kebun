@@ -8,6 +8,23 @@ const MONTH_GROUP_FORMATTER = new Intl.DateTimeFormat("en-GB", {
   year: "numeric",
 });
 
+function resolveHistoryGroupMetadata(createdAtEpoch) {
+  const groupDate =
+    typeof createdAtEpoch === "number" && createdAtEpoch > 0 ? new Date(createdAtEpoch) : null;
+
+  if (groupDate == null || Number.isNaN(groupDate.getTime())) {
+    return {
+      key: "unknown",
+      label: "Unscheduled",
+    };
+  }
+
+  return {
+    key: `${groupDate.getUTCFullYear()}-${String(groupDate.getUTCMonth() + 1).padStart(2, "0")}`,
+    label: MONTH_GROUP_FORMATTER.format(groupDate),
+  };
+}
+
 function countMediaByKind(mediaAssets) {
   return (Array.isArray(mediaAssets) ? mediaAssets : []).reduce(
     (summary, mediaAsset) => {
@@ -30,18 +47,9 @@ function groupHistoryEntriesByMonth(historyEntries) {
   const groupIndexByKey = new Map();
 
   (Array.isArray(historyEntries) ? historyEntries : []).forEach((historyEntry) => {
-    const createdAtEpoch =
-      typeof historyEntry?.createdAtEpoch === "number" ? historyEntry.createdAtEpoch : 0;
-    const groupDate =
-      createdAtEpoch > 0 ? new Date(createdAtEpoch) : null;
-    const groupKey =
-      groupDate != null && !Number.isNaN(groupDate.getTime())
-        ? `${groupDate.getUTCFullYear()}-${String(groupDate.getUTCMonth() + 1).padStart(2, "0")}`
-        : "unknown";
-    const groupLabel =
-      groupDate != null && !Number.isNaN(groupDate.getTime())
-        ? MONTH_GROUP_FORMATTER.format(groupDate)
-        : "Unscheduled";
+    const { key: groupKey, label: groupLabel } = resolveHistoryGroupMetadata(
+      historyEntry?.createdAtEpoch,
+    );
 
     if (!groupIndexByKey.has(groupKey)) {
       groupIndexByKey.set(groupKey, groups.length);
@@ -58,6 +66,18 @@ function groupHistoryEntriesByMonth(historyEntries) {
   return groups;
 }
 
+function findHistoryEntryById(historyEntries, historyEntryId) {
+  if (historyEntryId == null) {
+    return null;
+  }
+
+  return (
+    (Array.isArray(historyEntries) ? historyEntries : []).find(
+      (historyEntry) => historyEntry?.id === historyEntryId,
+    ) ?? null
+  );
+}
+
 export function TreeHistoryDrawer({
   historyEntries,
   latestHistoryEntry,
@@ -67,6 +87,7 @@ export function TreeHistoryDrawer({
 }) {
   const [detailMode, setDetailMode] = useState("latest");
   const [selectedCompareGroupKey, setSelectedCompareGroupKey] = useState("");
+  const [selectedHistoryEntryId, setSelectedHistoryEntryId] = useState(latestHistoryEntry?.id ?? null);
 
   useEffect(() => {
     const handleKeyDown = (event) => {
@@ -86,31 +107,54 @@ export function TreeHistoryDrawer({
     return null;
   }
 
-  const resolvedCondition = latestHistoryEntry?.condition ?? selectedTree?.condition ?? null;
+  const historyCount = Array.isArray(historyEntries) ? historyEntries.length : 0;
+  const historyGroups = groupHistoryEntriesByMonth(historyEntries);
+  const activeHistoryEntry =
+    findHistoryEntryById(historyEntries, selectedHistoryEntryId) ?? latestHistoryEntry ?? null;
+  const activeHistoryGroupKey = resolveHistoryGroupMetadata(activeHistoryEntry?.createdAtEpoch).key;
+  const activeHistoryGroupIndex = historyGroups.findIndex(
+    (historyGroup) => historyGroup.key === activeHistoryGroupKey,
+  );
+  const resolvedCondition =
+    activeHistoryEntry?.condition ?? latestHistoryEntry?.condition ?? selectedTree?.condition ?? null;
   const resolvedBadgeStyle =
-    latestHistoryEntry?.badgeStyle ?? reportRow?.badgeStyle ?? resolvedCondition?.badgeStyle ?? null;
+    activeHistoryEntry?.badgeStyle ??
+    latestHistoryEntry?.badgeStyle ??
+    reportRow?.badgeStyle ??
+    resolvedCondition?.badgeStyle ??
+    null;
   const resolvedConditionIcon =
-    latestHistoryEntry?.conditionIcon ?? reportRow?.conditionIcon ?? resolvedCondition?.icon ?? "●";
+    activeHistoryEntry?.conditionIcon ??
+    latestHistoryEntry?.conditionIcon ??
+    reportRow?.conditionIcon ??
+    resolvedCondition?.icon ??
+    "●";
   const resolvedConditionLabel =
-    latestHistoryEntry?.kondisi ?? reportRow?.kondisi ?? resolvedCondition?.label ?? "Unknown";
+    activeHistoryEntry?.kondisi ??
+    latestHistoryEntry?.kondisi ??
+    reportRow?.kondisi ??
+    resolvedCondition?.label ??
+    "Unknown";
   const resolvedTreeId = selectedTree?.treeIdDisplay ?? reportRow?.treeId ?? "Unknown";
   const resolvedPlantName = selectedTree?.plantName ?? reportRow?.plantName ?? "Unknown Plant";
   const resolvedPlantType = selectedTree?.plantType?.label ?? reportRow?.jenis ?? "Unknown";
-  const resolvedUpdatedAt = latestHistoryEntry?.updatedAt ?? reportRow?.updatedAt ?? NO_REPORT_UPDATED_AT;
-  const resolvedNote = latestHistoryEntry?.note ?? reportRow?.note ?? NO_REPORT_NOTE;
-  const mediaAssets = Array.isArray(latestHistoryEntry?.mediaAssets) ? latestHistoryEntry.mediaAssets : [];
+  const resolvedUpdatedAt =
+    activeHistoryEntry?.updatedAt ?? latestHistoryEntry?.updatedAt ?? reportRow?.updatedAt ?? NO_REPORT_UPDATED_AT;
+  const resolvedNote = activeHistoryEntry?.note ?? latestHistoryEntry?.note ?? reportRow?.note ?? NO_REPORT_NOTE;
+  const mediaAssets = Array.isArray(activeHistoryEntry?.mediaAssets) ? activeHistoryEntry.mediaAssets : [];
   const mediaCounts = countMediaByKind(mediaAssets);
-  const historyCount = Array.isArray(historyEntries) ? historyEntries.length : 0;
-  const historyGroups = groupHistoryEntriesByMonth(historyEntries);
   const comparisonOptions = useMemo(
-    () =>
-      historyGroups.slice(1).map((historyGroup) => ({
+    () => {
+      const comparisonStartIndex = activeHistoryGroupIndex >= 0 ? activeHistoryGroupIndex + 1 : 1;
+
+      return historyGroups.slice(comparisonStartIndex).map((historyGroup) => ({
         key: historyGroup.key,
         label: historyGroup.label,
         snapshotEntry: historyGroup.entries[0] ?? null,
         updateCount: historyGroup.entries.length,
-      })),
-    [historyGroups],
+      }));
+    },
+    [activeHistoryGroupIndex, historyGroups],
   );
   const selectedCompareOption =
     comparisonOptions.find((comparisonOption) => comparisonOption.key === selectedCompareGroupKey) ??
@@ -121,6 +165,10 @@ export function TreeHistoryDrawer({
     ? comparisonEntry.mediaAssets
     : [];
   const comparisonMediaCounts = countMediaByKind(comparisonMediaAssets);
+
+  useEffect(() => {
+    setSelectedHistoryEntryId(latestHistoryEntry?.id ?? null);
+  }, [latestHistoryEntry?.id]);
 
   useEffect(() => {
     if (comparisonOptions.length === 0) {
@@ -174,6 +222,11 @@ export function TreeHistoryDrawer({
           <span className="history-drawer__summary-chip">
             {historyCount === 1 ? "1 update loaded" : `${historyCount} updates loaded`}
           </span>
+          {activeHistoryEntry != null ? (
+            <span className="history-drawer__summary-chip">
+              {activeHistoryEntry.id === latestHistoryEntry?.id ? "Latest report focused" : "Timeline report focused"}
+            </span>
+          ) : null}
         </div>
 
         <div className="history-drawer__mode-switch" role="tablist" aria-label="Tree detail mode">
@@ -209,7 +262,7 @@ export function TreeHistoryDrawer({
             {comparisonOptions.length === 0 ? (
               <div className="history-drawer__empty-state">
                 <strong>No earlier month available</strong>
-                <span>This tree has only one month of history, so no monthly comparison can be shown yet.</span>
+                <span>This focused report does not have an earlier comparison month yet.</span>
               </div>
             ) : (
               <>
@@ -231,7 +284,7 @@ export function TreeHistoryDrawer({
                 <div className="history-compare">
                   <section className="history-compare__panel">
                     <div className="history-compare__panel-header">
-                      <strong>Current</strong>
+                      <strong>{activeHistoryEntry?.id === latestHistoryEntry?.id ? "Latest" : "Selected"}</strong>
                       <span>{resolvedUpdatedAt}</span>
                     </div>
                     <span className="status-badge" style={resolvedBadgeStyle ?? undefined}>
@@ -277,31 +330,31 @@ export function TreeHistoryDrawer({
           </section>
         ) : (
           <>
-        <section className="history-drawer__section">
-          <p className="history-drawer__label">Current Condition</p>
-          <div className="history-drawer__status-row">
-            <span className="status-badge" style={resolvedBadgeStyle ?? undefined}>
-              {resolvedConditionIcon} {resolvedConditionLabel}
-            </span>
-            <span className="history-drawer__timestamp">{resolvedUpdatedAt}</span>
-          </div>
-        </section>
+            <section className="history-drawer__section">
+              <p className="history-drawer__label">Report Snapshot</p>
+              <div className="history-drawer__status-row">
+                <span className="status-badge" style={resolvedBadgeStyle ?? undefined}>
+                  {resolvedConditionIcon} {resolvedConditionLabel}
+                </span>
+                <span className="history-drawer__timestamp">{resolvedUpdatedAt}</span>
+              </div>
+            </section>
 
-        <section className="history-drawer__section">
-          <p className="history-drawer__label">Latest Field Note</p>
-          <p className="history-drawer__note">{resolvedNote}</p>
-        </section>
+            <section className="history-drawer__section">
+              <p className="history-drawer__label">Field Note</p>
+              <p className="history-drawer__note">{resolvedNote}</p>
+            </section>
 
-        <section className="history-drawer__section">
-          <p className="history-drawer__label">Attached Media</p>
-          <div className="history-drawer__summary">
-            <span className="history-drawer__summary-chip">{mediaAssets.length} total</span>
-            <span className="history-drawer__summary-chip">{mediaCounts.image} images</span>
-            <span className="history-drawer__summary-chip">{mediaCounts.video} videos</span>
-          </div>
+            <section className="history-drawer__section">
+              <p className="history-drawer__label">Attached Media</p>
+              <div className="history-drawer__summary">
+                <span className="history-drawer__summary-chip">{mediaAssets.length} total</span>
+                <span className="history-drawer__summary-chip">{mediaCounts.image} images</span>
+                <span className="history-drawer__summary-chip">{mediaCounts.video} videos</span>
+              </div>
 
-          <UpdateMediaGallery mediaAssets={mediaAssets} />
-        </section>
+              <UpdateMediaGallery mediaAssets={mediaAssets} />
+            </section>
           </>
         )}
 
@@ -328,12 +381,22 @@ export function TreeHistoryDrawer({
 
                   <div className="history-timeline__entries">
                     {historyGroup.entries.map((historyEntry, index) => (
-                      <article className="history-card" key={historyEntry.id ?? `${historyGroup.key}-${index}`}>
+                      <button
+                        className={`history-card history-card--interactive ${
+                          activeHistoryEntry?.id === historyEntry.id ? "history-card--selected" : ""
+                        }`}
+                        key={historyEntry.id ?? `${historyGroup.key}-${index}`}
+                        onClick={() => setSelectedHistoryEntryId(historyEntry.id ?? null)}
+                        type="button"
+                      >
                         <div className="history-card__header">
                           <div className="history-card__status">
                             <span className="status-badge" style={historyEntry.badgeStyle ?? undefined}>
                               {historyEntry.conditionIcon ?? "●"} {historyEntry.kondisi}
                             </span>
+                            {activeHistoryEntry?.id === historyEntry.id ? (
+                              <span className="history-card__selected-chip">Selected</span>
+                            ) : null}
                             {latestHistoryEntry?.id === historyEntry.id ? (
                               <span className="history-card__latest-chip">Latest</span>
                             ) : null}
@@ -356,7 +419,7 @@ export function TreeHistoryDrawer({
                             {historyEntry.jenis ?? resolvedPlantType}
                           </span>
                         </div>
-                      </article>
+                      </button>
                     ))}
                   </div>
                 </div>

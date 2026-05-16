@@ -1658,9 +1658,37 @@ tbody tr + tr td {
 .history-card {
   display: grid;
   gap: 12px;
+  width: 100%;
   padding: 14px 16px;
   border: 1px solid rgba(114, 144, 156, 0.16);
   background: rgba(10, 20, 26, 0.72);
+  color: inherit;
+  text-align: left;
+  font: inherit;
+}
+
+.history-card--interactive {
+  cursor: pointer;
+  transition:
+    border-color 140ms ease,
+    background 140ms ease,
+    box-shadow 140ms ease;
+}
+
+.history-card--interactive:hover {
+  border-color: rgba(60, 230, 255, 0.18);
+  background: rgba(10, 24, 31, 0.8);
+}
+
+.history-card--interactive:focus-visible {
+  outline: 2px solid rgba(60, 230, 255, 0.82);
+  outline-offset: 2px;
+}
+
+.history-card--selected {
+  border-color: rgba(60, 230, 255, 0.22);
+  background: rgba(11, 31, 38, 0.82);
+  box-shadow: inset 3px 0 0 rgba(60, 230, 255, 0.9);
 }
 
 .history-card__header,
@@ -1683,7 +1711,8 @@ tbody tr + tr td {
 }
 
 .history-card__latest-chip,
-.history-card__meta-chip {
+.history-card__meta-chip,
+.history-card__selected-chip {
   display: inline-flex;
   align-items: center;
   min-height: 28px;
@@ -1697,6 +1726,12 @@ tbody tr + tr td {
   border-color: rgba(87, 242, 135, 0.18);
   background: rgba(10, 33, 19, 0.82);
   color: #d5ffd9;
+}
+
+.history-card__selected-chip {
+  border-color: rgba(60, 230, 255, 0.2);
+  background: rgba(8, 34, 41, 0.84);
+  color: #d8fbff;
 }
 
 .history-card__note {

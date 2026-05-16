@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { MediaViewerDialog } from "./MediaViewerDialog.jsx";
 
 const MEDIA_KIND_LABELS = {
@@ -39,6 +39,10 @@ function MediaPreview({ mediaAsset }) {
 export function UpdateMediaGallery({ mediaAssets }) {
   const resolvedMediaAssets = Array.isArray(mediaAssets) ? mediaAssets : [];
   const [activeMediaIndex, setActiveMediaIndex] = useState(null);
+
+  useEffect(() => {
+    setActiveMediaIndex(null);
+  }, [resolvedMediaAssets]);
 
   const handleNavigate = (direction) => {
     setActiveMediaIndex((currentIndex) => {
