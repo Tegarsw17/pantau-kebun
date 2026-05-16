@@ -48,6 +48,7 @@ function MonitoringDashboard() {
     imageCalibration: null,
     mapBounds: null,
     totalTrees: 0,
+    treeHistoryByPlantId: {},
     filters: {
       plantType: [],
       condition: [],
@@ -74,6 +75,7 @@ function MonitoringDashboard() {
           imageCalibration: snapshot.imageCalibration,
           mapBounds: snapshot.mapBounds,
           totalTrees: snapshot.totalTrees,
+          treeHistoryByPlantId: snapshot.treeHistoryByPlantId ?? {},
           filters: snapshot.filters,
           reportRows: snapshot.reportRows,
           message: snapshot.message,
@@ -90,6 +92,7 @@ function MonitoringDashboard() {
           imageCalibration: null,
           mapBounds: null,
           totalTrees: 0,
+          treeHistoryByPlantId: {},
           filters: {
             plantType: [],
             condition: [],

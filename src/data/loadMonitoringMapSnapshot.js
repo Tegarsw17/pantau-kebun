@@ -263,6 +263,30 @@ function normalizeConditionIds(conditionIds) {
     .filter((conditionId) => Number.isFinite(conditionId));
 }
 
+function resolveUpdateCreatedAtEpoch(update) {
+  const createdAt = typeof update?.created_at === "string" ? update.created_at.trim() : "";
+
+  if (createdAt !== "") {
+    const parsedDate = new Date(createdAt);
+
+    if (!Number.isNaN(parsedDate.getTime())) {
+      return parsedDate.getTime();
+    }
+  }
+
+  const fallbackDate = typeof update?.date === "string" ? update.date.trim() : "";
+
+  if (fallbackDate !== "") {
+    const parsedDate = new Date(fallbackDate);
+
+    if (!Number.isNaN(parsedDate.getTime())) {
+      return parsedDate.getTime();
+    }
+  }
+
+  return 0;
+}
+
 function buildPlantReferenceIndex(plants) {
   const plantById = new Map();
   const plantByReference = new Map();
@@ -302,8 +326,13 @@ function resolvePlantFromReference(plantReferenceIndex, referenceValue) {
   return plantReferenceIndex.plantByReference.get(normalizedReference) ?? null;
 }
 
-function buildLatestUpdateByPlantId(updates, plantReferenceIndex) {
-  const latestUpdateByPlantId = new Map();
+function buildResolvedUpdateHistoryByPlantId({
+  conditionLookup,
+  plantReferenceIndex,
+  plantTypeLookup,
+  updates,
+}) {
+  const historyByPlantId = {};
 
   (Array.isArray(updates) ? updates : []).forEach((update) => {
     const plant = resolvePlantFromReference(plantReferenceIndex, update?.plant_id);
@@ -313,15 +342,43 @@ function buildLatestUpdateByPlantId(updates, plantReferenceIndex) {
     }
 
     const plantId = String(plant.id);
+    const plantType = resolvePlantType(plant, plantTypeLookup);
+    const condition = resolveCondition(update, conditionLookup);
+    const historyEntry = {
+      badgeStyle: condition.badgeStyle,
+      condition,
+      conditionIcon: condition.icon,
+      createdAt:
+        typeof update?.created_at === "string" && update.created_at.trim() !== ""
+          ? update.created_at.trim()
+          : null,
+      createdAtEpoch: resolveUpdateCreatedAtEpoch(update),
+      id:
+        update?.id ??
+        `${plantId}-${update?.created_at ?? update?.date ?? "report"}`,
+      jenis: plantType.label,
+      kondisi: condition.label,
+      note: resolveLatestNote(update),
+      plantId,
+      plantName: plant.plant_name,
+      plantType,
+      sourceUpdate: update,
+      treeId: plant.tree_id_display,
+      updatedAt: formatUpdatedAt(update),
+    };
 
-    if (latestUpdateByPlantId.has(plantId)) {
-      return;
+    if (!Array.isArray(historyByPlantId[plantId])) {
+      historyByPlantId[plantId] = [];
     }
 
-    latestUpdateByPlantId.set(plantId, update);
+    historyByPlantId[plantId].push(historyEntry);
   });
 
-  return latestUpdateByPlantId;
+  Object.values(historyByPlantId).forEach((historyEntries) => {
+    historyEntries.sort((leftEntry, rightEntry) => rightEntry.createdAtEpoch - leftEntry.createdAtEpoch);
+  });
+
+  return historyByPlantId;
 }
 
 function buildLayoutMetadataByPlantId(payload) {
@@ -441,38 +498,31 @@ function buildDotRecord({ condition, plant, plantType, resolvedLatLng }) {
   };
 }
 
-function buildUpdateReportRows({ conditionLookup, plantReferenceIndex, plantTypeLookup, updates }) {
-  return (Array.isArray(updates) ? updates : []).map((update) => {
-    const plantId = String(update?.plant_id ?? "").trim();
-    const plant = resolvePlantFromReference(plantReferenceIndex, plantId);
-    const plantType =
-      plant != null
-        ? resolvePlantType(plant, plantTypeLookup)
-        : buildPlantTypePresentation({
-            color: UNKNOWN_PLANT_TYPE_COLOR,
-            label:
-              typeof update?.type === "string" && update.type.trim() !== ""
-                ? update.type.trim()
-                : "Unknown",
-          });
-    const condition = resolveCondition(update, conditionLookup);
-    const numericPlantId = Number(plantId);
+function buildReportRowFromPlant({ defaultCondition, latestHistoryEntry, plant, plantType }) {
+  const resolvedCondition = latestHistoryEntry?.condition ?? defaultCondition;
 
-    return {
-      id:
-        update?.id ??
-        `${plantId !== "" ? plantId : "unknown"}-${update?.created_at ?? update?.date ?? "report"}`,
-      badgeStyle: condition.badgeStyle,
-      conditionIcon: condition.icon,
-      kondisi: condition.label,
-      jenis: plantType.label,
-      note: resolveLatestNote(update),
-      plantName: plant?.plant_name ?? (plantId || UNKNOWN_PLANT_NAME),
-      treeId:
-        plant?.tree_id_display ??
-        (Number.isFinite(numericPlantId) ? formatTreeId(numericPlantId) : plantId || "Unknown"),
-      updatedAt: formatUpdatedAt(update),
-    };
+  return {
+    badgeStyle: resolvedCondition.badgeStyle,
+    conditionIcon: resolvedCondition.icon,
+    id: plant.id,
+    jenis: latestHistoryEntry?.jenis ?? plantType.label,
+    kondisi: latestHistoryEntry?.kondisi ?? resolvedCondition.label,
+    latestReportEpoch: latestHistoryEntry?.createdAtEpoch ?? 0,
+    note: latestHistoryEntry?.note ?? NO_REPORT_NOTE,
+    plantId: String(plant.id),
+    plantName: plant.plant_name ?? UNKNOWN_PLANT_NAME,
+    treeId: plant.tree_id_display ?? formatTreeId(plant.id),
+    updatedAt: latestHistoryEntry?.updatedAt ?? NO_REPORT_UPDATED_AT,
+  };
+}
+
+function sortReportRowsByLatestUpdate(reportRows) {
+  return [...reportRows].sort((leftRow, rightRow) => {
+    if (rightRow.latestReportEpoch !== leftRow.latestReportEpoch) {
+      return rightRow.latestReportEpoch - leftRow.latestReportEpoch;
+    }
+
+    return leftRow.treeId.localeCompare(rightRow.treeId);
   });
 }
 
@@ -481,6 +531,7 @@ function buildStaticSnapshot(payload, calibration) {
   const scopedPlants = plants.filter((plant) => plant.garden_id === GARDEN_SCOPE);
   const layoutExtent = deriveLayoutExtent(scopedPlants);
   const plantTypeLookup = buildStaticPlantTypeLookup();
+  const treeHistoryByPlantId = {};
 
   const dots = scopedPlants.map((plant) => {
     const plantType = resolvePlantType(plant, plantTypeLookup);
@@ -518,18 +569,32 @@ function buildStaticSnapshot(payload, calibration) {
   const reportRows = scopedPlants.map((plant) => {
     const plantType = resolvePlantType(plant, plantTypeLookup);
     const condition = deriveStaticConditionFromLayout(plant);
-
-    return {
-      id: plant.id,
+    const historyEntry = {
       badgeStyle: condition.badgeStyle,
+      condition,
       conditionIcon: condition.icon,
-      kondisi: condition.label,
+      createdAt: null,
+      createdAtEpoch: plant.id >= 33 ? new Date("2026-02-15T00:00:00Z").getTime() : new Date("2026-02-14T00:00:00Z").getTime(),
+      id: `static-${plant.id}`,
       jenis: plantType.label,
+      kondisi: condition.label,
       note: deriveSyntheticNote(plantType, condition, plant),
+      plantId: String(plant.id),
       plantName: plant.plant_name,
+      plantType,
+      sourceUpdate: null,
       treeId: plant.tree_id_display,
       updatedAt: plant.id >= 33 ? "15 Feb 2026" : "14 Feb 2026",
     };
+
+    treeHistoryByPlantId[String(plant.id)] = [historyEntry];
+
+    return buildReportRowFromPlant({
+      defaultCondition: DEFAULT_CONDITION_PRESENTATION,
+      latestHistoryEntry: historyEntry,
+      plant,
+      plantType,
+    });
   });
 
   return {
@@ -541,7 +606,8 @@ function buildStaticSnapshot(payload, calibration) {
     imageCalibration: calibration,
     mapBounds: calibration.mapBounds,
     message: "Static orchard preview loaded.",
-    reportRows,
+    reportRows: sortReportRowsByLatestUpdate(reportRows),
+    treeHistoryByPlantId,
     totalTrees: scopedPlants.length,
   };
 }
@@ -555,9 +621,7 @@ function buildSupabaseSnapshot({ calibration, conditions, layoutPayload, plantTy
   const plantTypeLookup = buildPlantTypeLookup(plantTypes);
   const conditionLookup = buildConditionLookup(conditions);
   const plantReferenceIndex = buildPlantReferenceIndex(scopedPlants);
-  const latestUpdateByPlantId = buildLatestUpdateByPlantId(updates, plantReferenceIndex);
-  const dots = [];
-  const reportRows = buildUpdateReportRows({
+  const treeHistoryByPlantId = buildResolvedUpdateHistoryByPlantId({
     conditionLookup,
     plantReferenceIndex,
     plantTypeLookup,
@@ -565,9 +629,31 @@ function buildSupabaseSnapshot({ calibration, conditions, layoutPayload, plantTy
   });
 
   scopedPlants.forEach((plant) => {
+    const plantId = String(plant.id);
+
+    if (!Array.isArray(treeHistoryByPlantId[plantId])) {
+      treeHistoryByPlantId[plantId] = [];
+    }
+  });
+
+  const defaultCondition = resolveDefaultConditionPresentation(conditionLookup);
+  const dots = [];
+  const reportRows = scopedPlants.map((plant) => {
     const plantType = resolvePlantType(plant, plantTypeLookup);
-    const latestUpdate = latestUpdateByPlantId.get(String(plant.id)) ?? null;
-    const condition = resolveCondition(latestUpdate, conditionLookup);
+    const latestHistoryEntry = treeHistoryByPlantId[String(plant.id)]?.[0] ?? null;
+
+    return buildReportRowFromPlant({
+      defaultCondition,
+      latestHistoryEntry,
+      plant,
+      plantType,
+    });
+  });
+
+  scopedPlants.forEach((plant) => {
+    const plantType = resolvePlantType(plant, plantTypeLookup);
+    const latestHistoryEntry = treeHistoryByPlantId[String(plant.id)]?.[0] ?? null;
+    const condition = latestHistoryEntry?.condition ?? defaultCondition;
     const resolvedLatLng = resolvePlantLatLng(plant, calibration, layoutExtent);
 
     if (resolvedLatLng != null) {
@@ -595,7 +681,8 @@ function buildSupabaseSnapshot({ calibration, conditions, layoutPayload, plantTy
       previewLayoutCount > 0
         ? `Supabase orchard snapshot loaded. ${previewLayoutCount} trees still use preview layout.`
         : "Supabase orchard snapshot loaded.",
-    reportRows,
+    reportRows: sortReportRowsByLatestUpdate(reportRows),
+    treeHistoryByPlantId,
     totalTrees: scopedPlants.length,
   };
 }
