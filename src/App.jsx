@@ -1,6 +1,7 @@
 import { useDeferredValue, useEffect, useState } from "react";
 import { AdminOrchardRoute } from "./components/AdminOrchardRoute.jsx";
 import { MonitoringMapStage } from "./components/MonitoringMapStage.jsx";
+import { TreeHistoryDrawer } from "./components/TreeHistoryDrawer.jsx";
 import { loadMonitoringMapSnapshot } from "./data/loadMonitoringMapSnapshot.js";
 
 const ADMIN_ORCHARD_PATH = "/admin-orchard";
@@ -137,6 +138,11 @@ function MonitoringDashboard() {
       ? availableValues
       : availableValues.filter((item) => item.value === selectedValue);
   const selectedTree = mapSnapshot.dots.find((dot) => String(dot.id) === selectedTreeId) ?? null;
+  const selectedReportRow =
+    mapSnapshot.reportRows.find((row) => row.plantId === selectedTreeId) ?? null;
+  const selectedTreeHistory =
+    selectedTreeId !== null ? mapSnapshot.treeHistoryByPlantId[selectedTreeId] ?? [] : [];
+  const latestHistoryEntry = selectedTreeHistory[0] ?? null;
   const normalizedTableSearchQuery = deferredTableSearchQuery.trim().toLowerCase();
   const filteredReportRows =
     normalizedTableSearchQuery === ""
@@ -312,6 +318,16 @@ function MonitoringDashboard() {
           </div>
         </section>
       </main>
+
+      {selectedTreeId !== null ? (
+        <TreeHistoryDrawer
+          historyEntries={selectedTreeHistory}
+          latestHistoryEntry={latestHistoryEntry}
+          onClose={() => setSelectedTreeId(null)}
+          reportRow={selectedReportRow}
+          selectedTree={selectedTree}
+        />
+      ) : null}
     </div>
   );
 }
