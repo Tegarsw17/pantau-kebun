@@ -1392,47 +1392,79 @@ tbody tr + tr td {
 }
 
 .history-drawer__empty-state span,
-.history-drawer__media-copy span {
+.media-gallery__meta span {
   color: var(--muted);
   line-height: 1.5;
 }
 
-.history-drawer__media-list {
-  list-style: none;
-  padding: 0;
-  margin: 0;
+.media-gallery {
   display: grid;
-  gap: 10px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
 }
 
-.history-drawer__media-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 12px;
-  padding: 14px 16px;
+.media-gallery__card {
+  display: grid;
+  gap: 10px;
+  color: inherit;
+  text-decoration: none;
+  min-width: 0;
+}
+
+.media-gallery__preview {
+  position: relative;
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
   border: 1px solid rgba(60, 230, 255, 0.12);
   background: rgba(10, 22, 28, 0.7);
 }
 
-.history-drawer__media-copy {
-  min-width: 0;
-  display: grid;
-  gap: 6px;
+.media-gallery__image,
+.media-gallery__video,
+.media-gallery__unknown {
+  width: 100%;
+  height: 100%;
+  display: block;
 }
 
-.history-drawer__media-copy strong {
+.media-gallery__image,
+.media-gallery__video {
+  object-fit: cover;
+  background: rgba(9, 18, 24, 0.92);
+}
+
+.media-gallery__unknown {
+  display: grid;
+  place-items: center;
+  color: var(--muted);
+}
+
+.media-gallery__kind {
+  position: absolute;
+  left: 10px;
+  bottom: 10px;
+  display: inline-flex;
+  align-items: center;
+  min-height: 26px;
+  padding: 0 10px;
+  border: 1px solid rgba(60, 230, 255, 0.18);
+  background: rgba(6, 14, 18, 0.84);
+  color: #d8fbff;
+  font-size: 0.8rem;
+}
+
+.media-gallery__meta {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.media-gallery__meta strong {
   color: var(--text);
 }
 
-.history-drawer__media-link {
+.media-gallery__action {
   color: var(--cyan);
-  text-decoration: none;
-  white-space: nowrap;
-}
-
-.history-drawer__media-link:hover {
-  text-decoration: underline;
 }
 
 @media (max-width: 1120px) {
@@ -1537,8 +1569,7 @@ tbody tr + tr td {
     flex-direction: column;
   }
 
-  .history-drawer__media-item {
-    align-items: flex-start;
-    flex-direction: column;
+  .media-gallery {
+    grid-template-columns: 1fr;
   }
 }

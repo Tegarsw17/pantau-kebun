@@ -1,12 +1,8 @@
 import { useEffect } from "react";
+import { UpdateMediaGallery } from "./UpdateMediaGallery.jsx";
 
 const NO_REPORT_NOTE = "No field report submitted yet.";
 const NO_REPORT_UPDATED_AT = "No report yet";
-const MEDIA_KIND_LABELS = {
-  image: "Image",
-  unknown: "Attachment",
-  video: "Video",
-};
 
 function countMediaByKind(mediaAssets) {
   return (Array.isArray(mediaAssets) ? mediaAssets : []).reduce(
@@ -23,14 +19,6 @@ function countMediaByKind(mediaAssets) {
       video: 0,
     },
   );
-}
-
-function formatMimeLabel(mediaAsset) {
-  if (typeof mediaAsset?.mimeType === "string" && mediaAsset.mimeType.trim() !== "") {
-    return mediaAsset.mimeType.trim();
-  }
-
-  return MEDIA_KIND_LABELS[mediaAsset?.kind] ?? MEDIA_KIND_LABELS.unknown;
 }
 
 export function TreeHistoryDrawer({
@@ -133,34 +121,7 @@ export function TreeHistoryDrawer({
             <span className="history-drawer__summary-chip">{mediaCounts.video} videos</span>
           </div>
 
-          {mediaAssets.length === 0 ? (
-            <div className="history-drawer__empty-state">
-              <strong>No media attached</strong>
-              <span>This latest report does not include photo or video evidence.</span>
-            </div>
-          ) : (
-            <ul className="history-drawer__media-list">
-              {mediaAssets.map((mediaAsset, index) => (
-                <li className="history-drawer__media-item" key={mediaAsset.id ?? `${mediaAsset.url}-${index}`}>
-                  <div className="history-drawer__media-copy">
-                    <strong>
-                      {MEDIA_KIND_LABELS[mediaAsset.kind] ?? MEDIA_KIND_LABELS.unknown} {index + 1}
-                    </strong>
-                    <span>{formatMimeLabel(mediaAsset)}</span>
-                  </div>
-
-                  <a
-                    className="history-drawer__media-link"
-                    href={mediaAsset.url}
-                    rel="noreferrer"
-                    target="_blank"
-                  >
-                    Open
-                  </a>
-                </li>
-              ))}
-            </ul>
-          )}
+          <UpdateMediaGallery mediaAssets={mediaAssets} />
         </section>
       </aside>
     </div>
