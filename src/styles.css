@@ -1467,6 +1467,77 @@ tbody tr + tr td {
   color: var(--cyan);
 }
 
+.history-timeline,
+.history-timeline__group,
+.history-timeline__entries {
+  display: grid;
+  gap: 14px;
+}
+
+.history-timeline__month {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(114, 144, 156, 0.16);
+}
+
+.history-timeline__month span,
+.history-card__timestamp {
+  color: var(--muted);
+}
+
+.history-card {
+  display: grid;
+  gap: 12px;
+  padding: 14px 16px;
+  border: 1px solid rgba(114, 144, 156, 0.16);
+  background: rgba(10, 20, 26, 0.72);
+}
+
+.history-card__header,
+.history-card__status,
+.history-card__meta {
+  display: flex;
+  gap: 10px;
+}
+
+.history-card__header,
+.history-card__meta {
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+
+.history-card__status {
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.history-card__latest-chip,
+.history-card__meta-chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 0 10px;
+  border: 1px solid rgba(60, 230, 255, 0.14);
+  background: rgba(11, 28, 34, 0.72);
+  color: #d2fbff;
+}
+
+.history-card__latest-chip {
+  border-color: rgba(87, 242, 135, 0.18);
+  background: rgba(10, 33, 19, 0.82);
+  color: #d5ffd9;
+}
+
+.history-card__note {
+  margin: 0;
+  color: var(--text);
+  line-height: 1.6;
+}
+
 @media (max-width: 1120px) {
   .filter-grid {
     grid-template-columns: 1fr 1fr;
@@ -1566,6 +1637,11 @@ tbody tr + tr td {
 
   .history-drawer__status-row,
   .history-drawer__header {
+    flex-direction: column;
+  }
+
+  .history-timeline__month,
+  .history-card__header {
     flex-direction: column;
   }
 

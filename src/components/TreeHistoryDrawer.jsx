@@ -3,6 +3,10 @@ import { UpdateMediaGallery } from "./UpdateMediaGallery.jsx";
 
 const NO_REPORT_NOTE = "No field report submitted yet.";
 const NO_REPORT_UPDATED_AT = "No report yet";
+const MONTH_GROUP_FORMATTER = new Intl.DateTimeFormat("en-GB", {
+  month: "long",
+  year: "numeric",
+});
 
 function countMediaByKind(mediaAssets) {
   return (Array.isArray(mediaAssets) ? mediaAssets : []).reduce(
@@ -19,6 +23,39 @@ function countMediaByKind(mediaAssets) {
       video: 0,
     },
   );
+}
+
+function groupHistoryEntriesByMonth(historyEntries) {
+  const groups = [];
+  const groupIndexByKey = new Map();
+
+  (Array.isArray(historyEntries) ? historyEntries : []).forEach((historyEntry) => {
+    const createdAtEpoch =
+      typeof historyEntry?.createdAtEpoch === "number" ? historyEntry.createdAtEpoch : 0;
+    const groupDate =
+      createdAtEpoch > 0 ? new Date(createdAtEpoch) : null;
+    const groupKey =
+      groupDate != null && !Number.isNaN(groupDate.getTime())
+        ? `${groupDate.getUTCFullYear()}-${String(groupDate.getUTCMonth() + 1).padStart(2, "0")}`
+        : "unknown";
+    const groupLabel =
+      groupDate != null && !Number.isNaN(groupDate.getTime())
+        ? MONTH_GROUP_FORMATTER.format(groupDate)
+        : "Unscheduled";
+
+    if (!groupIndexByKey.has(groupKey)) {
+      groupIndexByKey.set(groupKey, groups.length);
+      groups.push({
+        entries: [],
+        key: groupKey,
+        label: groupLabel,
+      });
+    }
+
+    groups[groupIndexByKey.get(groupKey)].entries.push(historyEntry);
+  });
+
+  return groups;
 }
 
 export function TreeHistoryDrawer({
@@ -61,6 +98,7 @@ export function TreeHistoryDrawer({
   const mediaAssets = Array.isArray(latestHistoryEntry?.mediaAssets) ? latestHistoryEntry.mediaAssets : [];
   const mediaCounts = countMediaByKind(mediaAssets);
   const historyCount = Array.isArray(historyEntries) ? historyEntries.length : 0;
+  const historyGroups = groupHistoryEntriesByMonth(historyEntries);
 
   return (
     <div className="history-drawer-backdrop" onClick={onClose}>
@@ -122,6 +160,66 @@ export function TreeHistoryDrawer({
           </div>
 
           <UpdateMediaGallery mediaAssets={mediaAssets} />
+        </section>
+
+        <section className="history-drawer__section">
+          <p className="history-drawer__label">Update Timeline</p>
+
+          {historyGroups.length === 0 ? (
+            <div className="history-drawer__empty-state">
+              <strong>No historical updates</strong>
+              <span>This tree is visible in monitoring, but no stored report history is attached yet.</span>
+            </div>
+          ) : (
+            <div className="history-timeline">
+              {historyGroups.map((historyGroup) => (
+                <div className="history-timeline__group" key={historyGroup.key}>
+                  <div className="history-timeline__month">
+                    <strong>{historyGroup.label}</strong>
+                    <span>
+                      {historyGroup.entries.length === 1
+                        ? "1 update"
+                        : `${historyGroup.entries.length} updates`}
+                    </span>
+                  </div>
+
+                  <div className="history-timeline__entries">
+                    {historyGroup.entries.map((historyEntry, index) => (
+                      <article className="history-card" key={historyEntry.id ?? `${historyGroup.key}-${index}`}>
+                        <div className="history-card__header">
+                          <div className="history-card__status">
+                            <span className="status-badge" style={historyEntry.badgeStyle ?? undefined}>
+                              {historyEntry.conditionIcon ?? "●"} {historyEntry.kondisi}
+                            </span>
+                            {latestHistoryEntry?.id === historyEntry.id ? (
+                              <span className="history-card__latest-chip">Latest</span>
+                            ) : null}
+                          </div>
+
+                          <span className="history-card__timestamp">
+                            {historyEntry.updatedAt ?? NO_REPORT_UPDATED_AT}
+                          </span>
+                        </div>
+
+                        <p className="history-card__note">{historyEntry.note ?? NO_REPORT_NOTE}</p>
+
+                        <div className="history-card__meta">
+                          <span className="history-card__meta-chip">
+                            {historyEntry.mediaCount > 0
+                              ? `${historyEntry.mediaCount} media`
+                              : "No media"}
+                          </span>
+                          <span className="history-card__meta-chip">
+                            {historyEntry.jenis ?? resolvedPlantType}
+                          </span>
+                        </div>
+                      </article>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </section>
       </aside>
     </div>
