@@ -134,7 +134,8 @@ export async function fetchPlantUpdates(gardenName) {
   }
 
   const searchParams = {
-    select: "id,garden,type,plant_id,desc,date,created_at,condition_ids",
+    select:
+      "id,garden,type,plant_id,desc,date,created_at,condition_ids,media,media_type,media_new,media_type_new",
     order: "created_at.desc",
   };
 

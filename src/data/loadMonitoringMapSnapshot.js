@@ -287,6 +287,101 @@ function resolveUpdateCreatedAtEpoch(update) {
   return 0;
 }
 
+function normalizeStringArray(value) {
+  if (Array.isArray(value)) {
+    return value
+      .map((entry) => (typeof entry === "string" ? entry.trim() : ""))
+      .filter((entry) => entry !== "");
+  }
+
+  if (typeof value === "string") {
+    const trimmedValue = value.trim();
+
+    if (trimmedValue === "") {
+      return [];
+    }
+
+    try {
+      const parsedValue = JSON.parse(trimmedValue);
+      return normalizeStringArray(parsedValue);
+    } catch {
+      return [trimmedValue];
+    }
+  }
+
+  return [];
+}
+
+function normalizeMimeType(value) {
+  return typeof value === "string" && value.trim() !== "" ? value.trim().toLowerCase() : null;
+}
+
+function inferMediaKind({ mimeType, url }) {
+  if (mimeType?.startsWith("image/")) {
+    return "image";
+  }
+
+  if (mimeType?.startsWith("video/")) {
+    return "video";
+  }
+
+  const normalizedUrl = typeof url === "string" ? url.trim().toLowerCase() : "";
+
+  if (/\.(jpg|jpeg|png|gif|webp|bmp|svg)(\?|#|$)/i.test(normalizedUrl)) {
+    return "image";
+  }
+
+  if (/\.(mp4|mov|webm|m4v|avi)(\?|#|$)/i.test(normalizedUrl)) {
+    return "video";
+  }
+
+  return "unknown";
+}
+
+function buildNormalizedMediaEntries({ mimeTypes, source, urls }) {
+  return urls.map((url, index) => {
+    const mimeType = normalizeMimeType(mimeTypes[index] ?? null);
+
+    return {
+      id: `${source}-${index}-${url}`,
+      kind: inferMediaKind({
+        mimeType,
+        url,
+      }),
+      mimeType,
+      source,
+      url,
+    };
+  });
+}
+
+function normalizeUpdateMedia(update) {
+  const mediaEntries = [
+    ...buildNormalizedMediaEntries({
+      mimeTypes: normalizeStringArray(update?.media_type),
+      source: "legacy",
+      urls: normalizeStringArray(update?.media),
+    }),
+    ...buildNormalizedMediaEntries({
+      mimeTypes: normalizeStringArray(update?.media_type_new),
+      source: "current",
+      urls: normalizeStringArray(update?.media_new),
+    }),
+  ];
+  const seenUrls = new Set();
+
+  return mediaEntries.filter((mediaEntry) => {
+    const normalizedUrl = normalizeReferenceValue(mediaEntry.url);
+
+    if (normalizedUrl === "" || seenUrls.has(normalizedUrl)) {
+      return false;
+    }
+
+    seenUrls.add(normalizedUrl);
+    return true;
+  });
+}
+
 function buildPlantReferenceIndex(plants) {
   const plantById = new Map();
   const plantByReference = new Map();
@@ -344,6 +439,7 @@ function buildResolvedUpdateHistoryByPlantId({
     const plantId = String(plant.id);
     const plantType = resolvePlantType(plant, plantTypeLookup);
     const condition = resolveCondition(update, conditionLookup);
+    const mediaAssets = normalizeUpdateMedia(update);
     const historyEntry = {
       badgeStyle: condition.badgeStyle,
       condition,
@@ -358,6 +454,8 @@ function buildResolvedUpdateHistoryByPlantId({
         `${plantId}-${update?.created_at ?? update?.date ?? "report"}`,
       jenis: plantType.label,
       kondisi: condition.label,
+      mediaAssets,
+      mediaCount: mediaAssets.length,
       note: resolveLatestNote(update),
       plantId,
       plantName: plant.plant_name,
@@ -508,6 +606,7 @@ function buildReportRowFromPlant({ defaultCondition, latestHistoryEntry, plant, 
     jenis: latestHistoryEntry?.jenis ?? plantType.label,
     kondisi: latestHistoryEntry?.kondisi ?? resolvedCondition.label,
     latestReportEpoch: latestHistoryEntry?.createdAtEpoch ?? 0,
+    mediaCount: latestHistoryEntry?.mediaCount ?? 0,
     note: latestHistoryEntry?.note ?? NO_REPORT_NOTE,
     plantId: String(plant.id),
     plantName: plant.plant_name ?? UNKNOWN_PLANT_NAME,
@@ -578,6 +677,8 @@ function buildStaticSnapshot(payload, calibration) {
       id: `static-${plant.id}`,
       jenis: plantType.label,
       kondisi: condition.label,
+      mediaAssets: [],
+      mediaCount: 0,
       note: deriveSyntheticNote(plantType, condition, plant),
       plantId: String(plant.id),
       plantName: plant.plant_name,
