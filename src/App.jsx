@@ -58,6 +58,7 @@ function MonitoringDashboard() {
   });
   const [selectedCategory, setSelectedCategory] = useState("condition");
   const [selectedValue, setSelectedValue] = useState(ALL_VALUES);
+  const [selectedTreeId, setSelectedTreeId] = useState(null);
   const [tableSearchQuery, setTableSearchQuery] = useState("");
 
   useEffect(() => {
@@ -111,6 +112,18 @@ function MonitoringDashboard() {
     setSelectedValue(ALL_VALUES);
   }, [selectedCategory]);
 
+  useEffect(() => {
+    if (selectedTreeId === null) {
+      return;
+    }
+
+    const hasSelectedTree = mapSnapshot.reportRows.some((row) => row.plantId === selectedTreeId);
+
+    if (!hasSelectedTree) {
+      setSelectedTreeId(null);
+    }
+  }, [mapSnapshot.reportRows, selectedTreeId]);
+
   const activeCategory = CATEGORY_OPTIONS[selectedCategory];
   const availableValues = mapSnapshot.filters[selectedCategory] ?? [];
   const deferredTableSearchQuery = useDeferredValue(tableSearchQuery);
@@ -123,6 +136,7 @@ function MonitoringDashboard() {
     selectedValue === ALL_VALUES
       ? availableValues
       : availableValues.filter((item) => item.value === selectedValue);
+  const selectedTree = mapSnapshot.dots.find((dot) => String(dot.id) === selectedTreeId) ?? null;
   const normalizedTableSearchQuery = deferredTableSearchQuery.trim().toLowerCase();
   const filteredReportRows =
     normalizedTableSearchQuery === ""
@@ -217,7 +231,10 @@ function MonitoringDashboard() {
           legendItems={legendItems}
           loadState={mapSnapshot.loadState}
           mapMessage={mapSnapshot.message}
+          onSelectTree={setSelectedTreeId}
           selectedCategory={selectedCategory}
+          selectedTree={selectedTree}
+          selectedTreeId={selectedTreeId}
           selectedValue={selectedValue}
           visibleDots={visibleDots}
         />
@@ -264,7 +281,19 @@ function MonitoringDashboard() {
                 </thead>
                 <tbody>
                   {filteredReportRows.map((row) => (
-                    <tr key={row.id ?? `${row.treeId}-${row.updatedAt}`}>
+                    <tr
+                      key={row.id ?? `${row.treeId}-${row.updatedAt}`}
+                      className={selectedTreeId === row.plantId ? "report-row report-row--selected" : "report-row"}
+                      onClick={() => setSelectedTreeId(row.plantId)}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter" || event.key === " ") {
+                          event.preventDefault();
+                          setSelectedTreeId(row.plantId);
+                        }
+                      }}
+                      role="button"
+                      tabIndex={0}
+                    >
                       <td className="mono">{row.treeId}</td>
                       <td>{row.plantName}</td>
                       <td>{row.jenis}</td>

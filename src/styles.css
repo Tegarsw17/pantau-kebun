@@ -1207,6 +1207,29 @@ tbody tr:nth-child(even) {
   background: rgba(8, 15, 19, 0.95);
 }
 
+.report-row {
+  cursor: pointer;
+  transition:
+    background-color 140ms ease,
+    box-shadow 140ms ease;
+}
+
+.report-row:hover {
+  background: rgba(18, 36, 44, 0.96);
+}
+
+.report-row:focus-visible {
+  outline: 2px solid rgba(60, 230, 255, 0.9);
+  outline-offset: -2px;
+}
+
+.report-row--selected {
+  background: rgba(12, 47, 58, 0.98);
+  box-shadow:
+    inset 3px 0 0 rgba(60, 230, 255, 0.95),
+    inset 0 0 0 1px rgba(60, 230, 255, 0.12);
+}
+
 tbody tr + tr td {
   border-top: 1px solid rgba(114, 144, 156, 0.12);
 }

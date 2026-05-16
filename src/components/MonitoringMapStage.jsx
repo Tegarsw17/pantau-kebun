@@ -73,12 +73,14 @@ export function MonitoringMapStage({
   legendItems,
   loadState,
   mapMessage,
+  onSelectTree,
   selectedCategory,
+  selectedTree,
+  selectedTreeId,
   selectedValue,
   visibleDots,
 }) {
   const [hoveredDotId, setHoveredDotId] = useState(null);
-  const [selectedDotId, setSelectedDotId] = useState(null);
   const [viewportState, setViewportState] = useState({
     width: 0,
     height: 0,
@@ -94,11 +96,7 @@ export function MonitoringMapStage({
     if (hoveredDotId !== null && !visibleIds.has(hoveredDotId)) {
       setHoveredDotId(null);
     }
-
-    if (selectedDotId !== null && !visibleIds.has(selectedDotId)) {
-      setSelectedDotId(null);
-    }
-  }, [hoveredDotId, selectedDotId, visibleDots]);
+  }, [hoveredDotId, visibleDots]);
 
   useEffect(() => {
     const projectedVisibleIds = new Set(
@@ -114,7 +112,8 @@ export function MonitoringMapStage({
 
   const projectedDots = viewportState.projectedDots.filter((dot) => dot.isVisibleOnViewport);
   const hoveredDot = projectedDots.find((dot) => dot.id === hoveredDotId) ?? null;
-  const selectedDot = visibleDots.find((dot) => dot.id === selectedDotId) ?? null;
+  const isSelectedTreeVisible =
+    selectedTreeId !== null && visibleDots.some((dot) => String(dot.id) === selectedTreeId);
 
   const tooltipLeft = hoveredDot
     ? clampTooltipPosition(hoveredDot.leftPx + 18, 16, viewportState.width - 220)
@@ -195,7 +194,7 @@ export function MonitoringMapStage({
           <div className="map-dot-layer">
             {projectedDots.map((dot) => {
               const presentation = dot[selectedCategory];
-              const isSelected = selectedDotId === dot.id;
+              const isSelected = selectedTreeId === String(dot.id);
               const isHovered = hoveredDotId === dot.id;
 
               return (
@@ -219,11 +218,11 @@ export function MonitoringMapStage({
                   onMouseLeave={() => setHoveredDotId(null)}
                   onFocus={() => setHoveredDotId(dot.id)}
                   onBlur={() => setHoveredDotId(null)}
-                  onClick={() => setSelectedDotId(dot.id)}
+                  onClick={() => onSelectTree(String(dot.id))}
                   onKeyDown={(event) => {
                     if (event.key === "Enter" || event.key === " ") {
                       event.preventDefault();
-                      setSelectedDotId(dot.id);
+                      onSelectTree(String(dot.id));
                     }
                   }}
                   role="button"
@@ -272,12 +271,13 @@ export function MonitoringMapStage({
 
         <div className="map-overlay map-overlay--bottom-left">
           <p className="overlay-label">Selection</p>
-          {selectedDot ? (
+          {selectedTree ? (
             <>
-              <strong>{selectedDot.treeIdDisplay}</strong>
-              <span>{selectedDot.plantName}</span>
-              <span>{selectedDot.plantType.label}</span>
-              <span>{selectedDot.condition.label}</span>
+              <strong>{selectedTree.treeIdDisplay}</strong>
+              <span>{selectedTree.plantName}</span>
+              <span>{selectedTree.plantType.label}</span>
+              <span>{selectedTree.condition.label}</span>
+              {!isSelectedTreeVisible ? <span>Hidden by current map filter.</span> : null}
             </>
           ) : (
             <>
