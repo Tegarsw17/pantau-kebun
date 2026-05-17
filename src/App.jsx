@@ -17,25 +17,45 @@ const CATEGORY_OPTIONS = {
     label: "Kondisi",
   },
 };
-const SIDEBAR_NAV_ITEMS = [
+const SIDEBAR_NAV_GROUPS = [
   {
-    isActive: true,
-    label: "Monitoring",
+    label: "Core",
+    items: [
+      {
+        isActive: true,
+        label: "Monitoring",
+      },
+      {
+        label: "Reports",
+      },
+    ],
   },
   {
-    label: "Reports",
+    label: "Resources",
+    items: [
+      {
+        label: "Inventory",
+      },
+      {
+        label: "Operations",
+      },
+    ],
   },
   {
-    label: "Inventory",
+    label: "Business",
+    items: [
+      {
+        label: "Accounting",
+      },
+    ],
   },
   {
-    label: "Accounting",
-  },
-  {
-    label: "Operations",
-  },
-  {
-    label: "Settings",
+    label: "System",
+    items: [
+      {
+        label: "Settings",
+      },
+    ],
   },
 ];
 
@@ -75,23 +95,35 @@ function MonitoringSidebar() {
       </div>
 
       <nav className="app-sidebar__nav">
-        {SIDEBAR_NAV_ITEMS.map((item) => (
-          <button
-            aria-current={item.isActive ? "page" : undefined}
-            className={`app-sidebar__nav-button ${
-              item.isActive ? "app-sidebar__nav-button--active" : ""
-            }`}
-            disabled={!item.isActive}
-            key={item.label}
-            type="button"
-          >
-            {item.label}
-          </button>
+        {SIDEBAR_NAV_GROUPS.map((group) => (
+          <section className="app-sidebar__group" key={group.label}>
+            <p className="app-sidebar__group-label">{group.label}</p>
+
+            <div className="app-sidebar__group-items">
+              {group.items.map((item) => (
+                <button
+                  aria-current={item.isActive ? "page" : undefined}
+                  aria-disabled={!item.isActive}
+                  className={`app-sidebar__nav-button ${
+                    item.isActive ? "app-sidebar__nav-button--active" : ""
+                  }`}
+                  key={item.label}
+                  type="button"
+                >
+                  {item.label}
+                </button>
+              ))}
+            </div>
+          </section>
         ))}
       </nav>
 
       <div className="app-sidebar__footer">
-        <span className="app-sidebar__scope">Garden 3 Active</span>
+        <div className="app-sidebar__status-card">
+          <span className="app-sidebar__status-label">Active Scope</span>
+          <strong>{MONITORING_GARDEN_NAME}</strong>
+          <span>Garden 3</span>
+        </div>
         <a className="app-sidebar__admin-link" href={ADMIN_ORCHARD_PATH}>
           Admin Orchard
         </a>
@@ -219,7 +251,11 @@ function MonitoringDashboard() {
 
       <div className="app-content">
         <section className="page-intro" aria-label="Monitoring page title">
-          <h1>Monitoring</h1>
+          <p className="section-kicker">Monitoring</p>
+          <div className="page-intro__copy">
+            <h1>{MONITORING_GARDEN_NAME}</h1>
+            <p className="page-intro__summary">Daily orchard monitoring workspace.</p>
+          </div>
         </section>
 
         <main className="dashboard">
