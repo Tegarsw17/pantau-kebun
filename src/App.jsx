@@ -1,4 +1,12 @@
 import { useDeferredValue, useEffect, useState } from "react";
+import {
+  FileText,
+  Map,
+  Package,
+  Settings2,
+  Wallet,
+  Wrench,
+} from "lucide-react";
 import { AdminOrchardRoute } from "./components/AdminOrchardRoute.jsx";
 import { MonitoringMapStage } from "./components/MonitoringMapStage.jsx";
 import { TreeHistoryDrawer } from "./components/TreeHistoryDrawer.jsx";
@@ -21,7 +29,7 @@ const DEFAULT_MODULE_ID = "monitoring";
 const MODULE_DEFINITIONS = {
   accounting: {
     id: "accounting",
-    icon: "💰",
+    icon: Wallet,
     label: "Accounting",
     moduleCode: "AC",
     navHint: "Cash flow, budget, and orchard finance controls.",
@@ -48,7 +56,7 @@ const MODULE_DEFINITIONS = {
   },
   inventory: {
     id: "inventory",
-    icon: "📦",
+    icon: Package,
     label: "Inventory",
     moduleCode: "IV",
     navHint: "Stock, field inputs, and storage movement.",
@@ -75,7 +83,7 @@ const MODULE_DEFINITIONS = {
   },
   monitoring: {
     id: "monitoring",
-    icon: "🛰",
+    icon: Map,
     label: "Monitoring",
     moduleCode: "MO",
     navHint: "Spatial map, field signals, and update review.",
@@ -86,7 +94,7 @@ const MODULE_DEFINITIONS = {
   },
   operations: {
     id: "operations",
-    icon: "🛠",
+    icon: Wrench,
     label: "Operations",
     moduleCode: "OP",
     navHint: "Tasks, crews, and routine execution planning.",
@@ -113,7 +121,7 @@ const MODULE_DEFINITIONS = {
   },
   reports: {
     id: "reports",
-    icon: "🗂",
+    icon: FileText,
     label: "Reports",
     moduleCode: "RP",
     navHint: "Cross-period orchard review and reporting.",
@@ -140,7 +148,7 @@ const MODULE_DEFINITIONS = {
   },
   settings: {
     id: "settings",
-    icon: "⚙",
+    icon: Settings2,
     label: "Settings",
     moduleCode: "ST",
     navHint: "Garden setup, access, and workspace defaults.",
@@ -211,6 +219,7 @@ function MonitoringSidebar({ onSelectModule, selectedModuleId }) {
       <nav className="app-sidebar__nav">
         {SIDEBAR_NAV_ITEMS.map((itemId) => {
           const item = MODULE_DEFINITIONS[itemId];
+          const Icon = item.icon;
           const isActive = selectedModuleId === itemId;
 
           return (
@@ -225,7 +234,7 @@ function MonitoringSidebar({ onSelectModule, selectedModuleId }) {
             >
               <span className="app-sidebar__nav-button-main">
                 <span className="app-sidebar__nav-glyph" aria-hidden="true">
-                  {item.icon}
+                  <Icon size={16} strokeWidth={2} />
                 </span>
                 <span className="app-sidebar__nav-button-label">{item.label}</span>
               </span>
