@@ -22,6 +22,8 @@ const MODULE_DEFINITIONS = {
   accounting: {
     id: "accounting",
     label: "Accounting",
+    moduleCode: "AC",
+    navHint: "Cash flow, budget, and orchard finance controls.",
     placeholderCopy:
       "Financial control surfaces will sit here once orchard expenses, revenue, and budget flows are connected.",
     plannedCapabilities: [
@@ -38,6 +40,7 @@ const MODULE_DEFINITIONS = {
         title: "Budget Control",
       },
     ],
+    surfaceCount: 3,
     status: "soon",
     summary: "Financial controls for orchard operations and business reporting.",
     title: "Accounting",
@@ -45,6 +48,8 @@ const MODULE_DEFINITIONS = {
   inventory: {
     id: "inventory",
     label: "Inventory",
+    moduleCode: "IV",
+    navHint: "Stock, field inputs, and storage movement.",
     placeholderCopy:
       "Stock movement for fertilizer, chemicals, harvest supplies, and storage lots will be managed from this module.",
     plannedCapabilities: [
@@ -61,6 +66,7 @@ const MODULE_DEFINITIONS = {
         title: "Reorder Signals",
       },
     ],
+    surfaceCount: 3,
     status: "soon",
     summary: "Supply, input, and stock-control workspace for farm operations.",
     title: "Inventory",
@@ -68,6 +74,9 @@ const MODULE_DEFINITIONS = {
   monitoring: {
     id: "monitoring",
     label: "Monitoring",
+    moduleCode: "MO",
+    navHint: "Spatial map, field signals, and update review.",
+    surfaceCount: 4,
     status: "live",
     summary: "Daily orchard monitoring workspace.",
     title: MONITORING_GARDEN_NAME,
@@ -75,6 +84,8 @@ const MODULE_DEFINITIONS = {
   operations: {
     id: "operations",
     label: "Operations",
+    moduleCode: "OP",
+    navHint: "Tasks, crews, and routine execution planning.",
     placeholderCopy:
       "Field execution workflows will live here once daily tasks, crews, and maintenance programs are connected.",
     plannedCapabilities: [
@@ -91,6 +102,7 @@ const MODULE_DEFINITIONS = {
         title: "Execution Notes",
       },
     ],
+    surfaceCount: 3,
     status: "soon",
     summary: "Task, workforce, and field execution workspace for daily operations.",
     title: "Operations",
@@ -98,6 +110,8 @@ const MODULE_DEFINITIONS = {
   reports: {
     id: "reports",
     label: "Reports",
+    moduleCode: "RP",
+    navHint: "Cross-period orchard review and reporting.",
     placeholderCopy:
       "Cross-period orchard reporting and review flows will be centralized here once export and comparison workflows are ready.",
     plannedCapabilities: [
@@ -114,6 +128,7 @@ const MODULE_DEFINITIONS = {
         title: "Distribution Reports",
       },
     ],
+    surfaceCount: 3,
     status: "soon",
     summary: "Historical review and reporting workspace for orchard performance.",
     title: "Reports",
@@ -121,6 +136,8 @@ const MODULE_DEFINITIONS = {
   settings: {
     id: "settings",
     label: "Settings",
+    moduleCode: "ST",
+    navHint: "Garden setup, access, and workspace defaults.",
     placeholderCopy:
       "System-level configuration will stay here once garden setup, access, and workspace preferences are exposed.",
     plannedCapabilities: [
@@ -137,6 +154,7 @@ const MODULE_DEFINITIONS = {
         title: "Workspace Preferences",
       },
     ],
+    surfaceCount: 3,
     status: "soon",
     summary: "System configuration, access, and workspace settings.",
     title: "Settings",
@@ -188,7 +206,21 @@ function usePathname() {
   return pathname;
 }
 
+function getModuleStatusLabel(status) {
+  return status === "live" ? "Live Workspace" : "Planned Module";
+}
+
+function getModuleSurfaceLabel(module) {
+  const surfaceCount = module.surfaceCount ?? module.plannedCapabilities?.length ?? 0;
+  const noun = surfaceCount === 1 ? "surface" : "surfaces";
+  const state = module.status === "live" ? "active" : "planned";
+
+  return `${surfaceCount} ${state} ${noun}`;
+}
+
 function MonitoringSidebar({ onSelectModule, selectedModuleId }) {
+  const activeModule = MODULE_DEFINITIONS[selectedModuleId] ?? MODULE_DEFINITIONS[DEFAULT_MODULE_ID];
+
   return (
     <aside className="app-sidebar" aria-label="Primary navigation">
       <div className="app-sidebar__brand">
@@ -221,7 +253,15 @@ function MonitoringSidebar({ onSelectModule, selectedModuleId }) {
                     onClick={() => onSelectModule(item.id)}
                     type="button"
                   >
-                    <span className="app-sidebar__nav-button-label">{item.label}</span>
+                    <span className="app-sidebar__nav-button-main">
+                      <span className="app-sidebar__nav-glyph" aria-hidden="true">
+                        {item.moduleCode}
+                      </span>
+                      <span className="app-sidebar__nav-copy">
+                        <span className="app-sidebar__nav-button-label">{item.label}</span>
+                        <span className="app-sidebar__nav-button-hint">{item.navHint}</span>
+                      </span>
+                    </span>
                     <span
                       className={`app-sidebar__nav-badge ${
                         item.status === "live"
@@ -239,9 +279,42 @@ function MonitoringSidebar({ onSelectModule, selectedModuleId }) {
         ))}
       </nav>
 
+      <section className="app-sidebar__module-focus" aria-label="Current module summary">
+        <div className="app-sidebar__module-focus-header">
+          <span
+            className={`app-sidebar__focus-chip ${
+              activeModule.status === "live"
+                ? "app-sidebar__focus-chip--live"
+                : "app-sidebar__focus-chip--soon"
+            }`}
+          >
+            {getModuleStatusLabel(activeModule.status)}
+          </span>
+          <span className="app-sidebar__focus-code" aria-hidden="true">
+            {activeModule.moduleCode}
+          </span>
+        </div>
+
+        <div className="app-sidebar__module-focus-copy">
+          <strong className="app-sidebar__module-focus-title">{activeModule.title}</strong>
+          <p className="app-sidebar__module-focus-text">{activeModule.summary}</p>
+        </div>
+
+        <div className="app-sidebar__module-focus-metrics">
+          <div className="app-sidebar__module-focus-metric">
+            <span>Scope</span>
+            <strong>{activeModule.navHint}</strong>
+          </div>
+          <div className="app-sidebar__module-focus-metric">
+            <span>Coverage</span>
+            <strong>{getModuleSurfaceLabel(activeModule)}</strong>
+          </div>
+        </div>
+      </section>
+
       <div className="app-sidebar__footer">
         <div className="app-sidebar__status-card">
-          <span className="app-sidebar__status-label">Active Scope</span>
+          <span className="app-sidebar__status-label">Garden Scope</span>
           <strong>{MONITORING_GARDEN_NAME}</strong>
           <span>Garden 3</span>
         </div>
@@ -270,6 +343,21 @@ function ModulePlaceholderPage({ module }) {
 
         <div className="workspace-panel__body">
           <p className="module-placeholder__copy">{module.placeholderCopy}</p>
+
+          <div className="module-placeholder__meta-grid">
+            <article className="module-placeholder__meta-card">
+              <span className="module-placeholder__meta-label">Release Track</span>
+              <strong>{getModuleStatusLabel(module.status)}</strong>
+            </article>
+            <article className="module-placeholder__meta-card">
+              <span className="module-placeholder__meta-label">Focus</span>
+              <strong>{module.navHint}</strong>
+            </article>
+            <article className="module-placeholder__meta-card">
+              <span className="module-placeholder__meta-label">Coverage</span>
+              <strong>{getModuleSurfaceLabel(module)}</strong>
+            </article>
+          </div>
         </div>
       </section>
 
@@ -431,6 +519,18 @@ function MonitoringDashboard() {
           <div className="page-intro__copy">
             <h1>{activeModule.title}</h1>
             <p className="page-intro__summary">{activeModule.summary}</p>
+          </div>
+          <div className="page-intro__meta">
+            <span
+              className={`module-status-pill ${
+                activeModule.status === "live"
+                  ? "module-status-pill--live"
+                  : "module-status-pill--soon"
+              }`}
+            >
+              {getModuleStatusLabel(activeModule.status)}
+            </span>
+            <span className="page-intro__meta-copy">{activeModule.navHint}</span>
           </div>
         </section>
 
