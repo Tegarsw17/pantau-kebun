@@ -1546,30 +1546,76 @@ tbody tr + tr td {
 
 .media-carousel {
   display: grid;
-  gap: 12px;
+  gap: 0;
 }
 
-.media-carousel__stage-shell {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  align-items: stretch;
+.media-carousel__stage {
+  min-width: 0;
+}
+
+.media-carousel__surface {
+  display: block;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.media-carousel__preview {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(60, 230, 255, 0.12);
+  background: rgba(10, 22, 28, 0.7);
+  min-height: 240px;
+  aspect-ratio: 4 / 3;
+}
+
+.media-carousel__preview .media-gallery__image,
+.media-carousel__preview .media-gallery__video,
+.media-carousel__preview .media-gallery__unknown {
+  width: 100%;
+  height: 100%;
+}
+
+.media-carousel__preview .media-gallery__image,
+.media-carousel__preview .media-gallery__video {
+  object-fit: cover;
+}
+
+.media-carousel__overlay {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  right: 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   gap: 10px;
+  pointer-events: none;
+}
+
+.media-carousel__overlay-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  pointer-events: auto;
 }
 
 .media-carousel__nav,
-.media-carousel__viewer-trigger {
-  min-height: 40px;
-  border: 1px solid rgba(60, 230, 255, 0.18);
-  background: rgba(10, 24, 30, 0.88);
+.media-carousel__counter {
+  min-height: 28px;
+  border: 1px solid rgba(60, 230, 255, 0.16);
+  background: rgba(6, 14, 18, 0.78);
   color: #d8fbff;
   font: inherit;
-  padding: 0 14px;
+  font-size: 0.78rem;
 }
 
-.media-carousel__nav,
-.media-carousel__stage,
-.media-carousel__thumb,
-.media-carousel__viewer-trigger {
+.media-carousel__nav {
+  min-width: 28px;
+  padding: 0;
   cursor: pointer;
 }
 
@@ -1578,101 +1624,11 @@ tbody tr + tr td {
   opacity: 0.42;
 }
 
-.media-carousel__stage {
-  border: 0;
-  background: transparent;
-  padding: 0;
-  min-width: 0;
-}
-
-.media-carousel__preview,
-.media-carousel__thumb-preview {
-  position: relative;
-  overflow: hidden;
-  border: 1px solid rgba(60, 230, 255, 0.12);
-  background: rgba(10, 22, 28, 0.7);
-}
-
-.media-carousel__preview {
-  min-height: 240px;
-  aspect-ratio: 4 / 3;
-}
-
-.media-carousel__thumb-preview {
-  aspect-ratio: 1;
-}
-
-.media-carousel__preview .media-gallery__image,
-.media-carousel__preview .media-gallery__video,
-.media-carousel__preview .media-gallery__unknown,
-.media-carousel__thumb-preview .media-gallery__image,
-.media-carousel__thumb-preview .media-gallery__video,
-.media-carousel__thumb-preview .media-gallery__unknown {
-  width: 100%;
-  height: 100%;
-}
-
-.media-carousel__preview .media-gallery__image,
-.media-carousel__preview .media-gallery__video,
-.media-carousel__thumb-preview .media-gallery__image,
-.media-carousel__thumb-preview .media-gallery__video {
-  object-fit: cover;
-}
-
-.media-carousel__kind {
-  position: absolute;
-  left: 10px;
-  bottom: 10px;
+.media-carousel__counter {
   display: inline-flex;
   align-items: center;
-  min-height: 26px;
   padding: 0 10px;
-  border: 1px solid rgba(60, 230, 255, 0.18);
-  background: rgba(6, 14, 18, 0.84);
-  color: #d8fbff;
-  font-size: 0.8rem;
-}
-
-.media-carousel__meta {
-  display: grid;
-  gap: 4px;
-  min-width: 0;
-}
-
-.media-carousel__meta strong {
-  color: var(--text);
-}
-
-.media-carousel__meta span,
-.media-carousel__thumb-index {
-  color: var(--muted);
-}
-
-.media-carousel__viewer-trigger {
-  justify-self: start;
-}
-
-.media-carousel__track {
-  display: grid;
-  grid-auto-flow: column;
-  grid-auto-columns: minmax(78px, 96px);
-  gap: 10px;
-  overflow-x: auto;
-  padding-bottom: 4px;
-}
-
-.media-carousel__thumb {
-  display: grid;
-  gap: 6px;
-  border: 1px solid rgba(60, 230, 255, 0.12);
-  background: rgba(10, 20, 26, 0.72);
-  padding: 4px;
-  text-align: left;
-}
-
-.media-carousel__thumb--active {
-  border-color: rgba(60, 230, 255, 0.26);
-  box-shadow: inset 0 0 0 1px rgba(60, 230, 255, 0.26);
+  pointer-events: auto;
 }
 
 .media-viewer-backdrop {
@@ -2145,13 +2101,10 @@ tbody tr + tr td {
     grid-template-columns: 1fr;
   }
 
-  .media-carousel__stage-shell {
-    grid-template-columns: 1fr;
-  }
-
-  .media-carousel__nav,
-  .media-carousel__viewer-trigger {
-    width: 100%;
+  .media-carousel__overlay {
+    top: 8px;
+    left: 8px;
+    right: 8px;
   }
 
   .media-viewer-backdrop {

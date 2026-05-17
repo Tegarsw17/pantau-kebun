@@ -89,81 +89,58 @@ export function UpdateMediaGallery({ layout = "grid", mediaAssets }) {
     return (
       <>
         <div className="media-carousel" role="region" aria-label="Report media carousel">
-          <div className="media-carousel__stage-shell">
-            <button
-              aria-label="Show previous media"
-              className="media-carousel__nav"
-              disabled={carouselIndex === 0}
-              onClick={() => handleCarouselNavigate(-1)}
-              type="button"
-            >
-              Prev
-            </button>
-
-            <button
-              aria-label={`Open media ${carouselIndex + 1} in fullscreen`}
-              className="media-carousel__stage"
-              onClick={() => setActiveMediaIndex(carouselIndex)}
-              type="button"
-            >
-              <div className="media-carousel__preview">
+          <div className="media-carousel__stage">
+            <div className="media-carousel__preview">
+              <button
+                aria-label={`Open media ${carouselIndex + 1} in fullscreen`}
+                className="media-carousel__surface"
+                onClick={() => setActiveMediaIndex(carouselIndex)}
+                type="button"
+              >
                 <MediaPreview mediaAsset={activeCarouselMedia} />
-                <span className="media-carousel__kind">
-                  {MEDIA_KIND_LABELS[activeCarouselMedia?.kind] ?? MEDIA_KIND_LABELS.unknown}
-                </span>
-              </div>
-            </button>
+              </button>
 
-            <button
-              aria-label="Show next media"
-              className="media-carousel__nav"
-              disabled={carouselIndex >= resolvedMediaAssets.length - 1}
-              onClick={() => handleCarouselNavigate(1)}
-              type="button"
-            >
-              Next
-            </button>
-          </div>
+              <div className="media-carousel__overlay">
+                {resolvedMediaAssets.length > 1 ? (
+                  <div className="media-carousel__overlay-actions">
+                    <button
+                      aria-label="Show previous media"
+                      className="media-carousel__nav"
+                      disabled={carouselIndex === 0}
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        handleCarouselNavigate(-1);
+                      }}
+                      type="button"
+                    >
+                      {"<"}
+                    </button>
 
-          <div className="media-carousel__meta">
-            <strong>
-              {MEDIA_KIND_LABELS[activeCarouselMedia?.kind] ?? MEDIA_KIND_LABELS.unknown}{" "}
-              {carouselIndex + 1}
-            </strong>
-            <span>{formatMimeLabel(activeCarouselMedia)}</span>
-            <span>
-              {carouselIndex + 1} / {resolvedMediaAssets.length}
-            </span>
-            <button
-              className="media-carousel__viewer-trigger"
-              onClick={() => setActiveMediaIndex(carouselIndex)}
-              type="button"
-            >
-              Preview fullscreen
-            </button>
-          </div>
-
-          {resolvedMediaAssets.length > 1 ? (
-            <div className="media-carousel__track" role="list">
-              {resolvedMediaAssets.map((mediaAsset, index) => (
-                <button
-                  aria-label={`Show media ${index + 1}`}
-                  className={`media-carousel__thumb ${
-                    index === carouselIndex ? "media-carousel__thumb--active" : ""
-                  }`}
-                  key={mediaAsset.id ?? `${mediaAsset.url}-${index}`}
-                  onClick={() => setCarouselIndex(index)}
-                  role="listitem"
-                  type="button"
-                >
-                  <div className="media-carousel__thumb-preview">
-                    <MediaPreview mediaAsset={mediaAsset} />
+                    <button
+                      aria-label="Show next media"
+                      className="media-carousel__nav"
+                      disabled={carouselIndex >= resolvedMediaAssets.length - 1}
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        handleCarouselNavigate(1);
+                      }}
+                      type="button"
+                    >
+                      {">"}
+                    </button>
                   </div>
-                  <span className="media-carousel__thumb-index">{index + 1}</span>
-                </button>
-              ))}
+                ) : (
+                  <span />
+                )}
+
+                {resolvedMediaAssets.length > 1 ? (
+                  <span className="media-carousel__counter">
+                    {carouselIndex + 1} / {resolvedMediaAssets.length}
+                  </span>
+                ) : null}
+              </div>
             </div>
-          ) : null}
+          </div>
         </div>
 
         <MediaViewerDialog

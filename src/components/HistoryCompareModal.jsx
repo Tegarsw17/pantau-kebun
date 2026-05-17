@@ -4,23 +4,6 @@ import { UpdateMediaGallery } from "./UpdateMediaGallery.jsx";
 const NO_REPORT_NOTE = "No field report submitted yet.";
 const NO_REPORT_UPDATED_AT = "No report yet";
 
-function countMediaByKind(mediaAssets) {
-  return (Array.isArray(mediaAssets) ? mediaAssets : []).reduce(
-    (summary, mediaAsset) => {
-      const mediaKind =
-        mediaAsset?.kind === "image" || mediaAsset?.kind === "video" ? mediaAsset.kind : "unknown";
-
-      summary[mediaKind] += 1;
-      return summary;
-    },
-    {
-      image: 0,
-      unknown: 0,
-      video: 0,
-    },
-  );
-}
-
 function normalizeHistoryEntryId(historyEntryId) {
   return historyEntryId == null ? "" : String(historyEntryId);
 }
@@ -47,7 +30,6 @@ function buildCompareOptionLabel(historyEntry) {
 
 function ComparePanel({ historyEntry, panelLabel }) {
   const resolvedMediaAssets = Array.isArray(historyEntry?.mediaAssets) ? historyEntry.mediaAssets : [];
-  const mediaCounts = countMediaByKind(resolvedMediaAssets);
 
   return (
     <section className="compare-modal__panel">
@@ -61,12 +43,6 @@ function ComparePanel({ historyEntry, panelLabel }) {
       </span>
 
       <p className="compare-modal__note">{historyEntry?.note ?? NO_REPORT_NOTE}</p>
-
-      <div className="history-card__meta">
-        <span className="history-card__meta-chip">{resolvedMediaAssets.length} total</span>
-        <span className="history-card__meta-chip">{mediaCounts.image} images</span>
-        <span className="history-card__meta-chip">{mediaCounts.video} videos</span>
-      </div>
 
       <UpdateMediaGallery layout="carousel" mediaAssets={resolvedMediaAssets} />
     </section>
