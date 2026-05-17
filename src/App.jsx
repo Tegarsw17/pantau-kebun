@@ -17,6 +17,27 @@ const CATEGORY_OPTIONS = {
     label: "Kondisi",
   },
 };
+const SIDEBAR_NAV_ITEMS = [
+  {
+    isActive: true,
+    label: "Monitoring",
+  },
+  {
+    label: "Reports",
+  },
+  {
+    label: "Inventory",
+  },
+  {
+    label: "Accounting",
+  },
+  {
+    label: "Operations",
+  },
+  {
+    label: "Settings",
+  },
+];
 
 function normalizePathname(pathname) {
   if (!pathname) {
@@ -43,6 +64,40 @@ function usePathname() {
   }, []);
 
   return pathname;
+}
+
+function MonitoringSidebar() {
+  return (
+    <aside className="app-sidebar" aria-label="Primary navigation">
+      <div className="app-sidebar__brand">
+        <p className="eyebrow">Pantau Kebun</p>
+        <strong className="app-sidebar__title">Farm Workspace</strong>
+      </div>
+
+      <nav className="app-sidebar__nav">
+        {SIDEBAR_NAV_ITEMS.map((item) => (
+          <button
+            aria-current={item.isActive ? "page" : undefined}
+            className={`app-sidebar__nav-button ${
+              item.isActive ? "app-sidebar__nav-button--active" : ""
+            }`}
+            disabled={!item.isActive}
+            key={item.label}
+            type="button"
+          >
+            {item.label}
+          </button>
+        ))}
+      </nav>
+
+      <div className="app-sidebar__footer">
+        <span className="app-sidebar__scope">Garden 3 Active</span>
+        <a className="app-sidebar__admin-link" href={ADMIN_ORCHARD_PATH}>
+          Admin Orchard
+        </a>
+      </div>
+    </aside>
+  );
 }
 
 function MonitoringDashboard() {
@@ -160,113 +215,108 @@ function MonitoringDashboard() {
 
   return (
     <div className="app-shell">
-      <header className="topbar">
-        <div>
-          <p className="eyebrow">Pantau Kebun</p>
-          <h1>Main Monitoring Dashboard</h1>
-        </div>
-        <div className="topbar-meta">
-          <div className="sync-pill">
-            <span className="sync-dot" />
-            <span>Ready for Garden 3</span>
-          </div>
-        </div>
-      </header>
+      <MonitoringSidebar />
 
-      <main className="dashboard">
-        <MonitoringMapStage
-          allValues={ALL_VALUES}
-          availableValues={availableValues}
-          categoryOptions={CATEGORY_OPTIONS}
-          gardenName={MONITORING_GARDEN_NAME}
-          imageCalibration={mapSnapshot.imageCalibration}
-          imageBounds={mapSnapshot.mapBounds}
-          legendItems={legendItems}
-          loadState={mapSnapshot.loadState}
-          mapMessage={mapSnapshot.message}
-          onCategoryChange={setSelectedCategory}
-          onSelectTree={setSelectedTreeId}
-          onValueChange={setSelectedValue}
-          selectedCategory={selectedCategory}
-          selectedTree={selectedTree}
-          selectedTreeId={selectedTreeId}
-          selectedValue={selectedValue}
-          visibleDots={visibleDots}
-        />
-
-        <section className="report-section" aria-label="Global Report Table">
-          <div className="report-section__header">
-            <div>
-              <p className="section-kicker">Global Report</p>
-              <h2>Operational record surface</h2>
-            </div>
-
-            <div className="report-toolbar">
-              <label className="search-shell" aria-label="Search Placeholder">
-                <span className="search-shell__icon">⌕</span>
-                <input
-                  type="text"
-                  value={tableSearchQuery}
-                  placeholder="Search Tree ID or notes"
-                  onChange={(event) => setTableSearchQuery(event.target.value)}
-                  disabled={mapSnapshot.loadState !== "ready"}
-                />
-              </label>
-              <span className="results-pill">{filteredReportRows.length} rows</span>
-            </div>
-          </div>
-
-          <div className="table-shell">
-            {filteredReportRows.length === 0 ? (
-              <div className="empty-table-state">
-                <strong>No matching records</strong>
-                <span>Try another Tree ID fragment or note keyword.</span>
-              </div>
-            ) : (
-              <table>
-                <thead>
-                  <tr>
-                    <th>Tree ID</th>
-                    <th>Plant Name</th>
-                    <th>Jenis</th>
-                    <th>Kondisi</th>
-                    <th>Last Note</th>
-                    <th>Updated At</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredReportRows.map((row) => (
-                    <tr
-                      key={row.id ?? `${row.treeId}-${row.updatedAt}`}
-                      className={selectedTreeId === row.plantId ? "report-row report-row--selected" : "report-row"}
-                      onClick={() => setSelectedTreeId(row.plantId)}
-                      onKeyDown={(event) => {
-                        if (event.key === "Enter" || event.key === " ") {
-                          event.preventDefault();
-                          setSelectedTreeId(row.plantId);
-                        }
-                      }}
-                      role="button"
-                      tabIndex={0}
-                    >
-                      <td className="mono">{row.treeId}</td>
-                      <td>{row.plantName}</td>
-                      <td>{row.jenis}</td>
-                      <td>
-                        <span className="status-badge" style={row.badgeStyle}>
-                          {row.conditionIcon ?? "●"} {row.kondisi}
-                        </span>
-                      </td>
-                      <td>{row.note}</td>
-                      <td>{row.updatedAt}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
-          </div>
+      <div className="app-content">
+        <section className="page-intro" aria-label="Monitoring page title">
+          <h1>Monitoring</h1>
         </section>
-      </main>
+
+        <main className="dashboard">
+          <MonitoringMapStage
+            allValues={ALL_VALUES}
+            availableValues={availableValues}
+            categoryOptions={CATEGORY_OPTIONS}
+            gardenName={MONITORING_GARDEN_NAME}
+            imageCalibration={mapSnapshot.imageCalibration}
+            imageBounds={mapSnapshot.mapBounds}
+            legendItems={legendItems}
+            loadState={mapSnapshot.loadState}
+            mapMessage={mapSnapshot.message}
+            onCategoryChange={setSelectedCategory}
+            onSelectTree={setSelectedTreeId}
+            onValueChange={setSelectedValue}
+            selectedCategory={selectedCategory}
+            selectedTree={selectedTree}
+            selectedTreeId={selectedTreeId}
+            selectedValue={selectedValue}
+            visibleDots={visibleDots}
+          />
+
+          <section className="report-section" aria-label="Global Report Table">
+            <div className="report-section__header">
+              <div>
+                <p className="section-kicker">Global Report</p>
+                <h2>Operational record surface</h2>
+              </div>
+
+              <div className="report-toolbar">
+                <label className="search-shell" aria-label="Search Placeholder">
+                  <span className="search-shell__icon">⌕</span>
+                  <input
+                    type="text"
+                    value={tableSearchQuery}
+                    placeholder="Search Tree ID or notes"
+                    onChange={(event) => setTableSearchQuery(event.target.value)}
+                    disabled={mapSnapshot.loadState !== "ready"}
+                  />
+                </label>
+                <span className="results-pill">{filteredReportRows.length} rows</span>
+              </div>
+            </div>
+
+            <div className="table-shell">
+              {filteredReportRows.length === 0 ? (
+                <div className="empty-table-state">
+                  <strong>No matching records</strong>
+                  <span>Try another Tree ID fragment or note keyword.</span>
+                </div>
+              ) : (
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Tree ID</th>
+                      <th>Plant Name</th>
+                      <th>Jenis</th>
+                      <th>Kondisi</th>
+                      <th>Last Note</th>
+                      <th>Updated At</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredReportRows.map((row) => (
+                      <tr
+                        key={row.id ?? `${row.treeId}-${row.updatedAt}`}
+                        className={selectedTreeId === row.plantId ? "report-row report-row--selected" : "report-row"}
+                        onClick={() => setSelectedTreeId(row.plantId)}
+                        onKeyDown={(event) => {
+                          if (event.key === "Enter" || event.key === " ") {
+                            event.preventDefault();
+                            setSelectedTreeId(row.plantId);
+                          }
+                        }}
+                        role="button"
+                        tabIndex={0}
+                      >
+                        <td className="mono">{row.treeId}</td>
+                        <td>{row.plantName}</td>
+                        <td>{row.jenis}</td>
+                        <td>
+                          <span className="status-badge" style={row.badgeStyle}>
+                            {row.conditionIcon ?? "●"} {row.kondisi}
+                          </span>
+                        </td>
+                        <td>{row.note}</td>
+                        <td>{row.updatedAt}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+          </section>
+        </main>
+      </div>
 
       {selectedTreeId !== null ? (
         <TreeHistoryDrawer
