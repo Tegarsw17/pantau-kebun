@@ -279,14 +279,14 @@ function MonitoringDashboard() {
             visibleDots={visibleDots}
           />
 
-          <section className="report-section" aria-label="Global Report Table">
-            <div className="report-section__header">
-              <div>
+          <section className="report-section workspace-panel workspace-panel--secondary" aria-label="Global Report Table">
+            <div className="workspace-panel__header">
+              <div className="workspace-panel__heading">
                 <p className="section-kicker">Global Report</p>
                 <h2>Operational record surface</h2>
               </div>
 
-              <div className="report-toolbar">
+              <div className="workspace-panel__toolbar report-toolbar">
                 <label className="search-shell" aria-label="Search Placeholder">
                   <span className="search-shell__icon">⌕</span>
                   <input
@@ -301,54 +301,56 @@ function MonitoringDashboard() {
               </div>
             </div>
 
-            <div className="table-shell">
-              {filteredReportRows.length === 0 ? (
-                <div className="empty-table-state">
-                  <strong>No matching records</strong>
-                  <span>Try another Tree ID fragment or note keyword.</span>
-                </div>
-              ) : (
-                <table>
-                  <thead>
-                    <tr>
-                      <th>Tree ID</th>
-                      <th>Plant Name</th>
-                      <th>Jenis</th>
-                      <th>Kondisi</th>
-                      <th>Last Note</th>
-                      <th>Updated At</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredReportRows.map((row) => (
-                      <tr
-                        key={row.id ?? `${row.treeId}-${row.updatedAt}`}
-                        className={selectedTreeId === row.plantId ? "report-row report-row--selected" : "report-row"}
-                        onClick={() => setSelectedTreeId(row.plantId)}
-                        onKeyDown={(event) => {
-                          if (event.key === "Enter" || event.key === " ") {
-                            event.preventDefault();
-                            setSelectedTreeId(row.plantId);
-                          }
-                        }}
-                        role="button"
-                        tabIndex={0}
-                      >
-                        <td className="mono">{row.treeId}</td>
-                        <td>{row.plantName}</td>
-                        <td>{row.jenis}</td>
-                        <td>
-                          <span className="status-badge" style={row.badgeStyle}>
-                            {row.conditionIcon ?? "●"} {row.kondisi}
-                          </span>
-                        </td>
-                        <td>{row.note}</td>
-                        <td>{row.updatedAt}</td>
+            <div className="workspace-panel__body">
+              <div className="table-shell">
+                {filteredReportRows.length === 0 ? (
+                  <div className="empty-table-state">
+                    <strong>No matching records</strong>
+                    <span>Try another Tree ID fragment or note keyword.</span>
+                  </div>
+                ) : (
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Tree ID</th>
+                        <th>Plant Name</th>
+                        <th>Jenis</th>
+                        <th>Kondisi</th>
+                        <th>Last Note</th>
+                        <th>Updated At</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              )}
+                    </thead>
+                    <tbody>
+                      {filteredReportRows.map((row) => (
+                        <tr
+                          key={row.id ?? `${row.treeId}-${row.updatedAt}`}
+                          className={selectedTreeId === row.plantId ? "report-row report-row--selected" : "report-row"}
+                          onClick={() => setSelectedTreeId(row.plantId)}
+                          onKeyDown={(event) => {
+                            if (event.key === "Enter" || event.key === " ") {
+                              event.preventDefault();
+                              setSelectedTreeId(row.plantId);
+                            }
+                          }}
+                          role="button"
+                          tabIndex={0}
+                        >
+                          <td className="mono">{row.treeId}</td>
+                          <td>{row.plantName}</td>
+                          <td>{row.jenis}</td>
+                          <td>
+                            <span className="status-badge" style={row.badgeStyle}>
+                              {row.conditionIcon ?? "●"} {row.kondisi}
+                            </span>
+                          </td>
+                          <td>{row.note}</td>
+                          <td>{row.updatedAt}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
+              </div>
             </div>
           </section>
         </main>

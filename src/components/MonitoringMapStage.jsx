@@ -128,13 +128,13 @@ export function MonitoringMapStage({
     : 16;
 
   return (
-    <section className="map-stage" aria-label="Orchard Map">
-      <div className="map-stage__header">
-        <div>
+    <section className="map-stage workspace-panel workspace-panel--primary" aria-label="Orchard Map">
+      <div className="workspace-panel__header">
+        <div className="workspace-panel__heading">
           <h2>{gardenName}</h2>
         </div>
 
-        <div className="legend-cluster" aria-label="Legend Preview">
+        <div className="workspace-panel__toolbar legend-cluster" aria-label="Legend Preview">
           {legendItems.map((item) => (
             <span
               className={`legend-chip ${
@@ -163,167 +163,169 @@ export function MonitoringMapStage({
         </div>
       </div>
 
-      <div className="map-stage__controls">
-        <label className="control-block">
-          <span className="control-label">Kategori</span>
-          <select
-            aria-label="Kategori"
-            disabled={loadState !== "ready"}
-            onChange={(event) => onCategoryChange(event.target.value)}
-            value={selectedCategory}
-          >
-            {Object.entries(categoryOptions).map(([key, option]) => (
-              <option key={key} value={key}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </label>
+      <div className="workspace-panel__body">
+        <div className="workspace-panel__controls map-stage__controls">
+          <label className="control-block">
+            <span className="control-label">Kategori</span>
+            <select
+              aria-label="Kategori"
+              disabled={loadState !== "ready"}
+              onChange={(event) => onCategoryChange(event.target.value)}
+              value={selectedCategory}
+            >
+              {Object.entries(categoryOptions).map(([key, option]) => (
+                <option key={key} value={key}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </label>
 
-        <label className="control-block">
-          <span className="control-label">Nilai</span>
-          <select
-            aria-label="Nilai"
-            disabled={loadState !== "ready"}
-            onChange={(event) => onValueChange(event.target.value)}
-            value={selectedValue}
-          >
-            <option value={allValues}>{allValues}</option>
-            {availableValues.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </label>
-      </div>
+          <label className="control-block">
+            <span className="control-label">Nilai</span>
+            <select
+              aria-label="Nilai"
+              disabled={loadState !== "ready"}
+              onChange={(event) => onValueChange(event.target.value)}
+              value={selectedValue}
+            >
+              <option value={allValues}>{allValues}</option>
+              {availableValues.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
 
-      <div className="map-viewport">
-        <div className="map-viewport__leaflet-shell">
-          <MapContainer
-            attributionControl={false}
-            bounds={resolvedImageBounds}
-            boundsOptions={{ padding: FIT_BOUNDS_PADDING }}
-            className="map-leaflet"
-            maxBounds={resolvedImageBounds}
-            maxBoundsViscosity={1}
-            maxZoom={24}
-            preferCanvas
-            scrollWheelZoom
-            zoomControl={false}
-            zoomDelta={0.5}
-            zoomSnap={0.25}
-          >
-            <ZoomControl position="topright" />
-            <CalibratedImageOverlay
-              corners={resolvedCalibration.corners}
-              imageUrl={resolvedCalibration.imageUrl}
-              opacity={1}
-            />
-            <MapViewportBridge
-              imageBounds={resolvedImageBounds}
-              onViewportSync={setViewportState}
-              visibleDots={visibleDots}
-            />
-          </MapContainer>
+        <div className="map-viewport">
+          <div className="map-viewport__leaflet-shell">
+            <MapContainer
+              attributionControl={false}
+              bounds={resolvedImageBounds}
+              boundsOptions={{ padding: FIT_BOUNDS_PADDING }}
+              className="map-leaflet"
+              maxBounds={resolvedImageBounds}
+              maxBoundsViscosity={1}
+              maxZoom={24}
+              preferCanvas
+              scrollWheelZoom
+              zoomControl={false}
+              zoomDelta={0.5}
+              zoomSnap={0.25}
+            >
+              <ZoomControl position="topright" />
+              <CalibratedImageOverlay
+                corners={resolvedCalibration.corners}
+                imageUrl={resolvedCalibration.imageUrl}
+                opacity={1}
+              />
+              <MapViewportBridge
+                imageBounds={resolvedImageBounds}
+                onViewportSync={setViewportState}
+                visibleDots={visibleDots}
+              />
+            </MapContainer>
 
-          <div className="map-viewport__scrim" />
-          <div className="map-viewport__grid" />
+            <div className="map-viewport__scrim" />
+            <div className="map-viewport__grid" />
 
-          <div className="map-dot-layer">
-            {projectedDots.map((dot) => {
-              const presentation = dot[selectedCategory];
-              const isSelected = selectedTreeId === String(dot.id);
-              const isHovered = hoveredDotId === dot.id;
+            <div className="map-dot-layer">
+              {projectedDots.map((dot) => {
+                const presentation = dot[selectedCategory];
+                const isSelected = selectedTreeId === String(dot.id);
+                const isHovered = hoveredDotId === dot.id;
 
-              return (
-                <span
-                  className={`map-dot ${presentation.dotClassName ?? ""} ${
-                    isSelected ? "map-dot--selected" : ""
-                  } ${isHovered ? "map-dot--hovered" : ""}`}
-                  key={dot.id}
-                  style={{
-                    ...(presentation.color
-                      ? {
-                          background: presentation.color,
-                          color: presentation.color,
-                        }
-                      : {}),
-                    left: `${dot.leftPx}px`,
-                    top: `${dot.topPx}px`,
-                  }}
-                  aria-label={`${dot.treeIdDisplay}, ${dot.plantName}, ${dot.plantType.label}, ${dot.condition.label}`}
-                  onMouseEnter={() => setHoveredDotId(dot.id)}
-                  onMouseLeave={() => setHoveredDotId(null)}
-                  onFocus={() => setHoveredDotId(dot.id)}
-                  onBlur={() => setHoveredDotId(null)}
-                  onClick={() => onSelectTree(String(dot.id))}
-                  onKeyDown={(event) => {
-                    if (event.key === "Enter" || event.key === " ") {
-                      event.preventDefault();
-                      onSelectTree(String(dot.id));
-                    }
-                  }}
-                  role="button"
-                  tabIndex={0}
-                />
-              );
-            })}
+                return (
+                  <span
+                    className={`map-dot ${presentation.dotClassName ?? ""} ${
+                      isSelected ? "map-dot--selected" : ""
+                    } ${isHovered ? "map-dot--hovered" : ""}`}
+                    key={dot.id}
+                    style={{
+                      ...(presentation.color
+                        ? {
+                            background: presentation.color,
+                            color: presentation.color,
+                          }
+                        : {}),
+                      left: `${dot.leftPx}px`,
+                      top: `${dot.topPx}px`,
+                    }}
+                    aria-label={`${dot.treeIdDisplay}, ${dot.plantName}, ${dot.plantType.label}, ${dot.condition.label}`}
+                    onMouseEnter={() => setHoveredDotId(dot.id)}
+                    onMouseLeave={() => setHoveredDotId(null)}
+                    onFocus={() => setHoveredDotId(dot.id)}
+                    onBlur={() => setHoveredDotId(null)}
+                    onClick={() => onSelectTree(String(dot.id))}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault();
+                        onSelectTree(String(dot.id));
+                      }
+                    }}
+                    role="button"
+                    tabIndex={0}
+                  />
+                );
+              })}
 
-            <div className="map-overlay map-overlay--center">
-              <div className="focus-ring" />
-            </div>
-
-            {hoveredDot ? (
-              <div
-                className="map-tooltip"
-                style={{
-                  left: `${tooltipLeft}px`,
-                  top: `${tooltipTop}px`,
-                }}
-              >
-                <p className="overlay-label">Hover Preview</p>
-                <strong>{hoveredDot.treeIdDisplay}</strong>
-                <span>{hoveredDot.plantName}</span>
-                <span>Jenis: {hoveredDot.plantType.label}</span>
-                <span>Kondisi: {hoveredDot.condition.label}</span>
+              <div className="map-overlay map-overlay--center">
+                <div className="focus-ring" />
               </div>
-            ) : null}
+
+              {hoveredDot ? (
+                <div
+                  className="map-tooltip"
+                  style={{
+                    left: `${tooltipLeft}px`,
+                    top: `${tooltipTop}px`,
+                  }}
+                >
+                  <p className="overlay-label">Hover Preview</p>
+                  <strong>{hoveredDot.treeIdDisplay}</strong>
+                  <span>{hoveredDot.plantName}</span>
+                  <span>Jenis: {hoveredDot.plantType.label}</span>
+                  <span>Kondisi: {hoveredDot.condition.label}</span>
+                </div>
+              ) : null}
+            </div>
           </div>
-        </div>
 
-        <div className="map-overlay map-overlay--top-left">
-          <p className="overlay-label">Map Status</p>
-          <strong>{loadState === "ready" ? "Leaflet overlay ready" : "Map shell active"}</strong>
-          <span>
-            {selectedCategory === "plantType"
-              ? "Color mode: Jenis Tumbuhan"
-              : "Color mode: Kondisi"}
-          </span>
-        </div>
+          <div className="map-overlay map-overlay--top-left">
+            <p className="overlay-label">Map Status</p>
+            <strong>{loadState === "ready" ? "Leaflet overlay ready" : "Map shell active"}</strong>
+            <span>
+              {selectedCategory === "plantType"
+                ? "Color mode: Jenis Tumbuhan"
+                : "Color mode: Kondisi"}
+            </span>
+          </div>
 
-        <div className="map-overlay map-overlay--bottom-right">
-          <p className="overlay-label">Visible Dots</p>
-          <strong>{visibleDots.length} Trees</strong>
-          <span>{mapMessage}</span>
-        </div>
+          <div className="map-overlay map-overlay--bottom-right">
+            <p className="overlay-label">Visible Dots</p>
+            <strong>{visibleDots.length} Trees</strong>
+            <span>{mapMessage}</span>
+          </div>
 
-        <div className="map-overlay map-overlay--bottom-left">
-          <p className="overlay-label">Selection</p>
-          {selectedTree ? (
-            <>
-              <strong>{selectedTree.treeIdDisplay}</strong>
-              <span>{selectedTree.plantName}</span>
-              <span>{selectedTree.plantType.label}</span>
-              <span>{selectedTree.condition.label}</span>
-              {!isSelectedTreeVisible ? <span>Hidden by current map filter.</span> : null}
-            </>
-          ) : (
-            <>
-              <strong>No tree selected</strong>
-              <span>Click a dot to pin it in the workspace.</span>
-            </>
-          )}
+          <div className="map-overlay map-overlay--bottom-left">
+            <p className="overlay-label">Selection</p>
+            {selectedTree ? (
+              <>
+                <strong>{selectedTree.treeIdDisplay}</strong>
+                <span>{selectedTree.plantName}</span>
+                <span>{selectedTree.plantType.label}</span>
+                <span>{selectedTree.condition.label}</span>
+                {!isSelectedTreeVisible ? <span>Hidden by current map filter.</span> : null}
+              </>
+            ) : (
+              <>
+                <strong>No tree selected</strong>
+                <span>Click a dot to pin it in the workspace.</span>
+              </>
+            )}
+          </div>
         </div>
       </div>
     </section>
