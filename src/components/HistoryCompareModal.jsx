@@ -68,7 +68,7 @@ function ComparePanel({ historyEntry, panelLabel }) {
         <span className="history-card__meta-chip">{mediaCounts.video} videos</span>
       </div>
 
-      <UpdateMediaGallery mediaAssets={resolvedMediaAssets} />
+      <UpdateMediaGallery layout="carousel" mediaAssets={resolvedMediaAssets} />
     </section>
   );
 }
