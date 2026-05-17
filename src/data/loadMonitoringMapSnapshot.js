@@ -11,7 +11,8 @@ import {
 } from "./loadDroneCalibration.js";
 
 const GARDEN_SCOPE = 3;
-const GARDEN_NAME = "Kebun Ntak-Ntak";
+export const MONITORING_GARDEN_NAME = "Kebun Ntak-Ntak";
+const GARDEN_NAME = MONITORING_GARDEN_NAME;
 const NO_REPORT_NOTE = "No field report submitted yet.";
 const NO_REPORT_UPDATED_AT = "No report yet";
 const UNKNOWN_PLANT_TYPE_COLOR = "#94a3b8";

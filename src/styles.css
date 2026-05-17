@@ -861,6 +861,17 @@ select:disabled,
   min-height: 0;
 }
 
+.map-stage__header {
+  margin-bottom: 12px;
+}
+
+.map-stage__controls {
+  display: grid;
+  grid-template-columns: minmax(0, 240px) minmax(0, 260px);
+  gap: 16px;
+  margin-bottom: 12px;
+}
+
 .legend-chip {
   border-color: rgba(255, 169, 86, 0.22);
   color: #fff1d4;
@@ -2026,6 +2037,10 @@ tbody tr + tr td {
   }
 
   .filter-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .map-stage__controls {
     grid-template-columns: 1fr;
   }
 

@@ -68,12 +68,17 @@ function clampTooltipPosition(value, min, max) {
 
 export function MonitoringMapStage({
   allValues,
+  availableValues,
+  categoryOptions,
+  gardenName,
   imageCalibration,
   imageBounds,
   legendItems,
   loadState,
   mapMessage,
+  onCategoryChange,
   onSelectTree,
+  onValueChange,
   selectedCategory,
   selectedTree,
   selectedTreeId,
@@ -126,8 +131,7 @@ export function MonitoringMapStage({
     <section className="map-stage" aria-label="Orchard Map">
       <div className="map-stage__header">
         <div>
-          <p className="section-kicker">Spatial Canvas</p>
-          <h2>Orchard command view</h2>
+          <h2>{gardenName}</h2>
         </div>
 
         <div className="legend-cluster" aria-label="Legend Preview">
@@ -157,6 +161,41 @@ export function MonitoringMapStage({
             </span>
           ))}
         </div>
+      </div>
+
+      <div className="map-stage__controls">
+        <label className="control-block">
+          <span className="control-label">Kategori</span>
+          <select
+            aria-label="Kategori"
+            disabled={loadState !== "ready"}
+            onChange={(event) => onCategoryChange(event.target.value)}
+            value={selectedCategory}
+          >
+            {Object.entries(categoryOptions).map(([key, option]) => (
+              <option key={key} value={key}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <label className="control-block">
+          <span className="control-label">Nilai</span>
+          <select
+            aria-label="Nilai"
+            disabled={loadState !== "ready"}
+            onChange={(event) => onValueChange(event.target.value)}
+            value={selectedValue}
+          >
+            <option value={allValues}>{allValues}</option>
+            {availableValues.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </label>
       </div>
 
       <div className="map-viewport">

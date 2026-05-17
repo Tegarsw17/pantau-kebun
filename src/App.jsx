@@ -2,7 +2,10 @@ import { useDeferredValue, useEffect, useState } from "react";
 import { AdminOrchardRoute } from "./components/AdminOrchardRoute.jsx";
 import { MonitoringMapStage } from "./components/MonitoringMapStage.jsx";
 import { TreeHistoryDrawer } from "./components/TreeHistoryDrawer.jsx";
-import { loadMonitoringMapSnapshot } from "./data/loadMonitoringMapSnapshot.js";
+import {
+  loadMonitoringMapSnapshot,
+  MONITORING_GARDEN_NAME,
+} from "./data/loadMonitoringMapSnapshot.js";
 
 const ADMIN_ORCHARD_PATH = "/admin-orchard";
 const ALL_VALUES = "Tampilkan Semua";
@@ -125,7 +128,6 @@ function MonitoringDashboard() {
     }
   }, [mapSnapshot.reportRows, selectedTreeId]);
 
-  const activeCategory = CATEGORY_OPTIONS[selectedCategory];
   const availableValues = mapSnapshot.filters[selectedCategory] ?? [];
   const deferredTableSearchQuery = useDeferredValue(tableSearchQuery);
   const visibleDots =
@@ -172,72 +174,19 @@ function MonitoringDashboard() {
       </header>
 
       <main className="dashboard">
-        <section className="filter-band" aria-label="Monitoring Filters">
-          <div className="filter-band__header">
-            <div>
-              <p className="section-kicker">Cascading Filters</p>
-              <h2>Visual category controls</h2>
-            </div>
-            <p className="filter-summary">
-              {activeCategory.label} / {selectedValue}
-            </p>
-          </div>
-
-          <div className="filter-grid">
-            <label className="control-block">
-              <span className="control-label">Kategori</span>
-              <select
-                aria-label="Kategori"
-                value={selectedCategory}
-                onChange={(event) => setSelectedCategory(event.target.value)}
-                disabled={mapSnapshot.loadState !== "ready"}
-              >
-                {Object.entries(CATEGORY_OPTIONS).map(([key, option]) => (
-                  <option key={key} value={key}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            <label className="control-block">
-              <span className="control-label">Nilai</span>
-              <select
-                aria-label="Nilai"
-                value={selectedValue}
-                onChange={(event) => setSelectedValue(event.target.value)}
-                disabled={mapSnapshot.loadState !== "ready"}
-              >
-                <option value={ALL_VALUES}>{ALL_VALUES}</option>
-                {availableValues.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            <div className="active-context">
-              <span className="context-label">Monitoring Context</span>
-              <div className="context-values">
-                <span className="context-chip">Garden 3</span>
-                <span className="context-chip">Orthomosaic Ready</span>
-                <span className="context-chip">
-                  {visibleDots.length}/{mapSnapshot.totalTrees} Visible
-                </span>
-              </div>
-            </div>
-          </div>
-        </section>
-
         <MonitoringMapStage
           allValues={ALL_VALUES}
+          availableValues={availableValues}
+          categoryOptions={CATEGORY_OPTIONS}
+          gardenName={MONITORING_GARDEN_NAME}
           imageCalibration={mapSnapshot.imageCalibration}
           imageBounds={mapSnapshot.mapBounds}
           legendItems={legendItems}
           loadState={mapSnapshot.loadState}
           mapMessage={mapSnapshot.message}
+          onCategoryChange={setSelectedCategory}
           onSelectTree={setSelectedTreeId}
+          onValueChange={setSelectedValue}
           selectedCategory={selectedCategory}
           selectedTree={selectedTree}
           selectedTreeId={selectedTreeId}
