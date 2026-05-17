@@ -21,6 +21,7 @@ const DEFAULT_MODULE_ID = "monitoring";
 const MODULE_DEFINITIONS = {
   accounting: {
     id: "accounting",
+    icon: "💰",
     label: "Accounting",
     moduleCode: "AC",
     navHint: "Cash flow, budget, and orchard finance controls.",
@@ -47,6 +48,7 @@ const MODULE_DEFINITIONS = {
   },
   inventory: {
     id: "inventory",
+    icon: "📦",
     label: "Inventory",
     moduleCode: "IV",
     navHint: "Stock, field inputs, and storage movement.",
@@ -73,6 +75,7 @@ const MODULE_DEFINITIONS = {
   },
   monitoring: {
     id: "monitoring",
+    icon: "🛰",
     label: "Monitoring",
     moduleCode: "MO",
     navHint: "Spatial map, field signals, and update review.",
@@ -83,6 +86,7 @@ const MODULE_DEFINITIONS = {
   },
   operations: {
     id: "operations",
+    icon: "🛠",
     label: "Operations",
     moduleCode: "OP",
     navHint: "Tasks, crews, and routine execution planning.",
@@ -109,6 +113,7 @@ const MODULE_DEFINITIONS = {
   },
   reports: {
     id: "reports",
+    icon: "🗂",
     label: "Reports",
     moduleCode: "RP",
     navHint: "Cross-period orchard review and reporting.",
@@ -135,6 +140,7 @@ const MODULE_DEFINITIONS = {
   },
   settings: {
     id: "settings",
+    icon: "⚙",
     label: "Settings",
     moduleCode: "ST",
     navHint: "Garden setup, access, and workspace defaults.",
@@ -160,24 +166,7 @@ const MODULE_DEFINITIONS = {
     title: "Settings",
   },
 };
-const SIDEBAR_NAV_GROUPS = [
-  {
-    label: "Core",
-    itemIds: ["monitoring", "reports"],
-  },
-  {
-    label: "Resources",
-    itemIds: ["inventory", "operations"],
-  },
-  {
-    label: "Business",
-    itemIds: ["accounting"],
-  },
-  {
-    label: "System",
-    itemIds: ["settings"],
-  },
-];
+const SIDEBAR_NAV_ITEMS = ["monitoring", "reports", "inventory", "operations", "accounting", "settings"];
 
 function normalizePathname(pathname) {
   if (!pathname) {
@@ -206,21 +195,7 @@ function usePathname() {
   return pathname;
 }
 
-function getModuleStatusLabel(status) {
-  return status === "live" ? "Live Workspace" : "Planned Module";
-}
-
-function getModuleSurfaceLabel(module) {
-  const surfaceCount = module.surfaceCount ?? module.plannedCapabilities?.length ?? 0;
-  const noun = surfaceCount === 1 ? "surface" : "surfaces";
-  const state = module.status === "live" ? "active" : "planned";
-
-  return `${surfaceCount} ${state} ${noun}`;
-}
-
 function MonitoringSidebar({ onSelectModule, selectedModuleId }) {
-  const activeModule = MODULE_DEFINITIONS[selectedModuleId] ?? MODULE_DEFINITIONS[DEFAULT_MODULE_ID];
-
   return (
     <aside className="app-sidebar" aria-label="Primary navigation">
       <div className="app-sidebar__brand">
@@ -234,94 +209,30 @@ function MonitoringSidebar({ onSelectModule, selectedModuleId }) {
       </div>
 
       <nav className="app-sidebar__nav">
-        {SIDEBAR_NAV_GROUPS.map((group) => (
-          <section className="app-sidebar__group" key={group.label}>
-            <p className="app-sidebar__group-label">{group.label}</p>
+        {SIDEBAR_NAV_ITEMS.map((itemId) => {
+          const item = MODULE_DEFINITIONS[itemId];
+          const isActive = selectedModuleId === itemId;
 
-            <div className="app-sidebar__group-items">
-              {group.itemIds.map((itemId) => {
-                const item = MODULE_DEFINITIONS[itemId];
-                const isActive = selectedModuleId === itemId;
-
-                return (
-                  <button
-                    aria-current={isActive ? "page" : undefined}
-                    className={`app-sidebar__nav-button ${
-                      isActive ? "app-sidebar__nav-button--active" : ""
-                    }`}
-                    key={item.id}
-                    onClick={() => onSelectModule(item.id)}
-                    type="button"
-                  >
-                    <span className="app-sidebar__nav-button-main">
-                      <span className="app-sidebar__nav-glyph" aria-hidden="true">
-                        {item.moduleCode}
-                      </span>
-                      <span className="app-sidebar__nav-copy">
-                        <span className="app-sidebar__nav-button-label">{item.label}</span>
-                        <span className="app-sidebar__nav-button-hint">{item.navHint}</span>
-                      </span>
-                    </span>
-                    <span
-                      className={`app-sidebar__nav-badge ${
-                        item.status === "live"
-                          ? "app-sidebar__nav-badge--live"
-                          : "app-sidebar__nav-badge--soon"
-                      }`}
-                    >
-                      {item.status === "live" ? "Live" : "Soon"}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-          </section>
-        ))}
+          return (
+            <button
+              aria-current={isActive ? "page" : undefined}
+              className={`app-sidebar__nav-button ${
+                isActive ? "app-sidebar__nav-button--active" : ""
+              }`}
+              key={item.id}
+              onClick={() => onSelectModule(item.id)}
+              type="button"
+            >
+              <span className="app-sidebar__nav-button-main">
+                <span className="app-sidebar__nav-glyph" aria-hidden="true">
+                  {item.icon}
+                </span>
+                <span className="app-sidebar__nav-button-label">{item.label}</span>
+              </span>
+            </button>
+          );
+        })}
       </nav>
-
-      <section className="app-sidebar__module-focus" aria-label="Current module summary">
-        <div className="app-sidebar__module-focus-header">
-          <span
-            className={`app-sidebar__focus-chip ${
-              activeModule.status === "live"
-                ? "app-sidebar__focus-chip--live"
-                : "app-sidebar__focus-chip--soon"
-            }`}
-          >
-            {getModuleStatusLabel(activeModule.status)}
-          </span>
-          <span className="app-sidebar__focus-code" aria-hidden="true">
-            {activeModule.moduleCode}
-          </span>
-        </div>
-
-        <div className="app-sidebar__module-focus-copy">
-          <strong className="app-sidebar__module-focus-title">{activeModule.title}</strong>
-          <p className="app-sidebar__module-focus-text">{activeModule.summary}</p>
-        </div>
-
-        <div className="app-sidebar__module-focus-metrics">
-          <div className="app-sidebar__module-focus-metric">
-            <span>Scope</span>
-            <strong>{activeModule.navHint}</strong>
-          </div>
-          <div className="app-sidebar__module-focus-metric">
-            <span>Coverage</span>
-            <strong>{getModuleSurfaceLabel(activeModule)}</strong>
-          </div>
-        </div>
-      </section>
-
-      <div className="app-sidebar__footer">
-        <div className="app-sidebar__status-card">
-          <span className="app-sidebar__status-label">Garden Scope</span>
-          <strong>{MONITORING_GARDEN_NAME}</strong>
-          <span>Garden 3</span>
-        </div>
-        <a className="app-sidebar__admin-link" href={ADMIN_ORCHARD_PATH}>
-          Admin Orchard
-        </a>
-      </div>
     </aside>
   );
 }
@@ -332,52 +243,13 @@ function ModulePlaceholderPage({ module }) {
       <section className="workspace-panel workspace-panel--secondary" aria-label={`${module.label} module status`}>
         <div className="workspace-panel__header">
           <div className="workspace-panel__heading">
-            <p className="section-kicker">Module Status</p>
-            <h2>{module.label} is planned next</h2>
-          </div>
-
-          <div className="workspace-panel__toolbar">
-            <span className="module-status-pill">Planned Module</span>
+            <p className="section-kicker">{module.label}</p>
+            <h2>Coming soon</h2>
           </div>
         </div>
 
         <div className="workspace-panel__body">
           <p className="module-placeholder__copy">{module.placeholderCopy}</p>
-
-          <div className="module-placeholder__meta-grid">
-            <article className="module-placeholder__meta-card">
-              <span className="module-placeholder__meta-label">Release Track</span>
-              <strong>{getModuleStatusLabel(module.status)}</strong>
-            </article>
-            <article className="module-placeholder__meta-card">
-              <span className="module-placeholder__meta-label">Focus</span>
-              <strong>{module.navHint}</strong>
-            </article>
-            <article className="module-placeholder__meta-card">
-              <span className="module-placeholder__meta-label">Coverage</span>
-              <strong>{getModuleSurfaceLabel(module)}</strong>
-            </article>
-          </div>
-        </div>
-      </section>
-
-      <section className="workspace-panel workspace-panel--secondary" aria-label={`${module.label} planned capabilities`}>
-        <div className="workspace-panel__header">
-          <div className="workspace-panel__heading">
-            <p className="section-kicker">Planned Surfaces</p>
-            <h2>Expected capabilities</h2>
-          </div>
-        </div>
-
-        <div className="workspace-panel__body">
-          <div className="module-placeholder__grid">
-            {module.plannedCapabilities.map((capability) => (
-              <article className="module-placeholder__card" key={capability.title}>
-                <strong>{capability.title}</strong>
-                <span>{capability.description}</span>
-              </article>
-            ))}
-          </div>
         </div>
       </section>
     </main>
@@ -519,18 +391,6 @@ function MonitoringDashboard() {
           <div className="page-intro__copy">
             <h1>{activeModule.title}</h1>
             <p className="page-intro__summary">{activeModule.summary}</p>
-          </div>
-          <div className="page-intro__meta">
-            <span
-              className={`module-status-pill ${
-                activeModule.status === "live"
-                  ? "module-status-pill--live"
-                  : "module-status-pill--soon"
-              }`}
-            >
-              {getModuleStatusLabel(activeModule.status)}
-            </span>
-            <span className="page-intro__meta-copy">{activeModule.navHint}</span>
           </div>
         </section>
 
