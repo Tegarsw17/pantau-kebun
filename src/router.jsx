@@ -3,12 +3,9 @@ import {
   createRootRoute,
   createRoute,
   createRouter,
+  lazyRouteComponent,
 } from "@tanstack/react-router";
-import { AdminOrchardRoute } from "./components/AdminOrchardRoute.jsx";
 import { WorkspaceLayout } from "./components/WorkspaceLayout.jsx";
-import { WORKSPACE_MODULES } from "./data/workspaceModules.js";
-import { ModulePlaceholderPage } from "./pages/ModulePlaceholderPage.jsx";
-import { MonitoringPage } from "./pages/MonitoringPage.jsx";
 
 function RootRouteComponent() {
   return <Outlet />;
@@ -27,43 +24,46 @@ const workspaceRoute = createRoute({
 const monitoringRoute = createRoute({
   getParentRoute: () => workspaceRoute,
   path: "/",
-  component: MonitoringPage,
+  component: lazyRouteComponent(() => import("./pages/MonitoringPage.jsx"), "MonitoringPage"),
 });
 
 const reportsRoute = createRoute({
   getParentRoute: () => workspaceRoute,
   path: "reports",
-  component: () => <ModulePlaceholderPage module={WORKSPACE_MODULES.reports} />,
+  component: lazyRouteComponent(() => import("./pages/ReportsPage.jsx"), "ReportsPage"),
 });
 
 const inventoryRoute = createRoute({
   getParentRoute: () => workspaceRoute,
   path: "inventory",
-  component: () => <ModulePlaceholderPage module={WORKSPACE_MODULES.inventory} />,
+  component: lazyRouteComponent(() => import("./pages/InventoryPage.jsx"), "InventoryPage"),
 });
 
 const operationsRoute = createRoute({
   getParentRoute: () => workspaceRoute,
   path: "operations",
-  component: () => <ModulePlaceholderPage module={WORKSPACE_MODULES.operations} />,
+  component: lazyRouteComponent(() => import("./pages/OperationsPage.jsx"), "OperationsPage"),
 });
 
 const accountingRoute = createRoute({
   getParentRoute: () => workspaceRoute,
   path: "accounting",
-  component: () => <ModulePlaceholderPage module={WORKSPACE_MODULES.accounting} />,
+  component: lazyRouteComponent(() => import("./pages/AccountingPage.jsx"), "AccountingPage"),
 });
 
 const settingsRoute = createRoute({
   getParentRoute: () => workspaceRoute,
   path: "settings",
-  component: () => <ModulePlaceholderPage module={WORKSPACE_MODULES.settings} />,
+  component: lazyRouteComponent(() => import("./pages/SettingsPage.jsx"), "SettingsPage"),
 });
 
 const adminOrchardRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "admin-orchard",
-  component: AdminOrchardRoute,
+  component: lazyRouteComponent(
+    () => import("./components/AdminOrchardRoute.jsx"),
+    "AdminOrchardRoute",
+  ),
 });
 
 const routeTree = rootRoute.addChildren([
