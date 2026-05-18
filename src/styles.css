@@ -224,9 +224,10 @@ body::before {
 }
 
 .admin-shell {
-  width: min(1480px, calc(100vw - 40px));
+  width: min(1600px, calc(100vw - 32px));
   margin: 0 auto;
-  padding: 28px 0 36px;
+  padding: 14px 0 20px;
+  min-height: 100vh;
 }
 
 .admin-gate-shell {
@@ -237,39 +238,35 @@ body::before {
 }
 
 .admin-gate-card,
-.admin-topbar,
 .admin-panel {
-  border: 1px solid rgba(255, 202, 95, 0.3);
-  background: linear-gradient(180deg, rgba(20, 17, 11, 0.96), rgba(11, 9, 6, 0.96));
+  border: 1px solid rgba(114, 144, 156, 0.18);
+  background: linear-gradient(180deg, rgba(11, 22, 28, 0.96), rgba(8, 16, 20, 0.96));
   box-shadow: var(--shadow);
 }
 
 .admin-gate-card {
   width: min(460px, 100%);
   padding: 28px;
+  border-color: rgba(255, 188, 84, 0.22);
 }
 
 .admin-gate-card__header,
 .admin-gate-form {
   display: grid;
-  gap: 16px;
-}
-
-.admin-eyebrow {
-  color: #ffca5f;
+  gap: 14px;
 }
 
 .admin-gate-copy {
   margin: 0;
-  color: #d5c6a2;
+  color: var(--muted);
   line-height: 1.55;
 }
 
 .admin-access-input {
   width: 100%;
   height: 52px;
-  border: 1px solid rgba(255, 202, 95, 0.28);
-  background: rgba(12, 10, 7, 0.92);
+  border: 1px solid rgba(255, 188, 84, 0.22);
+  background: rgba(8, 16, 20, 0.9);
   color: var(--text);
   padding: 0 14px;
   font: inherit;
@@ -277,16 +274,16 @@ body::before {
 }
 
 .admin-access-input:focus {
-  border-color: rgba(255, 155, 84, 0.56);
-  box-shadow: 0 0 0 3px rgba(255, 155, 84, 0.12);
+  border-color: rgba(255, 188, 84, 0.4);
+  box-shadow: 0 0 0 3px rgba(255, 188, 84, 0.1);
 }
 
 .admin-submit-button,
 .admin-lock-button {
   height: 46px;
-  border: 1px solid rgba(255, 155, 84, 0.42);
-  background: rgba(44, 24, 11, 0.94);
-  color: #fff1d4;
+  border: 1px solid rgba(255, 188, 84, 0.24);
+  background: rgba(21, 34, 39, 0.92);
+  color: var(--text);
   font: inherit;
   cursor: pointer;
   padding: 0 16px;
@@ -301,48 +298,66 @@ body::before {
   min-width: 132px;
 }
 
+.admin-lock-button--sidebar {
+  width: 100%;
+}
+
 .admin-gate-error {
   margin: 0;
-  color: #ffc1a8;
+  color: #ffd4d4;
   line-height: 1.45;
 }
 
-.admin-topbar {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 24px;
-  padding: 20px 24px;
+.admin-sidebar {
+  display: grid;
+  grid-template-rows: auto 1fr auto;
 }
 
-.admin-topbar__actions {
-  display: flex;
-  align-items: center;
+.admin-sidebar__body,
+.admin-sidebar__section {
+  display: grid;
   gap: 12px;
-  flex-wrap: wrap;
 }
 
-.admin-status-pill,
-.admin-route-pill {
-  display: inline-flex;
-  align-items: center;
-  min-height: 38px;
-  padding: 0 14px;
-  border: 1px solid rgba(255, 202, 95, 0.22);
-  background: rgba(30, 18, 10, 0.7);
-  color: #fff1d4;
+.admin-sidebar__body {
+  align-content: start;
+}
+
+.admin-sidebar__section {
+  padding: 14px;
+  border: 1px solid rgba(255, 188, 84, 0.18);
+  background: rgba(18, 28, 32, 0.84);
+}
+
+.admin-sidebar__label {
+  color: var(--subtle);
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.admin-sidebar__title {
+  color: var(--text);
+  line-height: 1.4;
+}
+
+.admin-sidebar__meta {
+  display: grid;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 0.88rem;
 }
 
 .admin-workspace {
   display: grid;
   grid-template-columns: minmax(280px, 340px) minmax(0, 1fr);
   gap: 18px;
-  margin-top: 18px;
 }
 
 .admin-panel {
   min-height: 640px;
   padding: 22px 24px 24px;
+  border-color: rgba(114, 144, 156, 0.18);
 }
 
 .admin-panel__header {
@@ -364,11 +379,11 @@ body::before {
 }
 
 .admin-panel--sidebar {
-  border-color: rgba(255, 155, 84, 0.34);
+  border-color: rgba(255, 188, 84, 0.22);
 }
 
 .admin-panel--map {
-  border-color: rgba(255, 202, 95, 0.3);
+  border-color: rgba(114, 144, 156, 0.18);
 }
 
 .admin-count-pill {
@@ -376,13 +391,15 @@ body::before {
   align-items: center;
   min-height: 34px;
   padding: 0 12px;
-  border: 1px solid rgba(255, 155, 84, 0.28);
-  background: rgba(33, 18, 9, 0.78);
+  border: 1px solid rgba(255, 188, 84, 0.2);
+  background: rgba(27, 34, 24, 0.72);
   color: #fff1d4;
 }
 
 .admin-count-pill--map {
-  border-color: rgba(255, 202, 95, 0.28);
+  border-color: rgba(114, 144, 156, 0.18);
+  background: rgba(12, 30, 36, 0.72);
+  color: #d8fbff;
 }
 
 .admin-count-pill--alert {
@@ -396,7 +413,7 @@ body::before {
   gap: 10px;
   min-height: 34px;
   cursor: pointer;
-  color: #fff1d4;
+  color: var(--text);
 }
 
 .admin-toggle input {
@@ -410,8 +427,8 @@ body::before {
   width: 44px;
   height: 24px;
   border-radius: 999px;
-  border: 1px solid rgba(255, 202, 95, 0.3);
-  background: rgba(58, 28, 12, 0.74);
+  border: 1px solid rgba(255, 188, 84, 0.22);
+  background: rgba(27, 34, 24, 0.74);
   transition: background 140ms ease, border-color 140ms ease;
 }
 
@@ -423,7 +440,7 @@ body::before {
   height: 18px;
   border-radius: 50%;
   transform: translateY(-50%);
-  background: #ffdcb0;
+  background: #f6efda;
   transition: left 140ms ease, background 140ms ease;
 }
 
@@ -438,7 +455,7 @@ body::before {
 }
 
 .admin-toggle__label {
-  color: #d5c6a2;
+  color: var(--muted);
 }
 
 .admin-tree-list {
@@ -459,8 +476,8 @@ body::before {
   gap: 10px;
   width: 100%;
   padding: 14px 16px;
-  border: 1px solid rgba(255, 202, 95, 0.16);
-  background: rgba(17, 12, 8, 0.74);
+  border: 1px solid rgba(114, 144, 156, 0.14);
+  background: rgba(9, 18, 23, 0.74);
   cursor: pointer;
   transition:
     border-color 140ms ease,
@@ -477,8 +494,8 @@ body::before {
 }
 
 .admin-tree-row:hover {
-  border-color: rgba(255, 202, 95, 0.28);
-  background: rgba(23, 15, 10, 0.82);
+  border-color: rgba(255, 188, 84, 0.22);
+  background: rgba(12, 24, 30, 0.86);
 }
 
 .admin-tree-row:focus-visible {
@@ -487,8 +504,8 @@ body::before {
 }
 
 .admin-tree-row--selected {
-  border-color: rgba(255, 202, 95, 0.42);
-  background: rgba(49, 29, 14, 0.86);
+  border-color: rgba(255, 188, 84, 0.3);
+  background: rgba(28, 31, 21, 0.88);
   transform: translateY(-1px);
 }
 
@@ -534,14 +551,14 @@ body::before {
   gap: 8px;
   place-items: center;
   min-height: 200px;
-  border: 1px dashed rgba(255, 202, 95, 0.18);
-  background: rgba(17, 12, 8, 0.74);
+  border: 1px dashed rgba(114, 144, 156, 0.18);
+  background: rgba(9, 18, 23, 0.74);
   text-align: center;
   padding: 20px;
 }
 
 .admin-empty-state span {
-  color: #cfbf97;
+  color: var(--muted);
   line-height: 1.45;
 }
 
@@ -558,7 +575,7 @@ body::before {
 
 .admin-calibration-copy {
   margin: 0;
-  color: #d5c6a2;
+  color: var(--muted);
   line-height: 1.5;
 }
 
@@ -576,8 +593,8 @@ body::before {
 .admin-calibration-input {
   width: 100%;
   height: 44px;
-  border: 1px solid rgba(255, 202, 95, 0.24);
-  background: rgba(12, 10, 7, 0.92);
+  border: 1px solid rgba(255, 188, 84, 0.22);
+  background: rgba(8, 16, 20, 0.9);
   color: var(--text);
   padding: 0 12px;
   font: inherit;
@@ -593,7 +610,7 @@ body::before {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
-  color: #cfbf97;
+  color: var(--muted);
   font-size: 0.9rem;
 }
 
@@ -606,8 +623,8 @@ body::before {
   display: grid;
   gap: 10px;
   padding: 12px;
-  border: 1px solid rgba(255, 202, 95, 0.16);
-  background: rgba(18, 12, 8, 0.68);
+  border: 1px solid rgba(114, 144, 156, 0.14);
+  background: rgba(9, 18, 23, 0.68);
 }
 
 .admin-calibration-step-group__header {
@@ -619,7 +636,7 @@ body::before {
 }
 
 .admin-calibration-step-meta {
-  color: #cfbf97;
+  color: var(--muted);
   font-size: 0.82rem;
 }
 
@@ -641,9 +658,9 @@ body::before {
 
 .admin-secondary-button {
   min-height: 40px;
-  border: 1px solid rgba(255, 202, 95, 0.24);
-  background: rgba(30, 18, 10, 0.88);
-  color: #fff1d4;
+  border: 1px solid rgba(255, 188, 84, 0.22);
+  background: rgba(18, 28, 32, 0.88);
+  color: var(--text);
   font: inherit;
   padding: 0 14px;
   cursor: pointer;
@@ -655,8 +672,8 @@ body::before {
 }
 
 .admin-secondary-button--primary {
-  border-color: rgba(255, 155, 84, 0.34);
-  background: rgba(76, 38, 14, 0.92);
+  border-color: rgba(255, 188, 84, 0.28);
+  background: rgba(45, 35, 16, 0.92);
 }
 
 .admin-secondary-button--compact {
@@ -670,7 +687,7 @@ body::before {
   aspect-ratio: 1600 / 900;
   margin-top: 18px;
   overflow: hidden;
-  border: 1px solid rgba(255, 202, 95, 0.2);
+  border: 1px solid rgba(114, 144, 156, 0.16);
   background: #080604;
   isolation: isolate;
 }
@@ -705,8 +722,8 @@ body::before {
 }
 
 .admin-map-leaflet .leaflet-control-zoom {
-  border: 1px solid rgba(255, 202, 95, 0.22);
-  background: rgba(17, 12, 8, 0.92);
+  border: 1px solid rgba(114, 144, 156, 0.18);
+  background: rgba(8, 16, 20, 0.92);
   box-shadow: var(--shadow);
 }
 
@@ -714,9 +731,9 @@ body::before {
   width: 34px;
   height: 34px;
   line-height: 34px;
-  border-bottom: 1px solid rgba(255, 202, 95, 0.14);
-  color: #fff1d4;
-  background: rgba(17, 12, 8, 0.92);
+  border-bottom: 1px solid rgba(114, 144, 156, 0.12);
+  color: var(--text);
+  background: rgba(8, 16, 20, 0.92);
 }
 
 .admin-map-placeholder {
@@ -758,15 +775,15 @@ body::before {
   gap: 6px;
   max-width: min(280px, calc(100% - 32px));
   padding: 14px 16px;
-  border: 1px solid rgba(255, 202, 95, 0.22);
-  background: rgba(17, 12, 8, 0.82);
+  border: 1px solid rgba(114, 144, 156, 0.18);
+  background: rgba(6, 14, 17, 0.82);
   backdrop-filter: blur(8px);
   z-index: 1000;
   pointer-events: none;
 }
 
 .admin-map-overlay span {
-  color: #d5c6a2;
+  color: var(--muted);
   line-height: 1.45;
 }
 
@@ -785,12 +802,12 @@ body::before {
   gap: 6px;
   margin-top: 18px;
   padding: 14px 16px;
-  border: 1px solid rgba(255, 202, 95, 0.16);
-  background: rgba(17, 12, 8, 0.72);
+  border: 1px solid rgba(114, 144, 156, 0.14);
+  background: rgba(9, 18, 23, 0.72);
 }
 
 .admin-mapping-banner span {
-  color: #d5c6a2;
+  color: var(--muted);
   line-height: 1.45;
 }
 
@@ -802,9 +819,9 @@ body::before {
 .admin-toast {
   margin-top: 12px;
   padding: 12px 14px;
-  border: 1px solid rgba(255, 202, 95, 0.18);
-  background: rgba(17, 12, 8, 0.74);
-  color: #fff1d4;
+  border: 1px solid rgba(114, 144, 156, 0.18);
+  background: rgba(9, 18, 23, 0.74);
+  color: var(--text);
 }
 
 .admin-toast--success {
@@ -834,7 +851,7 @@ body::before {
 }
 
 .admin-confirm-popup span {
-  color: #cfbf97;
+  color: var(--muted);
   line-height: 1.35;
 }
 
@@ -846,9 +863,9 @@ body::before {
 
 .admin-confirm-button {
   min-height: 34px;
-  border: 1px solid rgba(255, 202, 95, 0.26);
-  background: rgba(30, 18, 10, 0.88);
-  color: #fff1d4;
+  border: 1px solid rgba(255, 188, 84, 0.22);
+  background: rgba(18, 28, 32, 0.88);
+  color: var(--text);
   font: inherit;
   padding: 0 12px;
   cursor: pointer;
@@ -860,8 +877,8 @@ body::before {
 }
 
 .admin-confirm-button--primary {
-  border-color: rgba(255, 155, 84, 0.32);
-  background: rgba(76, 38, 14, 0.92);
+  border-color: rgba(255, 188, 84, 0.28);
+  background: rgba(45, 35, 16, 0.92);
 }
 
 .topbar,

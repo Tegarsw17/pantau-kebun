@@ -117,9 +117,8 @@ export function AdminOrchardRoute() {
       <div className="admin-gate-shell">
         <section className="admin-gate-card" aria-label="Admin Orchard Access Gate">
           <div className="admin-gate-card__header">
-            <p className="eyebrow admin-eyebrow">Setup Lab</p>
-            <h1>Admin Orchard Access</h1>
-            <p className="admin-gate-copy">Protected route for orchard calibration workspace.</p>
+            <h1>Admin Orchard</h1>
+            <p className="admin-gate-copy">Access key required for coordinate setup.</p>
           </div>
 
           <form className="admin-gate-form" onSubmit={handleUnlock}>
@@ -158,30 +157,49 @@ export function AdminOrchardRoute() {
   }
 
   return (
-    <div className="admin-shell">
-      <header className="admin-topbar">
-        <div>
-          <p className="eyebrow admin-eyebrow">Setup Lab</p>
-          <h1>Admin Orchard Workspace</h1>
+    <div className="app-shell admin-shell">
+      <aside className="app-sidebar admin-sidebar" aria-label="Admin Orchard Sidebar">
+        <div className="app-sidebar__brand">
+          <div className="app-sidebar__brand-mark" aria-hidden="true">
+            PK
+          </div>
+          <div className="app-sidebar__brand-copy">
+            <p className="eyebrow">Pantau Kebun</p>
+            <strong className="app-sidebar__title">Farm Workspace</strong>
+          </div>
         </div>
 
-        <div className="admin-topbar__actions">
-          <span className="admin-status-pill">Session Active</span>
-          <span className="admin-route-pill">/admin-orchard</span>
-          <button className="admin-lock-button" type="button" onClick={handleLock}>
-            Lock Session
-          </button>
-        </div>
-      </header>
+        <div className="admin-sidebar__body">
+          <div className="admin-sidebar__section">
+            <span className="admin-sidebar__label">Admin Orchard</span>
+            <strong className="admin-sidebar__title">Coordinate Setup</strong>
+          </div>
 
-      <AdminOrchardWorkspace
-        dataSource={workspaceSnapshot.dataSource}
-        imageCalibration={workspaceSnapshot.imageCalibration}
-        imageBounds={workspaceSnapshot.imageBounds}
-        loadState={workspaceSnapshot.loadState}
-        mappedTrees={workspaceSnapshot.mappedTrees}
-        unmappedTrees={workspaceSnapshot.unmappedTrees}
-      />
+          <div className="admin-sidebar__meta">
+            <span>Garden 3</span>
+            <span>{dataSource === "supabase" ? "Supabase Sync" : "Local Draft"}</span>
+          </div>
+        </div>
+
+        <button className="admin-lock-button admin-lock-button--sidebar" type="button" onClick={handleLock}>
+          Lock Session
+        </button>
+      </aside>
+
+      <div className="app-content">
+        <section className="page-intro" aria-label="Admin Orchard page title">
+          <h1>Admin Orchard</h1>
+        </section>
+
+        <AdminOrchardWorkspace
+          dataSource={workspaceSnapshot.dataSource}
+          imageCalibration={workspaceSnapshot.imageCalibration}
+          imageBounds={workspaceSnapshot.imageBounds}
+          loadState={workspaceSnapshot.loadState}
+          mappedTrees={workspaceSnapshot.mappedTrees}
+          unmappedTrees={workspaceSnapshot.unmappedTrees}
+        />
+      </div>
     </div>
   );
 }
