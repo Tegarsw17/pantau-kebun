@@ -602,7 +602,281 @@ export function AdminOrchardWorkspace({
 
   return (
     <main className="admin-workspace">
-      <aside className="admin-panel admin-panel--sidebar" aria-label="Admin Tree Workspace">
+      <section className="admin-panel admin-panel--map" aria-label="Admin Map Workspace">
+        <div className="admin-panel__header">
+          <div>
+            <p className="section-kicker">Plotting Surface</p>
+            <h2>Garden 3 Calibration Canvas</h2>
+          </div>
+          <div className="admin-panel__actions">
+            <label className="admin-toggle" htmlFor="admin-map-info-toggle">
+              <input
+                id="admin-map-info-toggle"
+                type="checkbox"
+                checked={showMapInfo}
+                onChange={() => setShowMapInfo((currentValue) => !currentValue)}
+              />
+              <span className="admin-toggle__track" aria-hidden="true">
+                <span className="admin-toggle__thumb" />
+              </span>
+              <span className="admin-toggle__label">Show Map Info</span>
+            </label>
+            <label className="admin-toggle" htmlFor="admin-reposition-toggle">
+              <input
+                id="admin-reposition-toggle"
+                type="checkbox"
+                checked={repositionMode}
+                onChange={handleRepositionToggle}
+              />
+              <span className="admin-toggle__track" aria-hidden="true">
+                <span className="admin-toggle__thumb" />
+              </span>
+              <span className="admin-toggle__label">Reposition Existing</span>
+            </label>
+            <label className="admin-toggle" htmlFor="admin-calibration-toggle">
+              <input
+                id="admin-calibration-toggle"
+                type="checkbox"
+                checked={calibrationMode}
+                onChange={handleCalibrationToggle}
+              />
+              <span className="admin-toggle__track" aria-hidden="true">
+                <span className="admin-toggle__thumb" />
+              </span>
+              <span className="admin-toggle__label">Calibration Editor</span>
+            </label>
+            <span className="admin-count-pill admin-count-pill--map">Leaflet Ready</span>
+            <span className="admin-count-pill admin-count-pill--map">
+              {dataSource === "supabase" ? "Supabase Sync" : "Session Only"}
+            </span>
+          </div>
+        </div>
+
+        <div className={`admin-mapping-banner ${isPlottingMode || calibrationMode ? "admin-mapping-banner--active" : ""}`}>
+          <p className="overlay-label">
+            {calibrationMode ? "Calibration Editor" : repositionMode ? "Reposition Mode" : "Plotting Mode"}
+          </p>
+          <strong>
+            {calibrationMode
+              ? "Click the map to move the drone image center."
+              : selectedTree
+                ? `Currently Mapping: ${selectedTree.treeIdDisplay}`
+                : repositionMode
+                  ? "Enable repositioning and select an existing marker."
+                  : "Select a tree to begin plotting."}
+          </strong>
+          <span>
+            {calibrationMode
+              ? "Tune heading, width, and height from the sidebar, then save the override to this browser."
+              : selectedTree
+                ? selectedTreeScope === "mapped"
+                  ? "Click the drone image to move this mapped tree, then confirm the popup."
+                  : "Click the drone image to place a draft point, then confirm the popup."
+                : repositionMode
+                  ? "Existing dots become selectable when reposition mode is active."
+                  : "Tree selection activates crosshair mode on the map."}
+          </span>
+        </div>
+
+        {feedback ? (
+          <div className={`admin-toast admin-toast--${feedback.tone}`} role="status">
+            {feedback.message}
+          </div>
+        ) : null}
+
+        <div className="admin-map-viewport">
+          {resolvedMapBounds ? (
+            <MapContainer
+              attributionControl={false}
+              bounds={resolvedMapBounds}
+              boundsOptions={{ padding: FIT_BOUNDS_PADDING }}
+              className={`admin-map-leaflet ${isPlottingMode || calibrationMode ? "admin-map-leaflet--plotting" : ""} ${repositionMode ? "admin-map-leaflet--repositioning" : ""} ${calibrationMode ? "admin-map-leaflet--calibrating" : ""}`}
+              maxBounds={resolvedMapBounds}
+              maxBoundsViscosity={1}
+              maxZoom={24}
+              preferCanvas
+              scrollWheelZoom
+              zoomControl={false}
+              zoomDelta={0.5}
+              zoomSnap={0.25}
+            >
+              <ZoomControl position="topright" />
+              <CalibratedImageOverlay
+                corners={resolvedCalibration.corners}
+                imageUrl={resolvedCalibration.imageUrl}
+                opacity={1}
+              />
+              <AdminMapBridge imageBounds={resolvedMapBounds} onMapClick={handleMapClick} />
+
+              {calibrationMode ? (
+                <>
+                  <Polyline
+                    pathOptions={{
+                      color: "#ffca5f",
+                      dashArray: "10 8",
+                      fill: false,
+                      weight: 2,
+                    }}
+                    positions={[...resolvedCalibration.corners, resolvedCalibration.corners[0]]}
+                  />
+                  {resolvedCalibration.corners.map((corner, index) => (
+                    <CircleMarker
+                      center={corner}
+                      key={`corner-${index}`}
+                      pathOptions={{
+                        color: "#3ce6ff",
+                        fillColor: "#3ce6ff",
+                        fillOpacity: 0.9,
+                        weight: 2,
+                      }}
+                      radius={5}
+                    />
+                  ))}
+                  <CircleMarker
+                    center={resolvedCalibration.center}
+                    pathOptions={{
+                      color: "#ff9b54",
+                      fillColor: "#ff9b54",
+                      fillOpacity: 0.94,
+                      weight: 2,
+                    }}
+                    radius={8}
+                  />
+                </>
+              ) : null}
+
+              {renderedMappedPlacements.map((placement) => {
+                const isSelectedMappedTree =
+                  selectedTreeSelection?.scope === "mapped" &&
+                  selectedTreeSelection.treeId === placement.id;
+                const mappedTreeColor = placement.plantTypeColor ?? "#57f287";
+
+                return (
+                  <CircleMarker
+                    center={placement.latlng}
+                    eventHandlers={
+                      repositionMode && !calibrationMode
+                        ? {
+                            click(event) {
+                              event.originalEvent?.stopPropagation();
+                              handleTreeSelect(placement, "mapped");
+                            },
+                          }
+                        : undefined
+                    }
+                    key={placement.id}
+                    pathOptions={{
+                      color: isSelectedMappedTree ? "#ffca5f" : mappedTreeColor,
+                      fillColor: isSelectedMappedTree ? "#ffca5f" : mappedTreeColor,
+                      fillOpacity: isSelectedMappedTree ? 0.96 : 0.88,
+                      weight: 2,
+                    }}
+                    radius={isSelectedMappedTree ? 8 : 7}
+                  />
+                );
+              })}
+              {pendingPlacement ? (
+                <>
+                  <CircleMarker
+                    center={pendingPlacement.latlng}
+                    pathOptions={{
+                      color: "#ffca5f",
+                      fillColor: "#ffca5f",
+                      fillOpacity: 0.92,
+                      weight: 2,
+                    }}
+                    radius={8}
+                  />
+                  <Popup
+                    autoClose={false}
+                    autoPan={false}
+                    closeButton={false}
+                    closeOnClick={false}
+                    position={pendingPlacement.latlng}
+                  >
+                    <div className="admin-confirm-popup">
+                      <strong>
+                        {pendingPlacement.scope === "mapped"
+                          ? `Confirm new position for ${pendingPlacement.tree.treeIdDisplay}?`
+                          : `Confirm position for ${pendingPlacement.tree.treeIdDisplay}?`}
+                      </strong>
+                      <span>
+                        Lat {pendingPlacement.latlng.lat.toFixed(6)}
+                      </span>
+                      <span>
+                        Lng {pendingPlacement.latlng.lng.toFixed(6)}
+                      </span>
+                      <div className="admin-confirm-actions">
+                        <button
+                          className="admin-confirm-button admin-confirm-button--primary"
+                          type="button"
+                          onClick={handleConfirmPlacement}
+                          disabled={isSavingPlacement}
+                        >
+                          {isSavingPlacement ? "Saving..." : "Confirm"}
+                        </button>
+                        <button
+                          className="admin-confirm-button"
+                          type="button"
+                          onClick={handleCancelPlacement}
+                          disabled={isSavingPlacement}
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  </Popup>
+                </>
+              ) : null}
+            </MapContainer>
+          ) : (
+            <div className="admin-map-placeholder" />
+          )}
+
+          <div className="admin-map-scrim" />
+          <div className="admin-map-grid" />
+
+          {showMapInfo ? (
+            <>
+              <div className="admin-map-overlay admin-map-overlay--top-left">
+                <p className="overlay-label">Mapping Status</p>
+                <strong>
+                  {calibrationMode
+                    ? "Calibration editing active"
+                    : loadState === "ready"
+                      ? "Awaiting tree selection"
+                      : "Loading workspace"}
+                </strong>
+                <span>
+                  {calibrationMode
+                    ? `Center ${resolvedCalibration.center.lat.toFixed(6)}, ${resolvedCalibration.center.lng.toFixed(6)}`
+                    : selectedTree
+                      ? `Currently mapping ${selectedTree.treeIdDisplay}.`
+                      : dataSource === "supabase"
+                        ? "Confirmed points will write directly to plants.latitude and plants.longitude."
+                        : "Confirmed points stay local until Supabase credentials are configured."}
+                </span>
+              </div>
+
+              <div className="admin-map-overlay admin-map-overlay--bottom-right">
+                <p className="overlay-label">{calibrationMode ? "Calibration Draft" : "Pending Queue"}</p>
+                <strong>
+                  {calibrationMode
+                    ? `${resolvedCalibration.sizeMeters.width}m x ${resolvedCalibration.sizeMeters.height}m`
+                    : `${queueTrees.length} Trees`}
+                </strong>
+                <span>
+                  {calibrationMode
+                    ? `${resolvedCalibration.headingDegrees}° top bearing`
+                    : "Garden 3 remains in setup mode."}
+                </span>
+              </div>
+            </>
+          ) : null}
+        </div>
+      </section>
+
+      <section className="admin-panel admin-panel--sidebar" aria-label="Admin Tree Workspace">
         <div className="admin-panel__header">
           <div>
             <p className="section-kicker">Queue</p>
@@ -1031,280 +1305,6 @@ export function AdminOrchardWorkspace({
             </div>
           </>
         ) : null}
-      </aside>
-
-      <section className="admin-panel admin-panel--map" aria-label="Admin Map Workspace">
-        <div className="admin-panel__header">
-          <div>
-            <p className="section-kicker">Plotting Surface</p>
-            <h2>Garden 3 Calibration Canvas</h2>
-          </div>
-          <div className="admin-panel__actions">
-            <label className="admin-toggle" htmlFor="admin-map-info-toggle">
-              <input
-                id="admin-map-info-toggle"
-                type="checkbox"
-                checked={showMapInfo}
-                onChange={() => setShowMapInfo((currentValue) => !currentValue)}
-              />
-              <span className="admin-toggle__track" aria-hidden="true">
-                <span className="admin-toggle__thumb" />
-              </span>
-              <span className="admin-toggle__label">Show Map Info</span>
-            </label>
-            <label className="admin-toggle" htmlFor="admin-reposition-toggle">
-              <input
-                id="admin-reposition-toggle"
-                type="checkbox"
-                checked={repositionMode}
-                onChange={handleRepositionToggle}
-              />
-              <span className="admin-toggle__track" aria-hidden="true">
-                <span className="admin-toggle__thumb" />
-              </span>
-              <span className="admin-toggle__label">Reposition Existing</span>
-            </label>
-            <label className="admin-toggle" htmlFor="admin-calibration-toggle">
-              <input
-                id="admin-calibration-toggle"
-                type="checkbox"
-                checked={calibrationMode}
-                onChange={handleCalibrationToggle}
-              />
-              <span className="admin-toggle__track" aria-hidden="true">
-                <span className="admin-toggle__thumb" />
-              </span>
-              <span className="admin-toggle__label">Calibration Editor</span>
-            </label>
-            <span className="admin-count-pill admin-count-pill--map">Leaflet Ready</span>
-            <span className="admin-count-pill admin-count-pill--map">
-              {dataSource === "supabase" ? "Supabase Sync" : "Session Only"}
-            </span>
-          </div>
-        </div>
-
-        <div className={`admin-mapping-banner ${isPlottingMode || calibrationMode ? "admin-mapping-banner--active" : ""}`}>
-          <p className="overlay-label">
-            {calibrationMode ? "Calibration Editor" : repositionMode ? "Reposition Mode" : "Plotting Mode"}
-          </p>
-          <strong>
-            {calibrationMode
-              ? "Click the map to move the drone image center."
-              : selectedTree
-                ? `Currently Mapping: ${selectedTree.treeIdDisplay}`
-                : repositionMode
-                  ? "Enable repositioning and select an existing marker."
-                  : "Select a tree to begin plotting."}
-          </strong>
-          <span>
-            {calibrationMode
-              ? "Tune heading, width, and height from the sidebar, then save the override to this browser."
-              : selectedTree
-                ? selectedTreeScope === "mapped"
-                  ? "Click the drone image to move this mapped tree, then confirm the popup."
-                  : "Click the drone image to place a draft point, then confirm the popup."
-                : repositionMode
-                  ? "Existing dots become selectable when reposition mode is active."
-                  : "Tree selection activates crosshair mode on the map."}
-          </span>
-        </div>
-
-        {feedback ? (
-          <div className={`admin-toast admin-toast--${feedback.tone}`} role="status">
-            {feedback.message}
-          </div>
-        ) : null}
-
-        <div className="admin-map-viewport">
-          {resolvedMapBounds ? (
-            <MapContainer
-              attributionControl={false}
-              bounds={resolvedMapBounds}
-              boundsOptions={{ padding: FIT_BOUNDS_PADDING }}
-              className={`admin-map-leaflet ${isPlottingMode || calibrationMode ? "admin-map-leaflet--plotting" : ""} ${repositionMode ? "admin-map-leaflet--repositioning" : ""} ${calibrationMode ? "admin-map-leaflet--calibrating" : ""}`}
-              maxBounds={resolvedMapBounds}
-              maxBoundsViscosity={1}
-              maxZoom={24}
-              preferCanvas
-              scrollWheelZoom
-              zoomControl={false}
-              zoomDelta={0.5}
-              zoomSnap={0.25}
-            >
-              <ZoomControl position="topright" />
-              <CalibratedImageOverlay
-                corners={resolvedCalibration.corners}
-                imageUrl={resolvedCalibration.imageUrl}
-                opacity={1}
-              />
-              <AdminMapBridge imageBounds={resolvedMapBounds} onMapClick={handleMapClick} />
-
-              {calibrationMode ? (
-                <>
-                  <Polyline
-                    pathOptions={{
-                      color: "#ffca5f",
-                      dashArray: "10 8",
-                      fill: false,
-                      weight: 2,
-                    }}
-                    positions={[...resolvedCalibration.corners, resolvedCalibration.corners[0]]}
-                  />
-                  {resolvedCalibration.corners.map((corner, index) => (
-                    <CircleMarker
-                      center={corner}
-                      key={`corner-${index}`}
-                      pathOptions={{
-                        color: "#3ce6ff",
-                        fillColor: "#3ce6ff",
-                        fillOpacity: 0.9,
-                        weight: 2,
-                      }}
-                      radius={5}
-                    />
-                  ))}
-                  <CircleMarker
-                    center={resolvedCalibration.center}
-                    pathOptions={{
-                      color: "#ff9b54",
-                      fillColor: "#ff9b54",
-                      fillOpacity: 0.94,
-                      weight: 2,
-                    }}
-                    radius={8}
-                  />
-                </>
-              ) : null}
-
-              {renderedMappedPlacements.map((placement) => {
-                const isSelectedMappedTree =
-                  selectedTreeSelection?.scope === "mapped" &&
-                  selectedTreeSelection.treeId === placement.id;
-                const mappedTreeColor = placement.plantTypeColor ?? "#57f287";
-
-                return (
-                  <CircleMarker
-                    center={placement.latlng}
-                    eventHandlers={
-                      repositionMode && !calibrationMode
-                        ? {
-                            click(event) {
-                              event.originalEvent?.stopPropagation();
-                              handleTreeSelect(placement, "mapped");
-                            },
-                          }
-                        : undefined
-                    }
-                    key={placement.id}
-                    pathOptions={{
-                      color: isSelectedMappedTree ? "#ffca5f" : mappedTreeColor,
-                      fillColor: isSelectedMappedTree ? "#ffca5f" : mappedTreeColor,
-                      fillOpacity: isSelectedMappedTree ? 0.96 : 0.88,
-                      weight: 2,
-                    }}
-                    radius={isSelectedMappedTree ? 8 : 7}
-                  />
-                );
-              })}
-              {pendingPlacement ? (
-                <>
-                  <CircleMarker
-                    center={pendingPlacement.latlng}
-                    pathOptions={{
-                      color: "#ffca5f",
-                      fillColor: "#ffca5f",
-                      fillOpacity: 0.92,
-                      weight: 2,
-                    }}
-                    radius={8}
-                  />
-                  <Popup
-                    autoClose={false}
-                    autoPan={false}
-                    closeButton={false}
-                    closeOnClick={false}
-                    position={pendingPlacement.latlng}
-                  >
-                    <div className="admin-confirm-popup">
-                      <strong>
-                        {pendingPlacement.scope === "mapped"
-                          ? `Confirm new position for ${pendingPlacement.tree.treeIdDisplay}?`
-                          : `Confirm position for ${pendingPlacement.tree.treeIdDisplay}?`}
-                      </strong>
-                      <span>
-                        Lat {pendingPlacement.latlng.lat.toFixed(6)}
-                      </span>
-                      <span>
-                        Lng {pendingPlacement.latlng.lng.toFixed(6)}
-                      </span>
-                      <div className="admin-confirm-actions">
-                        <button
-                          className="admin-confirm-button admin-confirm-button--primary"
-                          type="button"
-                          onClick={handleConfirmPlacement}
-                          disabled={isSavingPlacement}
-                        >
-                          {isSavingPlacement ? "Saving..." : "Confirm"}
-                        </button>
-                        <button
-                          className="admin-confirm-button"
-                          type="button"
-                          onClick={handleCancelPlacement}
-                          disabled={isSavingPlacement}
-                        >
-                          Cancel
-                        </button>
-                      </div>
-                    </div>
-                  </Popup>
-                </>
-              ) : null}
-            </MapContainer>
-          ) : (
-            <div className="admin-map-placeholder" />
-          )}
-
-          <div className="admin-map-scrim" />
-          <div className="admin-map-grid" />
-
-          {showMapInfo ? (
-            <>
-              <div className="admin-map-overlay admin-map-overlay--top-left">
-                <p className="overlay-label">Mapping Status</p>
-                <strong>
-                  {calibrationMode
-                    ? "Calibration editing active"
-                    : loadState === "ready"
-                      ? "Awaiting tree selection"
-                      : "Loading workspace"}
-                </strong>
-                <span>
-                  {calibrationMode
-                    ? `Center ${resolvedCalibration.center.lat.toFixed(6)}, ${resolvedCalibration.center.lng.toFixed(6)}`
-                    : selectedTree
-                      ? `Currently mapping ${selectedTree.treeIdDisplay}.`
-                      : dataSource === "supabase"
-                        ? "Confirmed points will write directly to plants.latitude and plants.longitude."
-                        : "Confirmed points stay local until Supabase credentials are configured."}
-                </span>
-              </div>
-
-              <div className="admin-map-overlay admin-map-overlay--bottom-right">
-                <p className="overlay-label">{calibrationMode ? "Calibration Draft" : "Pending Queue"}</p>
-                <strong>
-                  {calibrationMode
-                    ? `${resolvedCalibration.sizeMeters.width}m x ${resolvedCalibration.sizeMeters.height}m`
-                    : `${queueTrees.length} Trees`}
-                </strong>
-                <span>
-                  {calibrationMode
-                    ? `${resolvedCalibration.headingDegrees}° top bearing`
-                    : "Garden 3 remains in setup mode."}
-                </span>
-              </div>
-            </>
-          ) : null}
-        </div>
       </section>
     </main>
   );
