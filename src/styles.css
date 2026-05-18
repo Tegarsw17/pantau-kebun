@@ -200,6 +200,12 @@ body::before {
   padding: 4px 4px 2px;
 }
 
+.page-intro--with-toolbar {
+  grid-template-columns: minmax(0, 1fr) minmax(220px, 260px);
+  align-items: end;
+  gap: 16px;
+}
+
 .page-intro__copy {
   display: grid;
   gap: 4px;
@@ -346,6 +352,10 @@ body::before {
   gap: 8px;
   color: var(--muted);
   font-size: 0.88rem;
+}
+
+.admin-garden-picker {
+  width: 100%;
 }
 
 .admin-workspace {
@@ -2270,6 +2280,10 @@ tbody tr + tr td {
   .app-sidebar {
     position: static;
     min-height: 0;
+  }
+
+  .page-intro--with-toolbar {
+    grid-template-columns: 1fr;
   }
 
   .app-sidebar__nav {

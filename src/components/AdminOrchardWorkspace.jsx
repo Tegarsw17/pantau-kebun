@@ -645,37 +645,7 @@ export function AdminOrchardWorkspace({
               </span>
               <span className="admin-toggle__label">Calibration Editor</span>
             </label>
-            <span className="admin-count-pill admin-count-pill--map">Leaflet Ready</span>
-            <span className="admin-count-pill admin-count-pill--map">
-              {dataSource === "supabase" ? "Supabase Sync" : "Session Only"}
-            </span>
           </div>
-        </div>
-
-        <div className={`admin-mapping-banner ${isPlottingMode || calibrationMode ? "admin-mapping-banner--active" : ""}`}>
-          <p className="overlay-label">
-            {calibrationMode ? "Calibration Editor" : repositionMode ? "Reposition Mode" : "Plotting Mode"}
-          </p>
-          <strong>
-            {calibrationMode
-              ? "Click the map to move the drone image center."
-              : selectedTree
-                ? `Currently Mapping: ${selectedTree.treeIdDisplay}`
-                : repositionMode
-                  ? "Enable repositioning and select an existing marker."
-                  : "Select a tree to begin plotting."}
-          </strong>
-          <span>
-            {calibrationMode
-              ? "Tune heading, width, and height from the sidebar, then save the override to this browser."
-              : selectedTree
-                ? selectedTreeScope === "mapped"
-                  ? "Click the drone image to move this mapped tree, then confirm the popup."
-                  : "Click the drone image to place a draft point, then confirm the popup."
-                : repositionMode
-                  ? "Existing dots become selectable when reposition mode is active."
-                  : "Tree selection activates crosshair mode on the map."}
-          </span>
         </div>
 
         {feedback ? (

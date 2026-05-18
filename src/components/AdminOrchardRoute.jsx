@@ -187,8 +187,15 @@ export function AdminOrchardRoute() {
       </aside>
 
       <div className="app-content">
-        <section className="page-intro" aria-label="Admin Orchard page title">
+        <section className="page-intro page-intro--with-toolbar" aria-label="Admin Orchard page title">
           <h1>Admin Orchard</h1>
+
+          <label className="control-block admin-garden-picker" htmlFor="admin-garden-select">
+            <span className="control-label">Garden</span>
+            <select id="admin-garden-select" defaultValue="garden-3">
+              <option value="garden-3">Kebun Ntak-Ntak</option>
+            </select>
+          </label>
         </section>
 
         <AdminOrchardWorkspace
