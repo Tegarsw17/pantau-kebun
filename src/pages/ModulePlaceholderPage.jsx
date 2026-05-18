@@ -2,7 +2,7 @@ import { WorkspacePageFrame } from "../components/WorkspacePageFrame.jsx";
 
 export function ModulePlaceholderPage({ module }) {
   return (
-    <WorkspacePageFrame module={module}>
+    <WorkspacePageFrame module={module} title={module.label}>
       <main className="dashboard">
         <section
           className="workspace-panel workspace-panel--secondary"

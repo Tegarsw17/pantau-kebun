@@ -128,7 +128,7 @@ export function MonitoringPage() {
         });
 
   return (
-    <WorkspacePageFrame module={WORKSPACE_MODULES.monitoring}>
+    <WorkspacePageFrame module={WORKSPACE_MODULES.monitoring} title="Dashboard">
       <main className="dashboard">
         <MonitoringMapStage
           allValues={ALL_VALUES}

@@ -1,12 +1,10 @@
-export function WorkspacePageFrame({ children, module }) {
+export function WorkspacePageFrame({ children, module, title }) {
+  const pageTitle = title ?? module.title;
+
   return (
     <>
-      <section className="page-intro" aria-label={`${module.label} page title`}>
-        <p className="section-kicker">{module.label}</p>
-        <div className="page-intro__copy">
-          <h1>{module.title}</h1>
-          <p className="page-intro__summary">{module.summary}</p>
-        </div>
+      <section className="page-intro" aria-label={`${pageTitle} page title`}>
+        <h1>{pageTitle}</h1>
       </section>
 
       {children}
