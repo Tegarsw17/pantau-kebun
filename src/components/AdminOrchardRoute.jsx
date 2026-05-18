@@ -177,7 +177,7 @@ export function AdminOrchardRoute() {
 
           <div className="admin-sidebar__meta">
             <span>Garden 3</span>
-            <span>{dataSource === "supabase" ? "Supabase Sync" : "Local Draft"}</span>
+            <span>{workspaceSnapshot.dataSource === "supabase" ? "Supabase Sync" : "Local Draft"}</span>
           </div>
         </div>
 
