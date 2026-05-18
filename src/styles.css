@@ -63,7 +63,7 @@ body::before {
   top: 14px;
   min-height: calc(100vh - 28px);
   display: grid;
-  grid-template-rows: auto 1fr;
+  grid-template-rows: auto 1fr auto;
   gap: 18px;
   padding: 18px 16px;
   border: 1px solid var(--line);
@@ -185,6 +185,66 @@ body::before {
 
 .app-sidebar__nav-button--active .app-sidebar__nav-glyph {
   color: #d8fbff;
+}
+
+.app-sidebar__weather {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid rgba(114, 144, 156, 0.14);
+  border-radius: 10px;
+  background: rgba(9, 18, 23, 0.84);
+}
+
+.app-sidebar__weather-header,
+.app-sidebar__weather-body {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.app-sidebar__weather-label {
+  color: var(--muted);
+  font-size: 0.82rem;
+  line-height: 1.4;
+}
+
+.app-sidebar__weather-temperature {
+  color: var(--text);
+  font-size: 1rem;
+}
+
+.app-sidebar__weather-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+}
+
+.app-sidebar__weather-icon--sunny {
+  color: #ffca5f;
+}
+
+.app-sidebar__weather-icon--rainy {
+  color: #7dd3fc;
+}
+
+.app-sidebar__weather-icon--foggy {
+  color: #cbd5e1;
+}
+
+.app-sidebar__weather-icon--stormy {
+  color: #fda4af;
+}
+
+.app-sidebar__weather-icon--cloudy {
+  color: #a7d7df;
+}
+
+.app-sidebar__weather-condition {
+  color: var(--text);
+  font-size: 0.92rem;
 }
 
 .app-content {
