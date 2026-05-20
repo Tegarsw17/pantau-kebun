@@ -51,33 +51,40 @@ jobs:
         env:
           VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
         run: |
-          PORT="${VPS_PORT:-22}"
-          
-          # 1. Pastikan folder .ssh dibuat dengan jalur absolut & aman
+          # 1. Bersihkan variabel dari karakter gaib (\r atau spasi di ujung) akibat copy-paste
+          CLEAN_HOST=$(echo "$VPS_HOST" | tr -d '\r' | xargs)
+          CLEAN_PORT=$(echo "$VPS_PORT" | tr -d '\r' | xargs)
+          PORT="${CLEAN_PORT:-22}"
+
+          # 2. Pastikan folder .ssh siap
           mkdir -p /home/runner/.ssh
           chmod 700 /home/runner/.ssh
-          
-          # 2. Masukkan SSH Key ke dalam file id_ed25519
-          echo "$VPS_SSH_KEY" > /home/runner/.ssh/id_ed25519
+
+          # 3. Masukkan SSH Key dan bersihkan juga dari crack baris Windows (\r)
+          echo "$VPS_SSH_KEY" | tr -d '\r' > /home/runner/.ssh/id_ed25519
           chmod 600 /home/runner/.ssh/id_ed25519
+
+          echo "Mencoba mengambil fingerprint dari $CLEAN_HOST pada port $PORT..."
           
-          echo "Mencoba mengambil fingerprint SSH dari $VPS_HOST pada port $PORT..."
+          # 4. Jalankan ssh-keyscan dan tampung hasilnya (termasuk errornya) ke file
+          # Kita tambahkan '|| BUG_EXIT=$?' agar bash tidak langsung mati saat command ini gagal
+          ssh-keyscan -p "$PORT" -H "$CLEAN_HOST" > /home/runner/.ssh/known_hosts 2>&1 || BUG_EXIT=$?
           
-          # 3. Jalankan scanning port dan langsung masukkan ke known_hosts
-          ssh-keyscan -p "$PORT" -H "$VPS_HOST" > /home/runner/.ssh/known_hosts
-          
-          # 4. VALIDASI: Cek apakah file known_hosts berhasil terisi atau kosong
-          if [ ! -s /home/runner/.ssh/known_hosts ]; then
+          # 5. VALIDASI KETAT: Jika gagal atau hasilnya kosong, bongkar isi errornya
+          if [ ${BUG_EXIT:-0} -ne 0 ] || [ ! -s /home/runner/.ssh/known_hosts ]; then
             echo "================================================================"
-            echo "ERROR: ssh-keyscan GAGAL total!"
-            echo "GitHub Actions tidak bisa terhubung ke VPS Anda."
-            echo "Silakan cek kembali 2 hal ini di GitHub Secrets Anda:"
-            echo "1. Apakah VPS_HOST sudah benar? (Hanya IP/Domain, tanpa http://)"
-            echo "2. Apakah VPS_PORT sudah benar? (Default: 22)"
+            echo "SSH-KEYSCAN GAGAL TOTAL!"
+            echo "Pesan Error Asli dari Sistem:"
+            cat /home/runner/.ssh/known_hosts
+            echo "----------------------------------------------------------------"
+            echo "Rekomendasi tindakan:"
+            echo "1. Periksa VPS_HOST di Secrets. Pastikan HANYA IP murni (contoh: 103.22.43.11)"
+            echo "   atau domain murni (contoh: domainku.com). TANPA http:// atau ssh://"
+            echo "2. Periksa VPS_PORT di Secrets. Pastikan HANYA angka (contoh: 22)"
             echo "================================================================"
             exit 1
           fi
-          
+
           echo "Fingerprint SSH berhasil disimpan ke known_hosts!"
 
       - name: Ensure target directory exists
