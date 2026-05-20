@@ -51,6 +51,10 @@ jobs:
         env:
           VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
         run: |
+          echo "Mencoba melakukan scanning port SSH ke $VPS_HOST pada port $PORT..."
+          
+          ssh-keyscan -p "$PORT" -H "$VPS_HOST" >> ~/.ssh/known_hosts || echo "SSH-KEYSCAN GAGAL: Periksa kembali IP, Port, atau Firewall VPS Anda!"
+          
           set -eu
           PORT="${VPS_PORT:-22}"
 
