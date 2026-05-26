@@ -4,6 +4,7 @@ import {
   INVENTORY_CATEGORIES,
   loadInventoryWorkspace,
 } from "../data/inventoryData.js";
+import { InventoryMutationModal } from "./InventoryMutationModal.jsx";
 
 const EXPIRY_WARNING_MONTHS = 6;
 const PRICE_FORMATTER = new Intl.NumberFormat("id-ID", {
@@ -173,13 +174,37 @@ function InventoryItemCard({ item, onMutationRequest, userRole }) {
   );
 }
 
-export function InventoryWorkspace({ onMutationRequest, userRole = "non-admin" }) {
+function applyMovementToItem(item, movement) {
+  if (String(item.id) !== String(movement.itemId)) {
+    return item;
+  }
+
+  const nextMovements = [movement, ...item.movements].sort(
+    (leftMovement, rightMovement) => rightMovement.createdAtEpoch - leftMovement.createdAtEpoch,
+  );
+
+  return {
+    ...item,
+    currentStock: item.currentStock + movement.qty,
+    latestExpiryDate:
+      nextMovements.find((nextMovement) => nextMovement.expiryDate != null)?.expiryDate ?? null,
+    latestIncomingPrice:
+      nextMovements.find(
+        (nextMovement) => nextMovement.type === "IN" && nextMovement.pricePerUnit != null,
+      )?.pricePerUnit ?? null,
+    latestMovement: nextMovements[0] ?? null,
+    movements: nextMovements,
+  };
+}
+
+export function InventoryWorkspace({ userRole = "non-admin" }) {
   const [inventorySnapshot, setInventorySnapshot] = useState({
     dataSource: "static",
     items: [],
     loadMessage: "Loading inventory",
     loadState: "loading",
   });
+  const [selectedMutationItem, setSelectedMutationItem] = useState(null);
   const [selectedCategory, setSelectedCategory] = useState(ALL_INVENTORY_CATEGORIES);
   const [searchQuery, setSearchQuery] = useState("");
   const deferredSearchQuery = useDeferredValue(searchQuery);
@@ -227,8 +252,16 @@ export function InventoryWorkspace({ onMutationRequest, userRole = "non-admin" }
   });
   const isAdmin = userRole === "admin";
 
+  const handleMovementSaved = (movement) => {
+    setInventorySnapshot((currentSnapshot) => ({
+      ...currentSnapshot,
+      items: currentSnapshot.items.map((item) => applyMovementToItem(item, movement)),
+    }));
+  };
+
   return (
-    <main className="dashboard inventory-workspace">
+    <>
+      <main className="dashboard inventory-workspace">
       <section className="workspace-panel workspace-panel--primary inventory-hero">
         <div className="workspace-panel__header inventory-hero__header">
           <div className="workspace-panel__heading">
@@ -299,13 +332,22 @@ export function InventoryWorkspace({ onMutationRequest, userRole = "non-admin" }
               <InventoryItemCard
                 item={item}
                 key={item.id}
-                onMutationRequest={onMutationRequest}
+                onMutationRequest={setSelectedMutationItem}
                 userRole={userRole}
               />
             ))}
           </div>
         )}
       </section>
-    </main>
+      </main>
+
+      {isAdmin && selectedMutationItem != null ? (
+        <InventoryMutationModal
+          item={selectedMutationItem}
+          onClose={() => setSelectedMutationItem(null)}
+          onSaved={handleMovementSaved}
+        />
+      ) : null}
+    </>
   );
 }

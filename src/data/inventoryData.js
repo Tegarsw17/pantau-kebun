@@ -219,7 +219,7 @@ function normalizeItem(item) {
   };
 }
 
-function normalizeMovement(movement) {
+export function normalizeInventoryMovement(movement) {
   return {
     createdAt: normalizeDateValue(movement?.created_at),
     createdAtEpoch: resolveCreatedAtEpoch(movement?.created_at),
@@ -267,7 +267,9 @@ function buildMovementSummaryByItemId(movements) {
 }
 
 export function buildInventoryItems(items, movements) {
-  const normalizedMovements = (Array.isArray(movements) ? movements : []).map(normalizeMovement);
+  const normalizedMovements = (Array.isArray(movements) ? movements : []).map(
+    normalizeInventoryMovement,
+  );
   const summaryByItemId = buildMovementSummaryByItemId(normalizedMovements);
 
   return (Array.isArray(items) ? items : []).map((item) => {
