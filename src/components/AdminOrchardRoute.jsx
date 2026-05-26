@@ -114,7 +114,14 @@ export function AdminOrchardRoute() {
       }}
     >
       <div className="app-shell admin-shell">
-        <WorkspaceSidebar basePath="/admin-orchard" />
+        <WorkspaceSidebar
+          basePath="/admin-orchard"
+          footerAction={
+            <button className="admin-lock-button admin-lock-button--sidebar" type="button" onClick={handleLock}>
+              Lock Session
+            </button>
+          }
+        />
 
         <div className="app-content">
           <Outlet />

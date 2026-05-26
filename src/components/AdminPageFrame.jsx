@@ -1,7 +1,7 @@
 import { useAdminWorkspace } from "./AdminWorkspaceContext.jsx";
 
 export function AdminPageFrame({ children, summary, title }) {
-  const { gardenLabel, onLockSession } = useAdminWorkspace();
+  const { gardenLabel } = useAdminWorkspace();
 
   return (
     <>
@@ -18,10 +18,6 @@ export function AdminPageFrame({ children, summary, title }) {
               <option value="garden-3">{gardenLabel}</option>
             </select>
           </label>
-
-          <button className="admin-lock-button admin-lock-button--toolbar" type="button" onClick={onLockSession}>
-            Lock Session
-          </button>
         </div>
       </section>
 

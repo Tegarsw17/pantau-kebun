@@ -169,7 +169,7 @@ function SidebarWeatherCard() {
   );
 }
 
-export function WorkspaceSidebar({ basePath = "" }) {
+export function WorkspaceSidebar({ basePath = "", footerAction = null }) {
   const pathname = useRouterState({
     select: (state) => state.location.pathname,
   });
@@ -219,7 +219,10 @@ export function WorkspaceSidebar({ basePath = "" }) {
         })}
       </nav>
 
-      <SidebarWeatherCard />
+      <div className="app-sidebar__footer">
+        {footerAction}
+        <SidebarWeatherCard />
+      </div>
     </aside>
   );
 }

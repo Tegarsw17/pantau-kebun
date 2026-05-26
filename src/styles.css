@@ -187,6 +187,12 @@ body::before {
   color: #d8fbff;
 }
 
+.app-sidebar__footer {
+  display: grid;
+  gap: 12px;
+  align-content: end;
+}
+
 .app-sidebar__weather {
   display: grid;
   gap: 12px;
@@ -376,7 +382,7 @@ body::before {
   align-self: stretch;
 }
 
-.admin-lock-button--toolbar {
+.admin-lock-button--sidebar {
   width: 100%;
 }
 
