@@ -214,8 +214,9 @@ function applyMovementToItem(item, movement) {
 }
 
 export function InventoryWorkspace({ userRole = "non-admin" }) {
+  const isAdmin = userRole === "admin";
   const [inventorySnapshot, setInventorySnapshot] = useState({
-    dataSource: "static",
+    dataSource: isAdmin ? "supabase" : "static",
     items: [],
     loadMessage: "Loading inventory",
     loadState: "loading",
@@ -229,7 +230,9 @@ export function InventoryWorkspace({ userRole = "non-admin" }) {
   useEffect(() => {
     let isMounted = true;
 
-    loadInventoryWorkspace()
+    loadInventoryWorkspace({
+      allowStaticFallback: !isAdmin,
+    })
       .then((snapshot) => {
         if (!isMounted) {
           return;
@@ -248,9 +251,11 @@ export function InventoryWorkspace({ userRole = "non-admin" }) {
         }
 
         setInventorySnapshot({
-          dataSource: "static",
+          dataSource: isAdmin ? "supabase" : "static",
           items: [],
-          loadMessage: "Inventory data could not be loaded.",
+          loadMessage: isAdmin
+            ? "Supabase inventory data could not be loaded."
+            : "Inventory data could not be loaded.",
           loadState: "error",
         });
       });
@@ -267,8 +272,6 @@ export function InventoryWorkspace({ userRole = "non-admin" }) {
 
     return matchesCategory && itemMatchesSearch(item, normalizedSearchQuery);
   });
-  const isAdmin = userRole === "admin";
-
   const handleMovementSaved = (movement) => {
     setInventorySnapshot((currentSnapshot) => ({
       ...currentSnapshot,
@@ -357,7 +360,11 @@ export function InventoryWorkspace({ userRole = "non-admin" }) {
         ) : inventorySnapshot.loadState === "error" ? (
           <div className="inventory-empty-state">
             <strong>Inventory unavailable</strong>
-            <span>Check Supabase configuration or static preview data.</span>
+            <span>
+              {isAdmin
+                ? "Admin inventory requires Supabase tables and environment variables."
+                : "Check Supabase configuration or static preview data."}
+            </span>
           </div>
         ) : filteredItems.length === 0 ? (
           <div className="inventory-empty-state">

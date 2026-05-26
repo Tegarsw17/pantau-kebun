@@ -343,7 +343,7 @@ export async function fetchInventoryMovements() {
   return response.json();
 }
 
-export async function loadInventoryWorkspace() {
+export async function loadInventoryWorkspace({ allowStaticFallback = true } = {}) {
   if (isAdminSupabaseConfigured()) {
     try {
       const [items, movements] = await Promise.all([
@@ -357,12 +357,20 @@ export async function loadInventoryWorkspace() {
         loadMessage: "Supabase inventory loaded.",
       };
     } catch {
+      if (!allowStaticFallback) {
+        throw new Error("Supabase inventory data could not be loaded.");
+      }
+
       return {
         dataSource: "static",
         items: buildInventoryItems(STATIC_ITEMS, STATIC_MOVEMENTS),
         loadMessage: "Supabase inventory unavailable. Static inventory preview loaded.",
       };
     }
+  }
+
+  if (!allowStaticFallback) {
+    throw new Error("Supabase inventory connection is not configured.");
   }
 
   return {

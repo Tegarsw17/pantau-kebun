@@ -1,5 +1,9 @@
 import { useEffect, useState } from "react";
 import {
+  isCloudinaryInventoryUploadConfigured,
+  uploadInventoryItemImage,
+} from "../data/cloudinaryInventory.js";
+import {
   INVENTORY_CATEGORIES,
   buildInventoryItemPayload,
   buildInventoryItems,
@@ -16,12 +20,26 @@ export function InventoryItemModal({ onClose, onSaved }) {
   const [unit, setUnit] = useState("");
   const [lowStockThreshold, setLowStockThreshold] = useState("");
   const [imageUrl, setImageUrl] = useState("");
+  const [selectedImageFile, setSelectedImageFile] = useState(null);
+  const [previewImageUrl, setPreviewImageUrl] = useState("");
   const [initialQuantity, setInitialQuantity] = useState("");
   const [initialPricePerUnit, setInitialPricePerUnit] = useState("");
   const [initialExpiryDate, setInitialExpiryDate] = useState("");
   const [initialNotes, setInitialNotes] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const [isSaving, setIsSaving] = useState(false);
+
+  useEffect(() => {
+    if (selectedImageFile == null) {
+      setPreviewImageUrl("");
+      return undefined;
+    }
+
+    const objectUrl = URL.createObjectURL(selectedImageFile);
+    setPreviewImageUrl(objectUrl);
+
+    return () => URL.revokeObjectURL(objectUrl);
+  }, [selectedImageFile]);
 
   useEffect(() => {
     const handleKeyDown = (event) => {
@@ -65,6 +83,14 @@ export function InventoryItemModal({ onClose, onSaved }) {
       }
     }
 
+    if (selectedImageFile != null && !selectedImageFile.type.startsWith("image/")) {
+      return "Selected file must be an image.";
+    }
+
+    if (selectedImageFile != null && !isCloudinaryInventoryUploadConfigured()) {
+      return "Cloudinary env vars are required before uploading item images.";
+    }
+
     return "";
   };
 
@@ -82,11 +108,13 @@ export function InventoryItemModal({ onClose, onSaved }) {
     setErrorMessage("");
 
     try {
+      const resolvedImageUrl =
+        selectedImageFile == null ? imageUrl : await uploadInventoryItemImage(selectedImageFile);
       const savedItem = await saveInventoryItem(
         buildInventoryItemPayload({
           brand,
           category,
-          imageUrl,
+          imageUrl: resolvedImageUrl,
           lowStockThreshold,
           name,
           unit,
@@ -95,10 +123,11 @@ export function InventoryItemModal({ onClose, onSaved }) {
       const numericInitialQuantity = Number(initialQuantity);
       const shouldCreateInitialMovement =
         Number.isFinite(numericInitialQuantity) && numericInitialQuantity > 0;
+      let savedMovement = null;
       let normalizedMovement = null;
 
       if (shouldCreateInitialMovement) {
-        const savedMovement = await saveInventoryStockMovement(
+        savedMovement = await saveInventoryStockMovement(
           buildStockMovementPayload({
             expiryDate: initialExpiryDate,
             itemId: savedItem.id,
@@ -114,7 +143,7 @@ export function InventoryItemModal({ onClose, onSaved }) {
 
       const normalizedItem = buildInventoryItems(
         [savedItem],
-        normalizedMovement == null ? [] : [normalizedMovement],
+        savedMovement == null ? [] : [savedMovement],
       )[0];
 
       onSaved(
@@ -235,17 +264,34 @@ export function InventoryItemModal({ onClose, onSaved }) {
               />
             </label>
 
-            <label className="control-block">
-              <span className="control-label">Image URL</span>
+            <div className="control-block inventory-image-upload">
+              <span className="control-label">Item Image</span>
+              <div className="inventory-image-upload__surface">
+                {previewImageUrl || imageUrl ? (
+                  <img
+                    alt="Inventory item preview"
+                    className="inventory-image-upload__preview"
+                    src={previewImageUrl || imageUrl}
+                  />
+                ) : (
+                  <span>Upload to Cloudinary / item-image</span>
+                )}
+              </div>
               <input
-                className="inventory-form-input"
+                accept="image/*"
+                className="inventory-form-input inventory-form-input--file"
                 disabled={isSaving}
-                onChange={(event) => setImageUrl(event.target.value)}
-                placeholder="https://... or /inventory-pupuk.svg"
-                type="url"
-                value={imageUrl}
+                onChange={(event) => {
+                  setSelectedImageFile(event.target.files?.[0] ?? null);
+                  setImageUrl("");
+                  setErrorMessage("");
+                }}
+                type="file"
               />
-            </label>
+              <span className="inventory-form-hint">
+                Uses `VITE_PUBLIC_CLOUDINARY_UPLOAD_PRESET` and folder `item-image`.
+              </span>
+            </div>
 
             <div className="inventory-form-divider">
               <span>Optional Initial Stock</span>

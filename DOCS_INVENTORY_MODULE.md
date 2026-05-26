@@ -35,6 +35,7 @@ Main inventory view:
 - Horizontal tabs filter by the four inventory categories.
 - Items render as responsive cards: 1 column on mobile, 3-4 columns on desktop.
 - Cards render `items.image_url` when available and fall back to a category visual when empty.
+- Admin item creation uploads images to Cloudinary using `VITE_PUBLIC_CLOUDINARY_CLOUD_NAME` and `VITE_PUBLIC_CLOUDINARY_UPLOAD_PRESET`, with Cloudinary folder `item-image`.
 - Cards show category visual, category badge, name and brand, stock level, stock status, and expiry warning.
 
 Stock states:
@@ -52,7 +53,8 @@ Expiry states:
 Admin-only behavior:
 
 - Admin can create new master items from `Tambah Item`.
-- New item creation supports optional image URL and optional initial stock.
+- New item creation supports optional Cloudinary image upload and optional initial stock.
+- Admin inventory does not use static fallback data; Supabase must be configured and reachable.
 - Item cards show financial information when available.
 - Item cards show the `Mutasi Stok` button.
 - Mutation modal supports `Stok Masuk`, `Stok Keluar`, and `Penyesuaian`.
