@@ -1,7 +1,7 @@
-import { useEffect, useState } from "react";
-import { AdminOrchardWorkspace } from "./AdminOrchardWorkspace.jsx";
-import { loadAdminOrchardWorkspace } from "../data/loadAdminOrchardWorkspace.js";
-import { getAdminPersistenceMode } from "../data/adminOrchardSupabase.js";
+import { Outlet } from "@tanstack/react-router";
+import { useState } from "react";
+import { WorkspaceSidebar } from "./WorkspaceSidebar.jsx";
+import { AdminWorkspaceProvider } from "./AdminWorkspaceContext.jsx";
 
 const ADMIN_ACCESS_KEY = (
   import.meta.env.VITE_ADMIN_ACCESS_KEY ?? (import.meta.env.DEV ? "pantaukebun-admin" : "")
@@ -33,58 +33,8 @@ export function AdminOrchardRoute() {
   const [accessKeyInput, setAccessKeyInput] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const [isAuthenticated, setIsAuthenticated] = useState(readAdminSession);
-  const [workspaceSnapshot, setWorkspaceSnapshot] = useState({
-    dataSource: getAdminPersistenceMode(),
-    imageCalibration: null,
-    imageBounds: null,
-    loadState: "loading",
-    mappedTrees: [],
-    unmappedTrees: [],
-  });
 
   const isAccessKeyConfigured = ADMIN_ACCESS_KEY.length > 0;
-
-  useEffect(() => {
-    if (!isAuthenticated) {
-      return undefined;
-    }
-
-    let isMounted = true;
-
-    loadAdminOrchardWorkspace()
-      .then((snapshot) => {
-        if (!isMounted) {
-          return;
-        }
-
-        setWorkspaceSnapshot({
-          dataSource: snapshot.dataSource,
-          imageCalibration: snapshot.imageCalibration,
-          imageBounds: snapshot.imageBounds,
-          loadState: "ready",
-          mappedTrees: snapshot.mappedTrees,
-          unmappedTrees: snapshot.unmappedTrees,
-        });
-      })
-      .catch(() => {
-        if (!isMounted) {
-          return;
-        }
-
-        setWorkspaceSnapshot({
-          dataSource: getAdminPersistenceMode(),
-          imageCalibration: null,
-          imageBounds: null,
-          loadState: "error",
-          mappedTrees: [],
-          unmappedTrees: [],
-        });
-      });
-
-    return () => {
-      isMounted = false;
-    };
-  }, [isAuthenticated]);
 
   const handleUnlock = (event) => {
     event.preventDefault();
@@ -157,56 +107,19 @@ export function AdminOrchardRoute() {
   }
 
   return (
-    <div className="app-shell admin-shell">
-      <aside className="app-sidebar admin-sidebar" aria-label="Admin Orchard Sidebar">
-        <div className="app-sidebar__brand">
-          <div className="app-sidebar__brand-mark" aria-hidden="true">
-            PK
-          </div>
-          <div className="app-sidebar__brand-copy">
-            <p className="eyebrow">Pantau Kebun</p>
-            <strong className="app-sidebar__title">Farm Workspace</strong>
-          </div>
+    <AdminWorkspaceProvider
+      value={{
+        gardenLabel: "Kebun Ntak-Ntak",
+        onLockSession: handleLock,
+      }}
+    >
+      <div className="app-shell admin-shell">
+        <WorkspaceSidebar basePath="/admin-orchard" />
+
+        <div className="app-content">
+          <Outlet />
         </div>
-
-        <div className="admin-sidebar__body">
-          <div className="admin-sidebar__section">
-            <span className="admin-sidebar__label">Admin Orchard</span>
-            <strong className="admin-sidebar__title">Coordinate Setup</strong>
-          </div>
-
-          <div className="admin-sidebar__meta">
-            <span>Garden 3</span>
-            <span>{workspaceSnapshot.dataSource === "supabase" ? "Supabase Sync" : "Local Draft"}</span>
-          </div>
-        </div>
-
-        <button className="admin-lock-button admin-lock-button--sidebar" type="button" onClick={handleLock}>
-          Lock Session
-        </button>
-      </aside>
-
-      <div className="app-content">
-        <section className="page-intro page-intro--with-toolbar" aria-label="Admin Orchard page title">
-          <h1>Admin Orchard</h1>
-
-          <label className="control-block admin-garden-picker" htmlFor="admin-garden-select">
-            <span className="control-label">Garden</span>
-            <select id="admin-garden-select" defaultValue="garden-3">
-              <option value="garden-3">Kebun Ntak-Ntak</option>
-            </select>
-          </label>
-        </section>
-
-        <AdminOrchardWorkspace
-          dataSource={workspaceSnapshot.dataSource}
-          imageCalibration={workspaceSnapshot.imageCalibration}
-          imageBounds={workspaceSnapshot.imageBounds}
-          loadState={workspaceSnapshot.loadState}
-          mappedTrees={workspaceSnapshot.mappedTrees}
-          unmappedTrees={workspaceSnapshot.unmappedTrees}
-        />
       </div>
-    </div>
+    </AdminWorkspaceProvider>
   );
 }

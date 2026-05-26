@@ -51,6 +51,28 @@ function resolveWeatherPresentation(weatherCode, isDay) {
   };
 }
 
+function normalizeBasePath(basePath) {
+  if (basePath == null || basePath === "" || basePath === "/") {
+    return "";
+  }
+
+  return `/${basePath.replace(/^\/+|\/+$/g, "")}`;
+}
+
+function resolveItemPath(item, basePath) {
+  const normalizedBasePath = normalizeBasePath(basePath);
+
+  if (normalizedBasePath === "") {
+    return item.to;
+  }
+
+  if (item.id === "monitoring") {
+    return normalizedBasePath;
+  }
+
+  return `${normalizedBasePath}/${item.to.replace(/^\/+/, "")}`;
+}
+
 function SidebarWeatherCard() {
   const [weatherState, setWeatherState] = useState({
     isDay: true,
@@ -147,7 +169,7 @@ function SidebarWeatherCard() {
   );
 }
 
-export function WorkspaceSidebar() {
+export function WorkspaceSidebar({ basePath = "" }) {
   const pathname = useRouterState({
     select: (state) => state.location.pathname,
   });
@@ -168,8 +190,14 @@ export function WorkspaceSidebar() {
         {WORKSPACE_NAV_ITEMS.map((itemId) => {
           const item = WORKSPACE_MODULES[itemId];
           const Icon = item.icon;
+          const itemPath = resolveItemPath(item, basePath);
+          const isMonitoringPath = item.id === "monitoring";
           const isActive =
-            item.to === "/" ? pathname === "/" : pathname === item.to || pathname.startsWith(`${item.to}/`);
+            itemPath === "/"
+              ? pathname === "/"
+              : isMonitoringPath
+                ? pathname === itemPath
+                : pathname === itemPath || pathname.startsWith(`${itemPath}/`);
 
           return (
             <Link
@@ -178,7 +206,7 @@ export function WorkspaceSidebar() {
                 isActive ? "app-sidebar__nav-button--active" : ""
               }`}
               key={item.id}
-              to={item.to}
+              to={itemPath}
             >
               <span className="app-sidebar__nav-button-main">
                 <span className="app-sidebar__nav-glyph" aria-hidden="true">

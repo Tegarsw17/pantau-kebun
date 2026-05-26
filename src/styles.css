@@ -364,54 +364,20 @@ body::before {
   min-width: 132px;
 }
 
-.admin-lock-button--sidebar {
-  width: 100%;
-}
-
 .admin-gate-error {
   margin: 0;
   color: #ffd4d4;
   line-height: 1.45;
 }
 
-.admin-sidebar {
-  display: grid;
-  grid-template-rows: auto 1fr auto;
-}
-
-.admin-sidebar__body,
-.admin-sidebar__section {
+.admin-page-toolbar {
   display: grid;
   gap: 12px;
+  align-self: stretch;
 }
 
-.admin-sidebar__body {
-  align-content: start;
-}
-
-.admin-sidebar__section {
-  padding: 14px;
-  border: 1px solid rgba(255, 188, 84, 0.18);
-  background: rgba(18, 28, 32, 0.84);
-}
-
-.admin-sidebar__label {
-  color: var(--subtle);
-  font-size: 0.72rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-.admin-sidebar__title {
-  color: var(--text);
-  line-height: 1.4;
-}
-
-.admin-sidebar__meta {
-  display: grid;
-  gap: 8px;
-  color: var(--muted);
-  font-size: 0.88rem;
+.admin-lock-button--toolbar {
+  width: 100%;
 }
 
 .admin-garden-picker {

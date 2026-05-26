@@ -21,6 +21,15 @@ const workspaceRoute = createRoute({
   component: WorkspaceLayout,
 });
 
+const adminWorkspaceRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  id: "adminWorkspace",
+  component: lazyRouteComponent(
+    () => import("./components/AdminOrchardRoute.jsx"),
+    "AdminOrchardRoute",
+  ),
+});
+
 const monitoringRoute = createRoute({
   getParentRoute: () => workspaceRoute,
   path: "/",
@@ -58,12 +67,51 @@ const settingsRoute = createRoute({
 });
 
 const adminOrchardRoute = createRoute({
-  getParentRoute: () => rootRoute,
+  getParentRoute: () => adminWorkspaceRoute,
   path: "admin-orchard",
   component: lazyRouteComponent(
-    () => import("./components/AdminOrchardRoute.jsx"),
-    "AdminOrchardRoute",
+    () => import("./pages/AdminOrchardPage.jsx"),
+    "AdminOrchardPage",
   ),
+});
+
+const adminReportsRoute = createRoute({
+  getParentRoute: () => adminWorkspaceRoute,
+  path: "admin-orchard/reports",
+  component: lazyRouteComponent(() => import("./pages/AdminReportsPage.jsx"), "AdminReportsPage"),
+});
+
+const adminInventoryRoute = createRoute({
+  getParentRoute: () => adminWorkspaceRoute,
+  path: "admin-orchard/inventory",
+  component: lazyRouteComponent(
+    () => import("./pages/AdminInventoryPage.jsx"),
+    "AdminInventoryPage",
+  ),
+});
+
+const adminOperationsRoute = createRoute({
+  getParentRoute: () => adminWorkspaceRoute,
+  path: "admin-orchard/operations",
+  component: lazyRouteComponent(
+    () => import("./pages/AdminOperationsPage.jsx"),
+    "AdminOperationsPage",
+  ),
+});
+
+const adminAccountingRoute = createRoute({
+  getParentRoute: () => adminWorkspaceRoute,
+  path: "admin-orchard/accounting",
+  component: lazyRouteComponent(
+    () => import("./pages/AdminAccountingPage.jsx"),
+    "AdminAccountingPage",
+  ),
+});
+
+const adminSettingsRoute = createRoute({
+  getParentRoute: () => adminWorkspaceRoute,
+  path: "admin-orchard/settings",
+  component: lazyRouteComponent(() => import("./pages/AdminSettingsPage.jsx"), "AdminSettingsPage"),
 });
 
 const routeTree = rootRoute.addChildren([
@@ -75,7 +123,14 @@ const routeTree = rootRoute.addChildren([
     accountingRoute,
     settingsRoute,
   ]),
-  adminOrchardRoute,
+  adminWorkspaceRoute.addChildren([
+    adminOrchardRoute,
+    adminReportsRoute,
+    adminInventoryRoute,
+    adminOperationsRoute,
+    adminAccountingRoute,
+    adminSettingsRoute,
+  ]),
 ]);
 
 export const router = createRouter({
