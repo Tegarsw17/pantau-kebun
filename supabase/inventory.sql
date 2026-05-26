@@ -4,6 +4,7 @@ create table if not exists public.items (
   id uuid primary key default gen_random_uuid(),
   name text not null check (btrim(name) <> ''),
   brand text,
+  image_url text,
   category text not null check (
     category in (
       'Pupuk & Nutrisi',
@@ -17,6 +18,9 @@ create table if not exists public.items (
   low_stock_threshold numeric(14, 3) not null check (low_stock_threshold >= 0),
   created_at timestamp with time zone not null default timezone('utc'::text, now())
 );
+
+alter table public.items
+  add column if not exists image_url text;
 
 create table if not exists public.stock_movements (
   id uuid primary key default gen_random_uuid(),

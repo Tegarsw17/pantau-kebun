@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 420" role="img" aria-label="Pupuk dan nutrisi">
+  <defs>
+    <linearGradient id="bg" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0" stop-color="#123322"/>
+      <stop offset="1" stop-color="#071016"/>
+    </linearGradient>
+  </defs>
+  <rect width="640" height="420" fill="url(#bg)"/>
+  <circle cx="496" cy="92" r="132" fill="#57f287" opacity=".12"/>
+  <path d="M210 96h220l36 246H174z" fill="#d5ffd9" opacity=".92"/>
+  <path d="M210 96h220l-24 42H234z" fill="#57f287"/>
+  <path d="M248 184h144v70H248z" fill="#0b171d" opacity=".86"/>
+  <text x="320" y="228" text-anchor="middle" font-family="Arial, sans-serif" font-size="46" font-weight="700" fill="#d5ffd9">NPK</text>
+  <path d="M198 342h244" stroke="#57f287" stroke-width="10" stroke-linecap="round" opacity=".65"/>
+</svg>

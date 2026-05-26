@@ -13,7 +13,7 @@ The implementation follows the current app structure: React JSX, Vite, plain CSS
 
 The inventory model is ledger-based:
 
-- `items` stores master data and the cached `current_stock`.
+- `items` stores master data, optional item image URL, and the cached `current_stock`.
 - `stock_movements` stores append-only stock transactions.
 
 `stock_movements.qty` is signed:
@@ -34,6 +34,7 @@ Main inventory view:
 - Search input filters by item name, brand, category, and unit.
 - Horizontal tabs filter by the four inventory categories.
 - Items render as responsive cards: 1 column on mobile, 3-4 columns on desktop.
+- Cards render `items.image_url` when available and fall back to a category visual when empty.
 - Cards show category visual, category badge, name and brand, stock level, stock status, and expiry warning.
 
 Stock states:
@@ -50,6 +51,8 @@ Expiry states:
 
 Admin-only behavior:
 
+- Admin can create new master items from `Tambah Item`.
+- New item creation supports optional image URL and optional initial stock.
 - Item cards show financial information when available.
 - Item cards show the `Mutasi Stok` button.
 - Mutation modal supports `Stok Masuk`, `Stok Keluar`, and `Penyesuaian`.

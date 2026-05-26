@@ -39,6 +39,7 @@ const STATIC_ITEMS = [
     created_at: "2026-01-08T03:12:00Z",
     current_stock: 13.5,
     id: "static-npk-merauke",
+    image_url: "/inventory-pupuk.svg",
     low_stock_threshold: 8,
     name: "NPK 16-16-16",
     unit: "Sak",
@@ -49,6 +50,7 @@ const STATIC_ITEMS = [
     created_at: "2026-01-12T04:30:00Z",
     current_stock: 4,
     id: "static-zpt-root",
+    image_url: "/inventory-zpt.svg",
     low_stock_threshold: 5,
     name: "Root Booster",
     unit: "Botol",
@@ -59,6 +61,7 @@ const STATIC_ITEMS = [
     created_at: "2026-02-03T06:10:00Z",
     current_stock: 0,
     id: "static-fungicide",
+    image_url: "/inventory-agrokimia.svg",
     low_stock_threshold: 3,
     name: "Fungisida Sistemik",
     unit: "Liter",
@@ -69,6 +72,7 @@ const STATIC_ITEMS = [
     created_at: "2026-02-11T08:45:00Z",
     current_stock: 24,
     id: "static-polybag",
+    image_url: "/inventory-logistik.svg",
     low_stock_threshold: 12,
     name: "Polybag 40x50",
     unit: "Pack",
@@ -79,6 +83,7 @@ const STATIC_ITEMS = [
     created_at: "2026-02-20T02:20:00Z",
     current_stock: 7,
     id: "static-dolomit",
+    image_url: "/inventory-pupuk.svg",
     low_stock_threshold: 7,
     name: "Dolomit Granul",
     unit: "Sak",
@@ -89,6 +94,7 @@ const STATIC_ITEMS = [
     created_at: "2026-03-05T05:25:00Z",
     current_stock: 2.5,
     id: "static-insecticide",
+    image_url: "/inventory-agrokimia.svg",
     low_stock_threshold: 2,
     name: "Insektisida Kontak",
     unit: "Liter",
@@ -213,6 +219,7 @@ function normalizeItem(item) {
     createdAt: normalizeDateValue(item?.created_at),
     currentStock: normalizeNumber(item?.current_stock),
     id: String(item?.id),
+    imageUrl: normalizeText(item?.image_url, ""),
     lowStockThreshold: normalizeNumber(item?.low_stock_threshold),
     name: normalizeText(item?.name, "Unnamed Item"),
     unit: normalizeText(item?.unit, "Unit"),
@@ -299,7 +306,7 @@ export async function fetchInventoryItems() {
   const response = await fetch(
     buildSupabaseUrl("/rest/v1/items", {
       order: "name.asc",
-      select: "id,name,brand,category,current_stock,unit,low_stock_threshold,created_at",
+      select: "id,name,brand,image_url,category,current_stock,unit,low_stock_threshold,created_at",
     }),
     {
       headers: buildSupabaseHeaders(),
@@ -381,6 +388,60 @@ export function buildStockMovementPayload({ expiryDate, itemId, notes, pricePerU
     reason: mutationOption.reason,
     type,
   };
+}
+
+export function buildInventoryItemPayload({
+  brand,
+  category,
+  imageUrl,
+  lowStockThreshold,
+  name,
+  unit,
+}) {
+  return {
+    brand: normalizeText(brand, "") || null,
+    category: INVENTORY_CATEGORIES.includes(category) ? category : INVENTORY_CATEGORIES[0],
+    current_stock: 0,
+    image_url: normalizeText(imageUrl, "") || null,
+    low_stock_threshold: normalizeNumber(lowStockThreshold),
+    name: normalizeText(name, "Unnamed Item"),
+    unit: normalizeText(unit, "Unit"),
+  };
+}
+
+export async function saveInventoryItem(payload) {
+  if (!isAdminSupabaseConfigured()) {
+    return {
+      ...payload,
+      created_at: new Date().toISOString(),
+      id: `local-item-${crypto.randomUUID()}`,
+    };
+  }
+
+  const response = await fetch(
+    buildSupabaseUrl("/rest/v1/items", {
+      select: "id,name,brand,image_url,category,current_stock,unit,low_stock_threshold,created_at",
+    }),
+    {
+      body: JSON.stringify(payload),
+      headers: buildSupabaseHeaders({
+        Prefer: "return=representation",
+      }),
+      method: "POST",
+    },
+  );
+
+  if (!response.ok) {
+    throw new Error(await extractSupabaseError(response));
+  }
+
+  const rows = await response.json();
+
+  if (!Array.isArray(rows) || rows.length === 0) {
+    throw new Error("No inventory item was saved.");
+  }
+
+  return rows[0];
 }
 
 export async function saveInventoryStockMovement(payload) {

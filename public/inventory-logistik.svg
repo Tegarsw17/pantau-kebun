@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 420" role="img" aria-label="Alat dan logistik">
+  <defs>
+    <linearGradient id="bg" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0" stop-color="#3a1f10"/>
+      <stop offset="1" stop-color="#071016"/>
+    </linearGradient>
+  </defs>
+  <rect width="640" height="420" fill="url(#bg)"/>
+  <circle cx="144" cy="110" r="132" fill="#ff9b54" opacity=".14"/>
+  <path d="M168 164h304v160H168z" fill="#ffdcb0" opacity=".92"/>
+  <path d="M168 164l58-58h188l58 58z" fill="#ff9b54"/>
+  <path d="M226 106v58M414 106v58M320 164v160" stroke="#071016" stroke-width="8" opacity=".34"/>
+  <path d="M226 248h188" stroke="#071016" stroke-width="12" stroke-linecap="round" opacity=".5"/>
+</svg>

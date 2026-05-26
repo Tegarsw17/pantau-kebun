@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 420" role="img" aria-label="Agrokimia">
+  <defs>
+    <linearGradient id="bg" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0" stop-color="#33240f"/>
+      <stop offset="1" stop-color="#071016"/>
+    </linearGradient>
+  </defs>
+  <rect width="640" height="420" fill="url(#bg)"/>
+  <circle cx="510" cy="104" r="132" fill="#ffca5f" opacity=".14"/>
+  <path d="M220 110h200v252H220z" fill="#fff1d4" opacity=".92"/>
+  <path d="M238 138h164v68H238z" fill="#ffca5f"/>
+  <path d="M292 238l28-50 28 50 56 10-40 40 8 56-52-26-52 26 8-56-40-40z" fill="#071016" opacity=".82"/>
+  <path d="M246 362h148" stroke="#ffca5f" stroke-width="10" stroke-linecap="round"/>
+</svg>

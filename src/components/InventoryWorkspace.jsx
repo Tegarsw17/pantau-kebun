@@ -4,6 +4,7 @@ import {
   INVENTORY_CATEGORIES,
   loadInventoryWorkspace,
 } from "../data/inventoryData.js";
+import { InventoryItemModal } from "./InventoryItemModal.jsx";
 import { InventoryMutationModal } from "./InventoryMutationModal.jsx";
 
 const EXPIRY_WARNING_MONTHS = 6;
@@ -111,7 +112,12 @@ function itemMatchesSearch(item, normalizedQuery) {
     .includes(normalizedQuery);
 }
 
+function CategoryFallbackVisual({ visual }) {
+  return <span className="inventory-card__visual-mark">{visual.label}</span>;
+}
+
 function InventoryItemCard({ item, onMutationRequest, userRole }) {
+  const [hasImageError, setHasImageError] = useState(false);
   const isAdmin = userRole === "admin";
   const visual = CATEGORY_VISUALS[item.category] ?? CATEGORY_VISUALS["Pupuk & Nutrisi"];
   const stockState = resolveStockState(item);
@@ -121,7 +127,17 @@ function InventoryItemCard({ item, onMutationRequest, userRole }) {
   return (
     <article className="inventory-card">
       <div className={`inventory-card__visual ${visual.accent}`}>
-        <span className="inventory-card__visual-mark">{visual.label}</span>
+        {item.imageUrl && !hasImageError ? (
+          <img
+            alt={itemTitle}
+            className="inventory-card__image"
+            loading="lazy"
+            onError={() => setHasImageError(true)}
+            src={item.imageUrl}
+          />
+        ) : (
+          <CategoryFallbackVisual visual={visual} />
+        )}
       </div>
 
       <div className="inventory-card__body">
@@ -204,6 +220,7 @@ export function InventoryWorkspace({ userRole = "non-admin" }) {
     loadMessage: "Loading inventory",
     loadState: "loading",
   });
+  const [isItemModalOpen, setIsItemModalOpen] = useState(false);
   const [selectedMutationItem, setSelectedMutationItem] = useState(null);
   const [selectedCategory, setSelectedCategory] = useState(ALL_INVENTORY_CATEGORIES);
   const [searchQuery, setSearchQuery] = useState("");
@@ -259,6 +276,15 @@ export function InventoryWorkspace({ userRole = "non-admin" }) {
     }));
   };
 
+  const handleItemSaved = (item) => {
+    setInventorySnapshot((currentSnapshot) => ({
+      ...currentSnapshot,
+      items: [...currentSnapshot.items, item].sort((leftItem, rightItem) =>
+        leftItem.name.localeCompare(rightItem.name),
+      ),
+    }));
+  };
+
   return (
     <>
       <main className="dashboard inventory-workspace">
@@ -269,8 +295,20 @@ export function InventoryWorkspace({ userRole = "non-admin" }) {
             <h2>Supplies, inputs, and operational stock</h2>
           </div>
 
-          <div className="inventory-source-pill">
-            {inventorySnapshot.dataSource === "supabase" ? "Live Supabase" : "Static Preview"}
+          <div className="inventory-hero-actions">
+            {isAdmin ? (
+              <button
+                className="inventory-add-button"
+                disabled={inventorySnapshot.loadState !== "ready"}
+                onClick={() => setIsItemModalOpen(true)}
+                type="button"
+              >
+                Tambah Item
+              </button>
+            ) : null}
+            <div className="inventory-source-pill">
+              {inventorySnapshot.dataSource === "supabase" ? "Live Supabase" : "Static Preview"}
+            </div>
           </div>
         </div>
 
@@ -346,6 +384,13 @@ export function InventoryWorkspace({ userRole = "non-admin" }) {
           item={selectedMutationItem}
           onClose={() => setSelectedMutationItem(null)}
           onSaved={handleMovementSaved}
+        />
+      ) : null}
+
+      {isAdmin && isItemModalOpen ? (
+        <InventoryItemModal
+          onClose={() => setIsItemModalOpen(false)}
+          onSaved={handleItemSaved}
         />
       ) : null}
     </>

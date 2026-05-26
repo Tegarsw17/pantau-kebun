@@ -2309,6 +2309,29 @@ tbody tr + tr td {
   white-space: nowrap;
 }
 
+.inventory-hero-actions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.inventory-add-button {
+  min-height: 40px;
+  border: 1px solid rgba(255, 202, 95, 0.3);
+  background: rgba(64, 48, 16, 0.9);
+  color: #fff1d4;
+  font: inherit;
+  padding: 0 14px;
+  cursor: pointer;
+}
+
+.inventory-add-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.56;
+}
+
 .inventory-toolbar {
   position: relative;
   z-index: 1;
@@ -2449,6 +2472,17 @@ tbody tr + tr td {
   color: var(--text);
   font-weight: 700;
   letter-spacing: 0.08em;
+}
+
+.inventory-card__image {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+  filter: saturate(0.96) contrast(1.04);
 }
 
 .inventory-visual--nutrient {
@@ -2744,6 +2778,25 @@ tbody tr + tr td {
   line-height: 1.45;
 }
 
+.inventory-form-divider {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--muted);
+  font-size: 0.82rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.inventory-form-divider::before,
+.inventory-form-divider::after {
+  content: "";
+  height: 1px;
+  flex: 1;
+  background: rgba(114, 144, 156, 0.18);
+}
+
 .inventory-modal__footer {
   justify-content: flex-end;
   align-items: center;
@@ -2969,6 +3022,7 @@ tbody tr + tr td {
   .inventory-card__header,
   .inventory-stock,
   .inventory-card__meta,
+  .inventory-hero-actions,
   .inventory-modal__header,
   .inventory-modal__footer {
     align-items: stretch;
