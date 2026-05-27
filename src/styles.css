@@ -2400,6 +2400,11 @@ tbody tr + tr td {
     rgba(11, 22, 28, 0.96);
 }
 
+.inventory-card__visual--image {
+  border-bottom-color: rgba(114, 144, 156, 0.08);
+  background: transparent;
+}
+
 .inventory-card__visual::before,
 .inventory-card__visual::after {
   content: "";
@@ -2420,6 +2425,11 @@ tbody tr + tr td {
   inset: 14px;
   border: 1px solid currentColor;
   opacity: 0.13;
+}
+
+.inventory-card__visual--image::before,
+.inventory-card__visual--image::after {
+  display: none;
 }
 
 .inventory-card__visual-mark {
@@ -2445,7 +2455,7 @@ tbody tr + tr td {
   object-fit: cover;
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 18px;
-  background: rgba(6, 14, 18, 0.36);
+  background: transparent;
   box-shadow: 0 20px 42px rgba(0, 0, 0, 0.26);
   filter: saturate(0.96) contrast(1.04);
 }

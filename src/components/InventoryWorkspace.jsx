@@ -126,7 +126,11 @@ function InventoryItemCard({ item, onMutationRequest, userRole }) {
 
   return (
     <article className={`inventory-card ${isAdmin ? "inventory-card--admin" : ""}`}>
-      <div className={`inventory-card__visual ${visual.accent}`}>
+      <div
+        className={`inventory-card__visual ${visual.accent} ${
+          item.imageUrl && !hasImageError ? "inventory-card__visual--image" : ""
+        }`}
+      >
         {item.imageUrl && !hasImageError ? (
           <img
             alt={itemTitle}
