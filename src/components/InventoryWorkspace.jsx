@@ -1,3 +1,4 @@
+import { Grid2X2, TableOfContents } from "lucide-react";
 import { useDeferredValue, useEffect, useState } from "react";
 import {
   ALL_INVENTORY_CATEGORIES,
@@ -194,6 +195,97 @@ function InventoryItemCard({ item, onMutationRequest, userRole }) {
   );
 }
 
+function InventoryTableView({ items, onMutationRequest, userRole }) {
+  const isAdmin = userRole === "admin";
+
+  return (
+    <div className="inventory-table-shell">
+      <table className="inventory-table">
+        <thead>
+          <tr>
+            <th>Item</th>
+            <th>Category</th>
+            <th>Stock</th>
+            <th>Threshold</th>
+            <th>Expiry</th>
+            {isAdmin ? <th>Last Price</th> : null}
+            {isAdmin ? <th>Action</th> : null}
+          </tr>
+        </thead>
+        <tbody>
+          {items.map((item) => {
+            const visual = CATEGORY_VISUALS[item.category] ?? CATEGORY_VISUALS["Pupuk & Nutrisi"];
+            const stockState = resolveStockState(item);
+            const expiryState = resolveExpiryState(item.latestExpiryDate);
+            const itemTitle = item.brand ? `${item.name} (${item.brand})` : item.name;
+
+            return (
+              <tr key={item.id}>
+                <td>
+                  <div className="inventory-table-item">
+                    <div className={`inventory-table-thumb ${visual.accent}`}>
+                      {item.imageUrl ? (
+                        <img alt={itemTitle} src={item.imageUrl} />
+                      ) : (
+                        <span>{visual.label}</span>
+                      )}
+                    </div>
+                    <div>
+                      <strong>{itemTitle}</strong>
+                      <span>{item.unit}</span>
+                    </div>
+                  </div>
+                </td>
+                <td>
+                  <span className="inventory-category-badge">{item.category}</span>
+                </td>
+                <td>
+                  <span className={`inventory-table-stock ${stockState.className}`}>
+                    {formatStockValue(item.currentStock)} {item.unit}
+                    <small>{stockState.label}</small>
+                  </span>
+                </td>
+                <td>
+                  {formatStockValue(item.lowStockThreshold)} {item.unit}
+                </td>
+                <td>
+                  {expiryState ? (
+                    <span className={`inventory-expiry ${expiryState.className}`}>
+                      {expiryState.label}
+                    </span>
+                  ) : (
+                    <span className="inventory-table-muted">No expiry</span>
+                  )}
+                </td>
+                {isAdmin ? (
+                  <td>
+                    {item.latestIncomingPrice == null ? (
+                      <span className="inventory-table-muted">No price</span>
+                    ) : (
+                      PRICE_FORMATTER.format(item.latestIncomingPrice)
+                    )}
+                  </td>
+                ) : null}
+                {isAdmin ? (
+                  <td>
+                    <button
+                      className="inventory-table-action"
+                      onClick={() => onMutationRequest?.(item)}
+                      type="button"
+                    >
+                      Mutasi
+                    </button>
+                  </td>
+                ) : null}
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
 function applyMovementToItem(item, movement) {
   if (String(item.id) !== String(movement.itemId)) {
     return item;
@@ -229,6 +321,7 @@ export function InventoryWorkspace({ userRole = "non-admin" }) {
   const [selectedMutationItem, setSelectedMutationItem] = useState(null);
   const [selectedCategory, setSelectedCategory] = useState(ALL_INVENTORY_CATEGORIES);
   const [searchQuery, setSearchQuery] = useState("");
+  const [viewMode, setViewMode] = useState("grid");
   const deferredSearchQuery = useDeferredValue(searchQuery);
 
   useEffect(() => {
@@ -329,8 +422,33 @@ export function InventoryWorkspace({ userRole = "non-admin" }) {
       </section>
 
       <section className="inventory-grid-section" aria-label="Inventory Storefront">
-        {isAdmin ? (
-          <div className="inventory-grid-actions">
+        <div className="inventory-grid-actions">
+          <div className="inventory-view-toggle" aria-label="Inventory view mode">
+            <button
+              aria-pressed={viewMode === "grid"}
+              className={`inventory-view-toggle__button ${
+                viewMode === "grid" ? "inventory-view-toggle__button--active" : ""
+              }`}
+              onClick={() => setViewMode("grid")}
+              type="button"
+            >
+              <Grid2X2 size={16} strokeWidth={2} />
+              Card
+            </button>
+            <button
+              aria-pressed={viewMode === "table"}
+              className={`inventory-view-toggle__button ${
+                viewMode === "table" ? "inventory-view-toggle__button--active" : ""
+              }`}
+              onClick={() => setViewMode("table")}
+              type="button"
+            >
+              <TableOfContents size={16} strokeWidth={2} />
+              Table
+            </button>
+          </div>
+
+          {isAdmin ? (
             <button
               className="inventory-add-button"
               disabled={inventorySnapshot.loadState !== "ready"}
@@ -339,8 +457,8 @@ export function InventoryWorkspace({ userRole = "non-admin" }) {
             >
               Tambah Item
             </button>
-          </div>
-        ) : null}
+          ) : null}
+        </div>
 
         {inventorySnapshot.loadState === "loading" ? (
           <div className="inventory-empty-state">
@@ -361,6 +479,12 @@ export function InventoryWorkspace({ userRole = "non-admin" }) {
             <strong>No items found</strong>
             <span>Try another search term or category filter.</span>
           </div>
+        ) : viewMode === "table" ? (
+          <InventoryTableView
+            items={filteredItems}
+            onMutationRequest={setSelectedMutationItem}
+            userRole={userRole}
+          />
         ) : (
           <div className="inventory-grid">
             {filteredItems.map((item) => (
