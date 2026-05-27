@@ -2417,8 +2417,8 @@ tbody tr + tr td {
 .inventory-card {
   min-width: 0;
   display: grid;
-  grid-template-rows: 75% minmax(0, 1fr) auto;
-  min-height: 520px;
+  grid-template-rows: 50% minmax(0, 1fr) auto;
+  min-height: 420px;
   overflow: hidden;
   border: 1px solid rgba(114, 144, 156, 0.16);
   background:
