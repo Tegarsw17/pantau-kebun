@@ -125,7 +125,7 @@ function InventoryItemCard({ item, onMutationRequest, userRole }) {
   const itemTitle = item.brand ? `${item.name} (${item.brand})` : item.name;
 
   return (
-    <article className="inventory-card">
+    <article className={`inventory-card ${isAdmin ? "inventory-card--admin" : ""}`}>
       <div className={`inventory-card__visual ${visual.accent}`}>
         {item.imageUrl && !hasImageError ? (
           <img

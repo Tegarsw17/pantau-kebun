@@ -2383,6 +2383,11 @@ tbody tr + tr td {
   box-shadow: var(--shadow);
 }
 
+.inventory-card--admin {
+  grid-template-rows: 46% minmax(0, 1fr) auto;
+  min-height: 470px;
+}
+
 .inventory-card__visual {
   position: relative;
   min-height: 0;
@@ -2463,6 +2468,10 @@ tbody tr + tr td {
   gap: 8px;
   align-content: start;
   padding: 10px 12px 12px;
+}
+
+.inventory-card--admin .inventory-card__body {
+  gap: 7px;
 }
 
 .inventory-card__header,
