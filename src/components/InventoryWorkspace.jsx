@@ -292,28 +292,7 @@ export function InventoryWorkspace({ userRole = "non-admin" }) {
     <>
       <main className="dashboard inventory-workspace">
       <section className="workspace-panel workspace-panel--primary inventory-hero">
-        <div className="workspace-panel__header inventory-hero__header">
-          <div className="workspace-panel__heading">
-            <p className="section-kicker">Etalase Inventory</p>
-            <h2>Supplies, inputs, and operational stock</h2>
-          </div>
-
-          <div className="inventory-hero-actions">
-            {isAdmin ? (
-              <button
-                className="inventory-add-button"
-                disabled={inventorySnapshot.loadState !== "ready"}
-                onClick={() => setIsItemModalOpen(true)}
-                type="button"
-              >
-                Tambah Item
-              </button>
-            ) : null}
-            <div className="inventory-source-pill">
-              {inventorySnapshot.dataSource === "supabase" ? "Live Supabase" : "Static Preview"}
-            </div>
-          </div>
-        </div>
+        <p className="section-kicker inventory-hero__title">Etalase Inventory</p>
 
         <div className="inventory-toolbar">
           <label className="search-shell inventory-search" aria-label="Search inventory">
@@ -343,15 +322,22 @@ export function InventoryWorkspace({ userRole = "non-admin" }) {
             ))}
           </div>
         </div>
-
-        <div className="inventory-summary-strip">
-          <span>{filteredItems.length} visible items</span>
-          <span>{inventorySnapshot.loadMessage}</span>
-          <span>{isAdmin ? "Admin mode" : "Field worker read-only mode"}</span>
-        </div>
       </section>
 
       <section className="inventory-grid-section" aria-label="Inventory Storefront">
+        {isAdmin ? (
+          <div className="inventory-grid-actions">
+            <button
+              className="inventory-add-button"
+              disabled={inventorySnapshot.loadState !== "ready"}
+              onClick={() => setIsItemModalOpen(true)}
+              type="button"
+            >
+              Tambah Item
+            </button>
+          </div>
+        ) : null}
+
         {inventorySnapshot.loadState === "loading" ? (
           <div className="inventory-empty-state">
             <strong>Loading inventory</strong>
