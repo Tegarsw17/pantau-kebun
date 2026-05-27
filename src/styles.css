@@ -2401,7 +2401,7 @@ tbody tr + tr td {
 }
 
 .inventory-card__visual--image {
-  border-bottom-color: rgba(114, 144, 156, 0.08);
+  border-bottom-color: transparent;
   background: transparent;
 }
 
@@ -2453,10 +2453,9 @@ tbody tr + tr td {
   height: 80%;
   display: block;
   object-fit: cover;
-  border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 18px;
   background: transparent;
-  box-shadow: 0 20px 42px rgba(0, 0, 0, 0.26);
+  box-shadow: none;
   filter: saturate(0.96) contrast(1.04);
 }
 
