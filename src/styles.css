@@ -2402,7 +2402,7 @@ tbody tr + tr td {
 
 .inventory-card__visual--image {
   border-bottom-color: transparent;
-  background: transparent;
+  background: var(--bg);
 }
 
 .inventory-card__visual::before,
