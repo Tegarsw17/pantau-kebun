@@ -209,3 +209,11 @@ revoke all on public.stock_movements from anon, authenticated;
 grant select (id, item_id, type, qty, expiry_date, reason, notes, created_at)
   on public.stock_movements to anon;
 grant select, insert on public.stock_movements to authenticated;
+
+-- Current app compatibility mode:
+-- The existing admin gate uses a frontend access key, not Supabase Auth, so Supabase
+-- still sees admin inventory requests as the anon role. Keep RLS disabled when using
+-- this mode, then run these grants so the admin inventory page can read prices and
+-- write item/movement data. Remove these anon write grants after Supabase Auth is added.
+grant insert, update on public.items to anon;
+grant select, insert on public.stock_movements to anon;

@@ -54,6 +54,7 @@ Policy behavior:
 Important production note:
 
 - The current app admin gate is frontend-only and does not create a Supabase Auth admin JWT. After strict RLS is applied, admin writes require a real authenticated Supabase user with an admin role claim.
+- If RLS is disabled for the current frontend-admin-key mode, admin requests still use the Supabase `anon` role. The SQL includes temporary anon grants so admin inventory can read prices and write item/movement data. Remove those grants after real Supabase Auth is added.
 - PostgreSQL RLS is row-based, not column-based. The frontend avoids requesting `price_per_unit` for non-admin users. If field workers also become authenticated Supabase users, move financial data to a separate admin-only table/RPC before giving them database access.
 
 ## UI Behavior
