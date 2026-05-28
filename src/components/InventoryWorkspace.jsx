@@ -548,8 +548,10 @@ function InventoryTableView({ items, onEditRequest, onHistoryRequest, onMutation
                 <td>
                   {expiryState ? (
                     <span className={`inventory-expiry ${expiryState.className}`}>
-                      {expiryState.label}
+                      {item.latestExpiryDate}
                     </span>
+                  ) : item.latestExpiryDate ? (
+                    <span>{item.latestExpiryDate}</span>
                   ) : (
                     <span className="inventory-table-muted">No expiry</span>
                   )}
