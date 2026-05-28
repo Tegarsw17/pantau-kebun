@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
+import Swal from "sweetalert2";
 import {
   INVENTORY_MUTATION_OPTIONS,
   buildStockMovementPayload,
@@ -13,6 +15,10 @@ function formatStockValue(value) {
     maximumFractionDigits: 2,
     minimumFractionDigits: Number.isInteger(Number(value)) ? 0 : 1,
   });
+}
+
+function resolveMutationLabel(value) {
+  return INVENTORY_MUTATION_OPTIONS.find((option) => option.value === value)?.label ?? value;
 }
 
 export function InventoryMutationModal({ item, onClose, onSaved }) {
@@ -71,6 +77,36 @@ export function InventoryMutationModal({ item, onClose, onSaved }) {
 
     if (validationMessage !== "") {
       setErrorMessage(validationMessage);
+      await Swal.fire({
+        background: "#071116",
+        color: "#edf7f8",
+        confirmButtonColor: "#b27624",
+        icon: "warning",
+        text: validationMessage,
+        title: "Check mutation input",
+      });
+      return;
+    }
+
+    const numericQuantity = Number(quantity);
+    const nextStock = isIncomingStock
+      ? item.currentStock + numericQuantity
+      : item.currentStock - numericQuantity;
+    const confirmation = await Swal.fire({
+      background: "#071116",
+      cancelButtonColor: "#26343b",
+      color: "#edf7f8",
+      confirmButtonColor: "#b27624",
+      confirmButtonText: "Save Mutation",
+      icon: "question",
+      showCancelButton: true,
+      text: `${itemTitle}\nType: ${resolveMutationLabel(mutationType)}\nQuantity: ${formatStockValue(
+        numericQuantity,
+      )} ${item.unit}\nStock after save: ${formatStockValue(nextStock)} ${item.unit}`,
+      title: "Save stock mutation?",
+    });
+
+    if (!confirmation.isConfirmed) {
       return;
     }
 
@@ -89,11 +125,12 @@ export function InventoryMutationModal({ item, onClose, onSaved }) {
       const savedMovement = await saveInventoryStockMovement(payload);
 
       onSaved(normalizeInventoryMovement(savedMovement));
+      toast.success("Stock mutation saved.");
       onClose();
     } catch (error) {
-      setErrorMessage(
-        error instanceof Error ? error.message : "Stock mutation could not be saved.",
-      );
+      const message = error instanceof Error ? error.message : "Stock mutation could not be saved.";
+      setErrorMessage(message);
+      toast.error(message);
     } finally {
       setIsSaving(false);
     }

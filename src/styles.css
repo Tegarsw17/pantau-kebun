@@ -47,6 +47,15 @@ body::before {
   min-height: 100vh;
 }
 
+.swal2-container {
+  z-index: 5000;
+}
+
+.swal2-popup {
+  border: 1px solid rgba(255, 202, 95, 0.18);
+  box-shadow: var(--shadow);
+}
+
 .app-shell {
   width: min(1600px, calc(100vw - 32px));
   margin: 0 auto;

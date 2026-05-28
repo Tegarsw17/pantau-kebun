@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
+import Swal from "sweetalert2";
 import {
   isCloudinaryInventoryUploadConfigured,
   uploadInventoryItemImage,
@@ -137,6 +139,7 @@ export function InventoryItemModal({ item = null, mode = "create", onClose, onSa
           ...normalizedItem,
           movements: item.movements,
         });
+        toast.success("Inventory item updated.");
         onClose();
         return;
       }
@@ -176,9 +179,12 @@ export function InventoryItemModal({ item = null, mode = "create", onClose, onSa
               currentStock: normalizedItem.currentStock + normalizedMovement.qty,
             },
       );
+      toast.success("Inventory item added.");
       onClose();
     } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : "Inventory item could not be saved.");
+      const message = error instanceof Error ? error.message : "Inventory item could not be saved.";
+      setErrorMessage(message);
+      toast.error(message);
     } finally {
       setIsSaving(false);
     }
@@ -193,8 +199,19 @@ export function InventoryItemModal({ item = null, mode = "create", onClose, onSa
     const confirmationMessage = nextIsActive
       ? "Restore this item to active inventory?"
       : "Archive this item? Existing movement history will be preserved.";
+    const confirmation = await Swal.fire({
+      background: "#071116",
+      cancelButtonColor: "#26343b",
+      color: "#edf7f8",
+      confirmButtonColor: nextIsActive ? "#1f7a45" : "#8a2f2f",
+      confirmButtonText: nextIsActive ? "Restore Item" : "Archive Item",
+      icon: nextIsActive ? "question" : "warning",
+      showCancelButton: true,
+      text: confirmationMessage,
+      title: nextIsActive ? "Restore item?" : "Archive item?",
+    });
 
-    if (!window.confirm(confirmationMessage)) {
+    if (!confirmation.isConfirmed) {
       return;
     }
 
@@ -212,11 +229,13 @@ export function InventoryItemModal({ item = null, mode = "create", onClose, onSa
         ...normalizedItem,
         movements: item.movements,
       });
+      toast.success(nextIsActive ? "Inventory item restored." : "Inventory item archived.");
       onClose();
     } catch (error) {
-      setErrorMessage(
-        error instanceof Error ? error.message : "Inventory item status could not be updated.",
-      );
+      const message =
+        error instanceof Error ? error.message : "Inventory item status could not be updated.";
+      setErrorMessage(message);
+      toast.error(message);
     } finally {
       setIsSaving(false);
     }
