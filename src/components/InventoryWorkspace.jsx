@@ -2,11 +2,13 @@ import {
   Boxes,
   CalendarClock,
   CircleX,
+  Download,
   Grid2X2,
   TableOfContents,
   TriangleAlert,
 } from "lucide-react";
 import { useDeferredValue, useEffect, useState } from "react";
+import { toast } from "sonner";
 import {
   ALL_INVENTORY_CATEGORIES,
   INVENTORY_CATEGORIES,
@@ -47,6 +49,86 @@ function formatStockValue(value) {
     maximumFractionDigits: 2,
     minimumFractionDigits: Number.isInteger(Number(value)) ? 0 : 1,
   });
+}
+
+function formatCsvValue(value) {
+  if (value == null) {
+    return "";
+  }
+
+  const stringValue = String(value);
+
+  if (!/[",\n]/.test(stringValue)) {
+    return stringValue;
+  }
+
+  return `"${stringValue.replaceAll('"', '""')}"`;
+}
+
+function buildCsvContent(rows) {
+  return rows.map((row) => row.map(formatCsvValue).join(",")).join("\n");
+}
+
+function buildInventoryLedgerRows(items) {
+  const rows = [
+    [
+      "Movement Date",
+      "Item",
+      "Brand",
+      "Category",
+      "Status",
+      "Type",
+      "Quantity",
+      "Unit",
+      "Price Per Unit",
+      "Total Value",
+      "Expiry Date",
+      "Reason",
+      "Notes",
+    ],
+  ];
+
+  items.forEach((item) => {
+    const itemTitle = item.brand ? `${item.name} (${item.brand})` : item.name;
+
+    item.movements.forEach((movement) => {
+      const totalValue =
+        movement.pricePerUnit == null ? "" : Math.abs(movement.qty) * movement.pricePerUnit;
+
+      rows.push([
+        movement.createdAt ?? "",
+        itemTitle,
+        item.brand,
+        item.category,
+        item.isActive ? "Active" : "Archived",
+        movement.type,
+        movement.qty,
+        item.unit,
+        movement.pricePerUnit ?? "",
+        totalValue,
+        movement.expiryDate ?? "",
+        movement.reason,
+        movement.notes,
+      ]);
+    });
+  });
+
+  return rows;
+}
+
+function downloadCsvFile({ filename, rows }) {
+  const blob = new Blob([`\uFEFF${buildCsvContent(rows)}`], {
+    type: "text/csv;charset=utf-8",
+  });
+  const objectUrl = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+
+  link.href = objectUrl;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(objectUrl);
 }
 
 function resolveStockState(item) {
@@ -538,6 +620,23 @@ export function InventoryWorkspace({ userRole = "non-admin" }) {
         .sort((leftItem, rightItem) => leftItem.name.localeCompare(rightItem.name)),
     }));
   };
+  const handleLedgerExport = () => {
+    const ledgerRows = buildInventoryLedgerRows(filteredItems);
+    const movementCount = ledgerRows.length - 1;
+
+    if (movementCount <= 0) {
+      toast.error("No ledger movements match the current filters.");
+      return;
+    }
+
+    const exportDate = new Date().toISOString().slice(0, 10);
+
+    downloadCsvFile({
+      filename: `pantau-kebun-inventory-ledger-${exportDate}.csv`,
+      rows: ledgerRows,
+    });
+    toast.success(`Exported ${movementCount} ledger movements.`);
+  };
 
   return (
     <>
@@ -590,6 +689,16 @@ export function InventoryWorkspace({ userRole = "non-admin" }) {
                   type="button"
                 >
                   Tambah Item
+                </button>
+
+                <button
+                  className="inventory-export-button"
+                  disabled={inventorySnapshot.loadState !== "ready"}
+                  onClick={handleLedgerExport}
+                  type="button"
+                >
+                  <Download size={16} strokeWidth={2} />
+                  Export Ledger
                 </button>
 
                 <div className="inventory-archive-tabs" aria-label="Inventory archive filter">

@@ -102,6 +102,7 @@ Admin-only behavior:
 - Admin can archive and restore item master data from the edit modal.
 - Item cards show financial information when available.
 - Item cards show the `Mutasi Stok` button.
+- Admin can export the visible stock ledger to CSV for reporting/accounting.
 - Mutation modal supports `Stok Masuk`, `Stok Keluar`, and `Penyesuaian`.
 - Price and expiry fields are only rendered for `Stok Masuk`.
 
