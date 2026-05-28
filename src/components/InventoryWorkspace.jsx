@@ -187,6 +187,13 @@ function InventoryItemCard({ item, onEditRequest, onHistoryRequest, onMutationRe
         <div className="inventory-card__actions">
           <button
             className="inventory-secondary-button"
+            onClick={() => onHistoryRequest?.(item)}
+            type="button"
+          >
+            History
+          </button>
+          <button
+            className="inventory-secondary-button"
             onClick={() => onEditRequest?.(item)}
             type="button"
           >
@@ -200,17 +207,15 @@ function InventoryItemCard({ item, onEditRequest, onHistoryRequest, onMutationRe
             Mutasi Stok
           </button>
         </div>
-      ) : null}
-
-      <button
-        className={`inventory-card-history-button ${
-          isAdmin ? "inventory-card-history-button--admin" : ""
-        }`}
-        onClick={() => onHistoryRequest?.(item)}
-        type="button"
-      >
-        View History
-      </button>
+      ) : (
+        <button
+          className="inventory-card-history-button"
+          onClick={() => onHistoryRequest?.(item)}
+          type="button"
+        >
+          View History
+        </button>
+      )}
     </article>
   );
 }
