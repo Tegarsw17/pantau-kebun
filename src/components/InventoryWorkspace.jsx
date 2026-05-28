@@ -1,4 +1,11 @@
-import { Grid2X2, TableOfContents } from "lucide-react";
+import {
+  Boxes,
+  CalendarClock,
+  CircleX,
+  Grid2X2,
+  TableOfContents,
+  TriangleAlert,
+} from "lucide-react";
 import { useDeferredValue, useEffect, useState } from "react";
 import {
   ALL_INVENTORY_CATEGORIES,
@@ -114,8 +121,89 @@ function itemMatchesSearch(item, normalizedQuery) {
     .includes(normalizedQuery);
 }
 
+function itemMatchesFilterScope(item, selectedCategory, normalizedQuery) {
+  const matchesCategory =
+    selectedCategory === ALL_INVENTORY_CATEGORIES || item.category === selectedCategory;
+
+  return matchesCategory && itemMatchesSearch(item, normalizedQuery);
+}
+
+function buildInventorySummary(items) {
+  const activeItems = items.filter((item) => item.isActive);
+  const expiryRiskItems = activeItems.filter(
+    (item) => resolveExpiryState(item.latestExpiryDate) != null,
+  );
+  const expiredItems = activeItems.filter((item) => {
+    return resolveExpiryState(item.latestExpiryDate)?.className === "inventory-expiry--expired";
+  });
+
+  return {
+    activeCount: activeItems.length,
+    expiryRiskCount: expiryRiskItems.length,
+    expiredCount: expiredItems.length,
+    lowStockCount: activeItems.filter(
+      (item) => item.currentStock > 0 && item.currentStock <= item.lowStockThreshold,
+    ).length,
+    outOfStockCount: activeItems.filter((item) => item.currentStock === 0).length,
+  };
+}
+
 function CategoryFallbackVisual({ visual }) {
   return <span className="inventory-card__visual-mark">{visual.label}</span>;
+}
+
+function InventorySummaryCards({ summary }) {
+  const cards = [
+    {
+      icon: Boxes,
+      label: "Active Items",
+      tone: "cyan",
+      value: summary.activeCount,
+    },
+    {
+      icon: TriangleAlert,
+      label: "Low Stock",
+      tone: "amber",
+      value: summary.lowStockCount,
+    },
+    {
+      icon: CircleX,
+      label: "Out of Stock",
+      tone: "red",
+      value: summary.outOfStockCount,
+    },
+    {
+      helper: `${summary.expiredCount} expired`,
+      icon: CalendarClock,
+      label: "Expiry Risk",
+      tone: "green",
+      value: summary.expiryRiskCount,
+    },
+  ];
+
+  return (
+    <section className="inventory-summary-grid" aria-label="Inventory summary">
+      {cards.map((card) => {
+        const Icon = card.icon;
+
+        return (
+          <article
+            className={`inventory-summary-card inventory-summary-card--${card.tone}`}
+            key={card.label}
+          >
+            <div className="inventory-summary-card__icon">
+              <Icon size={18} strokeWidth={2} />
+            </div>
+            <div>
+              <span>{card.label}</span>
+              <strong>{card.value}</strong>
+              {card.helper ? <small>{card.helper}</small> : null}
+            </div>
+          </article>
+        );
+      })}
+    </section>
+  );
 }
 
 function InventoryItemCard({ item, onEditRequest, onHistoryRequest, onMutationRequest, userRole }) {
@@ -410,16 +498,21 @@ export function InventoryWorkspace({ userRole = "non-admin" }) {
   }, []);
 
   const normalizedSearchQuery = deferredSearchQuery.trim().toLowerCase();
+  const summaryScopeItems = inventorySnapshot.items.filter((item) => {
+    return itemMatchesFilterScope(item, selectedCategory, normalizedSearchQuery);
+  });
+  const inventorySummary = buildInventorySummary(summaryScopeItems);
   const filteredItems = inventorySnapshot.items.filter((item) => {
-    const matchesCategory =
-      selectedCategory === ALL_INVENTORY_CATEGORIES || item.category === selectedCategory;
     const matchesArchiveFilter =
       !isAdmin ||
       archiveFilter === "all" ||
       (archiveFilter === "active" && item.isActive) ||
       (archiveFilter === "archived" && !item.isActive);
 
-    return matchesArchiveFilter && matchesCategory && itemMatchesSearch(item, normalizedSearchQuery);
+    return (
+      matchesArchiveFilter &&
+      itemMatchesFilterScope(item, selectedCategory, normalizedSearchQuery)
+    );
   });
   const handleMovementSaved = (movement) => {
     setInventorySnapshot((currentSnapshot) => ({
@@ -481,6 +574,10 @@ export function InventoryWorkspace({ userRole = "non-admin" }) {
             </div>
           </div>
         </section>
+
+        {inventorySnapshot.loadState === "ready" ? (
+          <InventorySummaryCards summary={inventorySummary} />
+        ) : null}
 
         <section className="inventory-grid-section" aria-label="Inventory Storefront">
           <div className="inventory-grid-actions">

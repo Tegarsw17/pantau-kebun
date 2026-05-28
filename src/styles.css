@@ -2442,6 +2442,69 @@ tbody tr + tr td {
   min-width: 0;
 }
 
+.inventory-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.inventory-summary-card {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  min-height: 92px;
+  padding: 14px;
+  border: 1px solid rgba(114, 144, 156, 0.14);
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.035), transparent 42%),
+    rgba(7, 14, 18, 0.84);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.18);
+}
+
+.inventory-summary-card__icon {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border: 1px solid currentColor;
+  background: rgba(8, 16, 20, 0.72);
+}
+
+.inventory-summary-card div:last-child {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.inventory-summary-card span,
+.inventory-summary-card small {
+  color: var(--muted);
+  font-size: 0.76rem;
+}
+
+.inventory-summary-card strong {
+  color: var(--text);
+  font-size: 1.65rem;
+  line-height: 1.05;
+}
+
+.inventory-summary-card--cyan {
+  color: var(--cyan);
+}
+
+.inventory-summary-card--amber {
+  color: var(--amber);
+}
+
+.inventory-summary-card--red {
+  color: var(--red);
+}
+
+.inventory-summary-card--green {
+  color: var(--green);
+}
+
 .inventory-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -3238,6 +3301,10 @@ tbody tr + tr td {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
+  .inventory-summary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .filter-grid {
     grid-template-columns: 1fr 1fr;
   }
@@ -3436,6 +3503,10 @@ tbody tr + tr td {
   }
 
   .inventory-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .inventory-summary-grid {
     grid-template-columns: 1fr;
   }
 
