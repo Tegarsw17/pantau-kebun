@@ -39,7 +39,7 @@ Role resolution expects one of these Supabase Auth JWT claims:
 
 It also supports a database role row in:
 
-- `public.inventory_user_roles`
+- `public.user_roles`
 
 Admin values are:
 
@@ -58,14 +58,14 @@ Policy behavior:
 Important production note:
 
 - The admin workspace now signs in through Supabase Auth email/password.
-- Create the admin user in Supabase Auth, then insert the user's UUID into `public.inventory_user_roles` with role `admin` or `inventory_admin`. Add `display_name` and/or `email` so ledger actors render as readable labels.
+- Create the admin user in Supabase Auth, then insert the user's UUID into `public.user_roles` with role `admin` or `inventory_admin`. Add `display_name` and/or `email` so ledger actors render as readable labels.
 - Re-enable RLS after applying the auth schema.
 - PostgreSQL RLS is row-based, not column-based. The frontend avoids requesting `price_per_unit` for non-admin users. If field workers also become authenticated Supabase users, move financial data to a separate admin-only table/RPC before giving them database access.
 
 Bootstrap an admin role after creating the Auth user:
 
 ```sql
-insert into public.inventory_user_roles (user_id, role, display_name, email)
+insert into public.user_roles (user_id, role, display_name, email)
 values ('AUTH_USER_UUID_HERE', 'admin', 'Admin Name', 'admin@example.com')
 on conflict (user_id) do update
 set

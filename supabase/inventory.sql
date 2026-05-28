@@ -127,7 +127,10 @@ before delete on public.stock_movements
 for each row
 execute function public.prevent_stock_movement_mutation();
 
-create table if not exists public.inventory_user_roles (
+alter table if exists public.inventory_user_roles
+  rename to user_roles;
+
+create table if not exists public.user_roles (
   user_id uuid primary key references auth.users(id) on delete cascade,
   role text not null check (role in ('admin', 'inventory_admin', 'field_worker')),
   display_name text,
@@ -135,16 +138,17 @@ create table if not exists public.inventory_user_roles (
   created_at timestamp with time zone not null default timezone('utc'::text, now())
 );
 
-alter table public.inventory_user_roles
+alter table public.user_roles
   add column if not exists display_name text;
 
-alter table public.inventory_user_roles
+alter table public.user_roles
   add column if not exists email text;
 
-alter table public.inventory_user_roles enable row level security;
+alter table public.user_roles enable row level security;
 
-drop policy if exists inventory_user_roles_read on public.inventory_user_roles;
-drop policy if exists inventory_user_roles_self_read on public.inventory_user_roles;
+drop policy if exists user_roles_read on public.user_roles;
+drop policy if exists inventory_user_roles_read on public.user_roles;
+drop policy if exists inventory_user_roles_self_read on public.user_roles;
 
 create or replace function public.current_inventory_app_role()
 returns text
@@ -158,9 +162,9 @@ as $$
     nullif(auth.jwt() -> 'app_metadata' ->> 'role', ''),
     nullif(auth.jwt() -> 'user_metadata' ->> 'role', ''),
     (
-      select inventory_user_roles.role
-      from public.inventory_user_roles
-      where inventory_user_roles.user_id = auth.uid()
+      select user_roles.role
+      from public.user_roles
+      where user_roles.user_id = auth.uid()
       limit 1
     ),
     'field_worker'
@@ -175,8 +179,8 @@ as $$
   select public.current_inventory_app_role() in ('admin', 'inventory_admin');
 $$;
 
-create policy inventory_user_roles_read
-on public.inventory_user_roles
+create policy user_roles_read
+on public.user_roles
 for select
 to authenticated
 using (auth.uid() = user_id or public.is_inventory_admin());
@@ -238,7 +242,7 @@ with check (
 );
 
 grant usage on schema public to anon, authenticated;
-grant select on public.inventory_user_roles to authenticated;
+grant select on public.user_roles to authenticated;
 grant select on public.items to anon, authenticated;
 grant insert, update on public.items to authenticated;
 

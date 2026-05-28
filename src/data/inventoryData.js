@@ -406,7 +406,7 @@ export async function fetchInventoryActorProfiles() {
   }
 
   const response = await fetch(
-    buildSupabaseUrl("/rest/v1/inventory_user_roles", {
+    buildSupabaseUrl("/rest/v1/user_roles", {
       order: "display_name.asc,email.asc",
       select: "user_id,display_name,email,role",
     }),
