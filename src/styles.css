@@ -2645,20 +2645,36 @@ tbody tr + tr td {
   color: #fff1d4;
 }
 
-.inventory-mutation-button {
-  min-height: 38px;
-  width: calc(100% - 24px);
+.inventory-card__actions {
+  display: grid;
+  grid-template-columns: minmax(0, 0.72fr) minmax(0, 1.28fr);
+  gap: 8px;
   margin: 0 12px 12px;
+}
+
+.inventory-mutation-button,
+.inventory-secondary-button {
+  min-height: 38px;
   border: 1px solid rgba(255, 202, 95, 0.28);
-  background: linear-gradient(180deg, rgba(70, 52, 17, 0.96), rgba(39, 30, 14, 0.96));
   color: #fff1d4;
   font: inherit;
   font-size: 0.86rem;
+  padding: 0 10px;
   cursor: pointer;
   transition:
     border-color 140ms ease,
     transform 140ms ease,
     filter 140ms ease;
+}
+
+.inventory-mutation-button {
+  background: linear-gradient(180deg, rgba(70, 52, 17, 0.96), rgba(39, 30, 14, 0.96));
+}
+
+.inventory-secondary-button {
+  background: rgba(12, 24, 30, 0.88);
+  color: #d8fbff;
+  border-color: rgba(60, 230, 255, 0.16);
 }
 
 .inventory-mutation-button:hover {
@@ -2767,12 +2783,22 @@ tbody tr + tr td {
 
 .inventory-table-action {
   min-height: 34px;
-  border: 1px solid rgba(255, 202, 95, 0.26);
-  background: rgba(64, 48, 16, 0.82);
-  color: #fff1d4;
+  border: 1px solid rgba(60, 230, 255, 0.16);
+  background: rgba(10, 24, 30, 0.82);
+  color: #d8fbff;
   font: inherit;
   padding: 0 12px;
   cursor: pointer;
+}
+
+.inventory-table-action + .inventory-table-action {
+  margin-left: 8px;
+}
+
+.inventory-table-action--primary {
+  border-color: rgba(255, 202, 95, 0.26);
+  background: rgba(64, 48, 16, 0.82);
+  color: #fff1d4;
 }
 
 .inventory-empty-state {

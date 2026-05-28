@@ -226,6 +226,10 @@ function normalizeItem(item) {
   };
 }
 
+export function normalizeInventoryItem(item, movements = []) {
+  return buildInventoryItems([item], movements)[0] ?? null;
+}
+
 export function normalizeInventoryMovement(movement) {
   return {
     createdAt: normalizeDateValue(movement?.created_at),
@@ -417,6 +421,24 @@ export function buildInventoryItemPayload({
   };
 }
 
+export function buildInventoryItemUpdatePayload({
+  brand,
+  category,
+  imageUrl,
+  lowStockThreshold,
+  name,
+  unit,
+}) {
+  return {
+    brand: normalizeText(brand, "") || null,
+    category: INVENTORY_CATEGORIES.includes(category) ? category : INVENTORY_CATEGORIES[0],
+    image_url: normalizeText(imageUrl, "") || null,
+    low_stock_threshold: normalizeNumber(lowStockThreshold),
+    name: normalizeText(name, "Unnamed Item"),
+    unit: normalizeText(unit, "Unit"),
+  };
+}
+
 export async function saveInventoryItem(payload) {
   if (!isAdminSupabaseConfigured()) {
     return {
@@ -447,6 +469,42 @@ export async function saveInventoryItem(payload) {
 
   if (!Array.isArray(rows) || rows.length === 0) {
     throw new Error("No inventory item was saved.");
+  }
+
+  return rows[0];
+}
+
+export async function updateInventoryItem({ itemId, payload }) {
+  if (!isAdminSupabaseConfigured()) {
+    return {
+      ...payload,
+      current_stock: payload.current_stock ?? 0,
+      id: itemId,
+    };
+  }
+
+  const response = await fetch(
+    buildSupabaseUrl("/rest/v1/items", {
+      id: `eq.${String(itemId)}`,
+      select: "id,name,brand,image_url,category,current_stock,unit,low_stock_threshold,created_at",
+    }),
+    {
+      body: JSON.stringify(payload),
+      headers: buildSupabaseHeaders({
+        Prefer: "return=representation",
+      }),
+      method: "PATCH",
+    },
+  );
+
+  if (!response.ok) {
+    throw new Error(await extractSupabaseError(response));
+  }
+
+  const rows = await response.json();
+
+  if (!Array.isArray(rows) || rows.length === 0) {
+    throw new Error("No inventory item was updated.");
   }
 
   return rows[0];

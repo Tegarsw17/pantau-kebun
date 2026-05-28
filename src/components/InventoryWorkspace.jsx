@@ -117,7 +117,7 @@ function CategoryFallbackVisual({ visual }) {
   return <span className="inventory-card__visual-mark">{visual.label}</span>;
 }
 
-function InventoryItemCard({ item, onMutationRequest, userRole }) {
+function InventoryItemCard({ item, onEditRequest, onMutationRequest, userRole }) {
   const [hasImageError, setHasImageError] = useState(false);
   const isAdmin = userRole === "admin";
   const visual = CATEGORY_VISUALS[item.category] ?? CATEGORY_VISUALS["Pupuk & Nutrisi"];
@@ -183,19 +183,28 @@ function InventoryItemCard({ item, onMutationRequest, userRole }) {
       </div>
 
       {isAdmin ? (
-        <button
-          className="inventory-mutation-button"
-          onClick={() => onMutationRequest?.(item)}
-          type="button"
-        >
-          Mutasi Stok
-        </button>
+        <div className="inventory-card__actions">
+          <button
+            className="inventory-secondary-button"
+            onClick={() => onEditRequest?.(item)}
+            type="button"
+          >
+            Edit
+          </button>
+          <button
+            className="inventory-mutation-button"
+            onClick={() => onMutationRequest?.(item)}
+            type="button"
+          >
+            Mutasi Stok
+          </button>
+        </div>
       ) : null}
     </article>
   );
 }
 
-function InventoryTableView({ items, onMutationRequest, userRole }) {
+function InventoryTableView({ items, onEditRequest, onMutationRequest, userRole }) {
   const isAdmin = userRole === "admin";
 
   return (
@@ -270,6 +279,13 @@ function InventoryTableView({ items, onMutationRequest, userRole }) {
                   <td>
                     <button
                       className="inventory-table-action"
+                      onClick={() => onEditRequest?.(item)}
+                      type="button"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      className="inventory-table-action inventory-table-action--primary"
                       onClick={() => onMutationRequest?.(item)}
                       type="button"
                     >
@@ -318,6 +334,7 @@ export function InventoryWorkspace({ userRole = "non-admin" }) {
     loadState: "loading",
   });
   const [isItemModalOpen, setIsItemModalOpen] = useState(false);
+  const [selectedEditItem, setSelectedEditItem] = useState(null);
   const [selectedMutationItem, setSelectedMutationItem] = useState(null);
   const [selectedCategory, setSelectedCategory] = useState(ALL_INVENTORY_CATEGORIES);
   const [searchQuery, setSearchQuery] = useState("");
@@ -382,6 +399,15 @@ export function InventoryWorkspace({ userRole = "non-admin" }) {
       items: [...currentSnapshot.items, item].sort((leftItem, rightItem) =>
         leftItem.name.localeCompare(rightItem.name),
       ),
+    }));
+  };
+
+  const handleItemUpdated = (updatedItem) => {
+    setInventorySnapshot((currentSnapshot) => ({
+      ...currentSnapshot,
+      items: currentSnapshot.items
+        .map((item) => (item.id === updatedItem.id ? updatedItem : item))
+        .sort((leftItem, rightItem) => leftItem.name.localeCompare(rightItem.name)),
     }));
   };
 
@@ -482,6 +508,7 @@ export function InventoryWorkspace({ userRole = "non-admin" }) {
         ) : viewMode === "table" ? (
           <InventoryTableView
             items={filteredItems}
+            onEditRequest={setSelectedEditItem}
             onMutationRequest={setSelectedMutationItem}
             userRole={userRole}
           />
@@ -491,6 +518,7 @@ export function InventoryWorkspace({ userRole = "non-admin" }) {
               <InventoryItemCard
                 item={item}
                 key={item.id}
+                onEditRequest={setSelectedEditItem}
                 onMutationRequest={setSelectedMutationItem}
                 userRole={userRole}
               />
@@ -512,6 +540,15 @@ export function InventoryWorkspace({ userRole = "non-admin" }) {
         <InventoryItemModal
           onClose={() => setIsItemModalOpen(false)}
           onSaved={handleItemSaved}
+        />
+      ) : null}
+
+      {isAdmin && selectedEditItem != null ? (
+        <InventoryItemModal
+          item={selectedEditItem}
+          mode="edit"
+          onClose={() => setSelectedEditItem(null)}
+          onSaved={handleItemUpdated}
         />
       ) : null}
     </>

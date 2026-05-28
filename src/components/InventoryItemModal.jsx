@@ -6,20 +6,26 @@ import {
 import {
   INVENTORY_CATEGORIES,
   buildInventoryItemPayload,
+  buildInventoryItemUpdatePayload,
   buildInventoryItems,
   buildStockMovementPayload,
+  normalizeInventoryItem,
   normalizeInventoryMovement,
   saveInventoryItem,
   saveInventoryStockMovement,
+  updateInventoryItem,
 } from "../data/inventoryData.js";
 
-export function InventoryItemModal({ onClose, onSaved }) {
-  const [name, setName] = useState("");
-  const [brand, setBrand] = useState("");
-  const [category, setCategory] = useState(INVENTORY_CATEGORIES[0]);
-  const [unit, setUnit] = useState("");
-  const [lowStockThreshold, setLowStockThreshold] = useState("");
-  const [imageUrl, setImageUrl] = useState("");
+export function InventoryItemModal({ item = null, mode = "create", onClose, onSaved }) {
+  const isEditing = mode === "edit" && item != null;
+  const [name, setName] = useState(item?.name ?? "");
+  const [brand, setBrand] = useState(item?.brand ?? "");
+  const [category, setCategory] = useState(item?.category ?? INVENTORY_CATEGORIES[0]);
+  const [unit, setUnit] = useState(item?.unit ?? "");
+  const [lowStockThreshold, setLowStockThreshold] = useState(
+    item == null ? "" : String(item.lowStockThreshold),
+  );
+  const [imageUrl, setImageUrl] = useState(item?.imageUrl ?? "");
   const [selectedImageFile, setSelectedImageFile] = useState(null);
   const [previewImageUrl, setPreviewImageUrl] = useState("");
   const [initialQuantity, setInitialQuantity] = useState("");
@@ -67,7 +73,7 @@ export function InventoryItemModal({ onClose, onSaved }) {
       return "Low stock threshold must be 0 or greater.";
     }
 
-    if (initialQuantity.trim() !== "") {
+    if (!isEditing && initialQuantity.trim() !== "") {
       const numericInitialQuantity = Number(initialQuantity);
 
       if (!Number.isFinite(numericInitialQuantity) || numericInitialQuantity < 0) {
@@ -110,16 +116,31 @@ export function InventoryItemModal({ onClose, onSaved }) {
     try {
       const resolvedImageUrl =
         selectedImageFile == null ? imageUrl : await uploadInventoryItemImage(selectedImageFile);
-      const savedItem = await saveInventoryItem(
-        buildInventoryItemPayload({
-          brand,
-          category,
-          imageUrl: resolvedImageUrl,
-          lowStockThreshold,
-          name,
-          unit,
-        }),
-      );
+      const itemPayload = {
+        brand,
+        category,
+        imageUrl: resolvedImageUrl,
+        lowStockThreshold,
+        name,
+        unit,
+      };
+
+      if (isEditing) {
+        const savedItem = await updateInventoryItem({
+          itemId: item.id,
+          payload: buildInventoryItemUpdatePayload(itemPayload),
+        });
+        const normalizedItem = normalizeInventoryItem(savedItem, item.movements);
+
+        onSaved({
+          ...normalizedItem,
+          movements: item.movements,
+        });
+        onClose();
+        return;
+      }
+
+      const savedItem = await saveInventoryItem(buildInventoryItemPayload(itemPayload));
       const numericInitialQuantity = Number(initialQuantity);
       const shouldCreateInitialMovement =
         Number.isFinite(numericInitialQuantity) && numericInitialQuantity > 0;
@@ -175,8 +196,12 @@ export function InventoryItemModal({ onClose, onSaved }) {
           <div className="inventory-modal__header">
             <div>
               <p className="section-kicker">Master Item</p>
-              <h2 id="inventory-item-title">Tambah Item</h2>
-              <span>Create a stock item and optional initial ledger entry.</span>
+              <h2 id="inventory-item-title">{isEditing ? "Edit Item" : "Tambah Item"}</h2>
+              <span>
+                {isEditing
+                  ? "Update item identity, category, threshold, and image."
+                  : "Create a stock item and optional initial ledger entry."}
+              </span>
             </div>
             <button
               aria-label="Close add item modal"
@@ -293,66 +318,70 @@ export function InventoryItemModal({ onClose, onSaved }) {
               </span>
             </div>
 
-            <div className="inventory-form-divider">
-              <span>Optional Initial Stock</span>
-            </div>
+            {!isEditing ? (
+              <>
+                <div className="inventory-form-divider">
+                  <span>Optional Initial Stock</span>
+                </div>
 
-            <label className="control-block">
-              <span className="control-label">Initial Quantity</span>
-              <input
-                className="inventory-form-input"
-                disabled={isSaving}
-                min="0"
-                onChange={(event) => {
-                  setInitialQuantity(event.target.value);
-                  setErrorMessage("");
-                }}
-                placeholder="0"
-                step="0.01"
-                type="number"
-                value={initialQuantity}
-              />
-            </label>
+                <label className="control-block">
+                  <span className="control-label">Initial Quantity</span>
+                  <input
+                    className="inventory-form-input"
+                    disabled={isSaving}
+                    min="0"
+                    onChange={(event) => {
+                      setInitialQuantity(event.target.value);
+                      setErrorMessage("");
+                    }}
+                    placeholder="0"
+                    step="0.01"
+                    type="number"
+                    value={initialQuantity}
+                  />
+                </label>
 
-            <label className="control-block">
-              <span className="control-label">Initial Price per Unit</span>
-              <input
-                className="inventory-form-input"
-                disabled={isSaving}
-                min="0"
-                onChange={(event) => {
-                  setInitialPricePerUnit(event.target.value);
-                  setErrorMessage("");
-                }}
-                placeholder="185000"
-                step="1"
-                type="number"
-                value={initialPricePerUnit}
-              />
-            </label>
+                <label className="control-block">
+                  <span className="control-label">Initial Price per Unit</span>
+                  <input
+                    className="inventory-form-input"
+                    disabled={isSaving}
+                    min="0"
+                    onChange={(event) => {
+                      setInitialPricePerUnit(event.target.value);
+                      setErrorMessage("");
+                    }}
+                    placeholder="185000"
+                    step="1"
+                    type="number"
+                    value={initialPricePerUnit}
+                  />
+                </label>
 
-            <label className="control-block">
-              <span className="control-label">Initial Expiry Date</span>
-              <input
-                className="inventory-form-input"
-                disabled={isSaving}
-                onChange={(event) => setInitialExpiryDate(event.target.value)}
-                type="date"
-                value={initialExpiryDate}
-              />
-            </label>
+                <label className="control-block">
+                  <span className="control-label">Initial Expiry Date</span>
+                  <input
+                    className="inventory-form-input"
+                    disabled={isSaving}
+                    onChange={(event) => setInitialExpiryDate(event.target.value)}
+                    type="date"
+                    value={initialExpiryDate}
+                  />
+                </label>
 
-            <label className="control-block">
-              <span className="control-label">Initial Notes</span>
-              <input
-                className="inventory-form-input"
-                disabled={isSaving}
-                onChange={(event) => setInitialNotes(event.target.value)}
-                placeholder="Initial stock"
-                type="text"
-                value={initialNotes}
-              />
-            </label>
+                <label className="control-block">
+                  <span className="control-label">Initial Notes</span>
+                  <input
+                    className="inventory-form-input"
+                    disabled={isSaving}
+                    onChange={(event) => setInitialNotes(event.target.value)}
+                    placeholder="Initial stock"
+                    type="text"
+                    value={initialNotes}
+                  />
+                </label>
+              </>
+            ) : null}
           </div>
 
           {errorMessage ? (
@@ -375,7 +404,7 @@ export function InventoryItemModal({ onClose, onSaved }) {
               disabled={isSaving}
               type="submit"
             >
-              {isSaving ? "Saving..." : "Save Item"}
+              {isSaving ? "Saving..." : isEditing ? "Save Changes" : "Save Item"}
             </button>
           </div>
         </form>
