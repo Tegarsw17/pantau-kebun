@@ -69,6 +69,21 @@ function buildCsvContent(rows) {
   return rows.map((row) => row.map(formatCsvValue).join(",")).join("\n");
 }
 
+function formatLedgerExportDate(value) {
+  const parsedDate = new Date(value);
+
+  if (Number.isNaN(parsedDate.getTime())) {
+    return "";
+  }
+
+  const pad = (number) => String(number).padStart(2, "0");
+
+  return [
+    `${pad(parsedDate.getDate())}-${pad(parsedDate.getMonth() + 1)}-${parsedDate.getFullYear()}`,
+    `${pad(parsedDate.getHours())}:${pad(parsedDate.getMinutes())}`,
+  ].join(" ");
+}
+
 function buildInventoryLedgerRows(items) {
   const rows = [
     [
@@ -96,7 +111,7 @@ function buildInventoryLedgerRows(items) {
         movement.pricePerUnit == null ? "" : Math.abs(movement.qty) * movement.pricePerUnit;
 
       rows.push([
-        movement.createdAt ?? "",
+        formatLedgerExportDate(movement.createdAt),
         itemTitle,
         item.brand,
         item.category,
