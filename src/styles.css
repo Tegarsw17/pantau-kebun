@@ -2321,10 +2321,6 @@ tbody tr + tr td {
   position: relative;
 }
 
-.inventory-hero__title {
-  margin-bottom: 14px;
-}
-
 .inventory-add-button,
 .inventory-export-button {
   min-height: 40px;
@@ -2430,52 +2426,70 @@ tbody tr + tr td {
   position: relative;
   z-index: 1;
   display: grid;
-  grid-template-columns: minmax(280px, 420px) minmax(0, 1fr);
-  gap: 14px;
-  align-items: start;
+  grid-template-columns: minmax(280px, 1fr) minmax(220px, 280px);
+  gap: 12px;
+  align-items: center;
 }
 
 .inventory-search {
+  min-height: 46px;
+  width: 100%;
+  border-color: rgba(255, 202, 95, 0.2);
+  border-radius: 999px;
+  background: rgba(7, 15, 19, 0.84);
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.16);
+  overflow: hidden;
+}
+
+.inventory-search input {
+  min-height: 44px;
+  padding-right: 18px;
+}
+
+.inventory-category-select {
+  position: relative;
+  display: flex;
+  align-items: center;
   width: 100%;
 }
 
-.inventory-tabs {
-  display: flex;
-  gap: 8px;
-  justify-content: flex-end;
-  overflow-x: auto;
-  padding-bottom: 4px;
-}
-
-.inventory-tab {
-  min-height: 40px;
-  flex: 0 0 auto;
+.inventory-category-select select {
+  width: 100%;
+  min-height: 46px;
+  appearance: none;
   border: 1px solid rgba(114, 144, 156, 0.16);
-  background: rgba(9, 18, 23, 0.78);
-  color: var(--muted);
+  border-radius: 999px;
+  background: rgba(7, 15, 19, 0.84);
+  color: var(--text);
   font: inherit;
-  padding: 0 13px;
+  font-size: 0.9rem;
+  padding: 0 42px 0 16px;
   cursor: pointer;
+  outline: none;
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.16);
   transition:
     border-color 140ms ease,
-    background 140ms ease,
-    color 140ms ease;
+    box-shadow 140ms ease;
 }
 
-.inventory-tab:hover {
-  border-color: rgba(255, 202, 95, 0.24);
-  color: var(--text);
-}
-
-.inventory-tab--active {
+.inventory-category-select select:hover,
+.inventory-category-select select:focus {
   border-color: rgba(255, 202, 95, 0.34);
-  background: rgba(46, 34, 15, 0.86);
-  color: #fff1d4;
+  box-shadow:
+    0 14px 34px rgba(0, 0, 0, 0.16),
+    0 0 0 3px rgba(255, 202, 95, 0.08);
 }
 
-.inventory-tab:disabled {
+.inventory-category-select select:disabled {
   cursor: not-allowed;
   opacity: 0.54;
+}
+
+.inventory-category-select svg {
+  position: absolute;
+  right: 15px;
+  pointer-events: none;
+  color: var(--subtle);
 }
 
 .inventory-grid-section {
@@ -3395,10 +3409,6 @@ tbody tr + tr td {
 @media (max-width: 960px) {
   .inventory-toolbar {
     grid-template-columns: 1fr;
-  }
-
-  .inventory-tabs {
-    justify-content: flex-start;
   }
 
   .inventory-grid {

@@ -1,6 +1,7 @@
 import {
   Boxes,
   CalendarClock,
+  ChevronDown,
   CircleX,
   Download,
   Grid2X2,
@@ -824,9 +825,7 @@ export function InventoryWorkspace({ userRole = "non-admin" }) {
   return (
     <>
       <main className="dashboard inventory-workspace">
-        <section className="workspace-panel workspace-panel--primary inventory-hero">
-          <p className="section-kicker inventory-hero__title">Etalase Inventory</p>
-
+        <section className="inventory-hero" aria-label="Inventory filters">
           <div className="inventory-toolbar">
             <label className="search-shell inventory-search" aria-label="Search inventory">
               <span className="search-shell__icon">⌕</span>
@@ -839,21 +838,20 @@ export function InventoryWorkspace({ userRole = "non-admin" }) {
               />
             </label>
 
-            <div className="inventory-tabs" aria-label="Inventory categories">
-              {[ALL_INVENTORY_CATEGORIES, ...INVENTORY_CATEGORIES].map((category) => (
-                <button
-                  className={`inventory-tab ${
-                    selectedCategory === category ? "inventory-tab--active" : ""
-                  }`}
-                  disabled={inventorySnapshot.loadState !== "ready"}
-                  key={category}
-                  onClick={() => setSelectedCategory(category)}
-                  type="button"
-                >
-                  {category}
-                </button>
-              ))}
-            </div>
+            <label className="inventory-category-select" aria-label="Filter inventory category">
+              <select
+                disabled={inventorySnapshot.loadState !== "ready"}
+                onChange={(event) => setSelectedCategory(event.target.value)}
+                value={selectedCategory}
+              >
+                {[ALL_INVENTORY_CATEGORIES, ...INVENTORY_CATEGORIES].map((category) => (
+                  <option key={category} value={category}>
+                    {category}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown size={16} strokeWidth={2} />
+            </label>
           </div>
         </section>
 
