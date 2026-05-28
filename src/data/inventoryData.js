@@ -3,6 +3,7 @@ import {
   buildSupabaseUrl,
   extractSupabaseError,
   isAdminSupabaseConfigured,
+  readAdminAuthSession,
 } from "./adminOrchardSupabase.js";
 
 export const INVENTORY_CATEGORIES = [
@@ -232,15 +233,50 @@ function normalizeItem(item) {
   };
 }
 
+function normalizeActorProfile(profile) {
+  const id = normalizeText(profile?.user_id, "");
+  const displayName = normalizeText(profile?.display_name, "");
+  const email = normalizeText(profile?.email, "");
+
+  return {
+    displayName,
+    email,
+    id,
+    label: displayName || email || id,
+    role: normalizeText(profile?.role, ""),
+  };
+}
+
+function buildActorProfileById(actorProfiles) {
+  const actorProfileById = new Map();
+
+  (Array.isArray(actorProfiles) ? actorProfiles : []).forEach((profile) => {
+    const normalizedProfile = normalizeActorProfile(profile);
+
+    if (normalizedProfile.id !== "") {
+      actorProfileById.set(normalizedProfile.id, normalizedProfile);
+    }
+  });
+
+  return actorProfileById;
+}
+
 export function normalizeInventoryItem(item, movements = []) {
   return buildInventoryItems([item], movements)[0] ?? null;
 }
 
-export function normalizeInventoryMovement(movement) {
+export function normalizeInventoryMovement(movement, actorProfileById = new Map()) {
+  const createdBy = normalizeText(movement?.created_by, "");
+  const actorProfile = actorProfileById.get(createdBy) ?? null;
+  const currentSession = readAdminAuthSession();
+  const currentUserLabel =
+    createdBy !== "" && createdBy === currentSession?.user?.id ? currentSession.user.email : "";
+
   return {
+    actorLabel: actorProfile?.label ?? (currentUserLabel || createdBy),
     createdAt: normalizeDateValue(movement?.created_at),
     createdAtEpoch: resolveCreatedAtEpoch(movement?.created_at),
-    createdBy: normalizeText(movement?.created_by, ""),
+    createdBy,
     expiryDate: normalizeDateValue(movement?.expiry_date),
     id: String(movement?.id),
     itemId: String(movement?.item_id),
@@ -284,9 +320,10 @@ function buildMovementSummaryByItemId(movements) {
   return summaryByItemId;
 }
 
-export function buildInventoryItems(items, movements) {
+export function buildInventoryItems(items, movements, actorProfiles = []) {
+  const actorProfileById = buildActorProfileById(actorProfiles);
   const normalizedMovements = (Array.isArray(movements) ? movements : []).map(
-    normalizeInventoryMovement,
+    (movement) => normalizeInventoryMovement(movement, actorProfileById),
   );
   const summaryByItemId = buildMovementSummaryByItemId(normalizedMovements);
 
@@ -363,6 +400,28 @@ export async function fetchInventoryMovements({ includeFinancials = false } = {}
   return response.json();
 }
 
+export async function fetchInventoryActorProfiles() {
+  if (!isAdminSupabaseConfigured()) {
+    throw new Error("Supabase inventory connection is not configured.");
+  }
+
+  const response = await fetch(
+    buildSupabaseUrl("/rest/v1/inventory_user_roles", {
+      order: "display_name.asc,email.asc",
+      select: "user_id,display_name,email,role",
+    }),
+    {
+      headers: buildSupabaseHeaders(),
+    },
+  );
+
+  if (!response.ok) {
+    throw new Error(await extractSupabaseError(response));
+  }
+
+  return response.json();
+}
+
 export async function loadInventoryWorkspace({
   allowStaticFallback = true,
   includeFinancials = false,
@@ -370,14 +429,15 @@ export async function loadInventoryWorkspace({
 } = {}) {
   if (isAdminSupabaseConfigured()) {
     try {
-      const [items, movements] = await Promise.all([
+      const [items, movements, actorProfiles] = await Promise.all([
         fetchInventoryItems({ includeArchived }),
         fetchInventoryMovements({ includeFinancials }),
+        includeFinancials ? fetchInventoryActorProfiles() : Promise.resolve([]),
       ]);
 
       return {
         dataSource: "supabase",
-        items: buildInventoryItems(items, movements),
+        items: buildInventoryItems(items, movements, actorProfiles),
         loadMessage: "Supabase inventory loaded.",
       };
     } catch {

@@ -58,17 +58,20 @@ Policy behavior:
 Important production note:
 
 - The admin workspace now signs in through Supabase Auth email/password.
-- Create the admin user in Supabase Auth, then insert the user's UUID into `public.inventory_user_roles` with role `admin` or `inventory_admin`.
+- Create the admin user in Supabase Auth, then insert the user's UUID into `public.inventory_user_roles` with role `admin` or `inventory_admin`. Add `display_name` and/or `email` so ledger actors render as readable labels.
 - Re-enable RLS after applying the auth schema.
 - PostgreSQL RLS is row-based, not column-based. The frontend avoids requesting `price_per_unit` for non-admin users. If field workers also become authenticated Supabase users, move financial data to a separate admin-only table/RPC before giving them database access.
 
 Bootstrap an admin role after creating the Auth user:
 
 ```sql
-insert into public.inventory_user_roles (user_id, role)
-values ('AUTH_USER_UUID_HERE', 'admin')
+insert into public.inventory_user_roles (user_id, role, display_name, email)
+values ('AUTH_USER_UUID_HERE', 'admin', 'Admin Name', 'admin@example.com')
 on conflict (user_id) do update
-set role = excluded.role;
+set
+  role = excluded.role,
+  display_name = excluded.display_name,
+  email = excluded.email;
 ```
 
 ## UI Behavior
@@ -104,7 +107,7 @@ Admin-only behavior:
 - Item cards show financial information when available.
 - Item cards show the `Mutasi Stok` button.
 - Admin can export the visible stock ledger to CSV for reporting/accounting, optionally scoped by movement date range.
-- Admin can see/export the authenticated actor ID attached to each stock movement.
+- Admin can see/export the authenticated actor label attached to each stock movement.
 - Mutation modal supports `Stok Masuk`, `Stok Keluar`, and `Penyesuaian`.
 - Mutation modal uses an explicit reason dropdown: `Pembelian`, `Aplikasi Lahan`, `Alat Rusak`, `Hibah Barang`, and `Kadaluarsa/Rusak`.
 - Price and expiry fields are only rendered for `Stok Masuk`.

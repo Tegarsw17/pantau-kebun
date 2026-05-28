@@ -166,7 +166,7 @@ function buildInventoryLedgerRows(items, { endDate = "", startDate = "" } = {}) 
           movement.expiryDate ?? "",
           movement.reason,
           movement.notes,
-          movement.createdBy,
+          movement.actorLabel || movement.createdBy,
         ]);
       });
   });

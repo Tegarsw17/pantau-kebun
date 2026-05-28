@@ -130,18 +130,21 @@ execute function public.prevent_stock_movement_mutation();
 create table if not exists public.inventory_user_roles (
   user_id uuid primary key references auth.users(id) on delete cascade,
   role text not null check (role in ('admin', 'inventory_admin', 'field_worker')),
+  display_name text,
+  email text,
   created_at timestamp with time zone not null default timezone('utc'::text, now())
 );
 
+alter table public.inventory_user_roles
+  add column if not exists display_name text;
+
+alter table public.inventory_user_roles
+  add column if not exists email text;
+
 alter table public.inventory_user_roles enable row level security;
 
+drop policy if exists inventory_user_roles_read on public.inventory_user_roles;
 drop policy if exists inventory_user_roles_self_read on public.inventory_user_roles;
-
-create policy inventory_user_roles_self_read
-on public.inventory_user_roles
-for select
-to authenticated
-using (auth.uid() = user_id);
 
 create or replace function public.current_inventory_app_role()
 returns text
@@ -171,6 +174,12 @@ stable
 as $$
   select public.current_inventory_app_role() in ('admin', 'inventory_admin');
 $$;
+
+create policy inventory_user_roles_read
+on public.inventory_user_roles
+for select
+to authenticated
+using (auth.uid() = user_id or public.is_inventory_admin());
 
 alter table public.items enable row level security;
 alter table public.stock_movements enable row level security;
