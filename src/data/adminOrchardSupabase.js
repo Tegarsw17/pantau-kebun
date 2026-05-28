@@ -6,11 +6,116 @@ const SUPABASE_ANON_KEY = (
 ).trim();
 const SUPABASE_SCHEMA = "public";
 const GARDEN_DRONE_CALIBRATIONS_TABLE = "garden_drone_calibrations";
+const ADMIN_AUTH_SESSION_KEY = "pantaukebun.supabase.admin.session";
+
+function readStoredAdminAuthSession() {
+  try {
+    const rawSession = window.localStorage.getItem(ADMIN_AUTH_SESSION_KEY);
+
+    return rawSession == null ? null : JSON.parse(rawSession);
+  } catch {
+    return null;
+  }
+}
+
+function writeStoredAdminAuthSession(session) {
+  try {
+    if (session == null) {
+      window.localStorage.removeItem(ADMIN_AUTH_SESSION_KEY);
+      return;
+    }
+
+    window.localStorage.setItem(ADMIN_AUTH_SESSION_KEY, JSON.stringify(session));
+  } catch {
+    // Ignore storage failures; the request can still use the in-memory response.
+  }
+}
+
+function normalizeAuthSession(payload) {
+  const expiresIn = Number(payload?.expires_in);
+  const expiresAt =
+    Number(payload?.expires_at) ||
+    Math.floor(Date.now() / 1000) + (Number.isFinite(expiresIn) ? expiresIn : 3600);
+
+  return {
+    accessToken: payload?.access_token ?? "",
+    expiresAt,
+    refreshToken: payload?.refresh_token ?? "",
+    user: {
+      email: payload?.user?.email ?? "",
+      id: payload?.user?.id ?? "",
+    },
+  };
+}
+
+export function isAdminAuthSessionValid(session = readStoredAdminAuthSession()) {
+  return (
+    typeof session?.accessToken === "string" &&
+    session.accessToken !== "" &&
+    Number(session?.expiresAt) > Math.floor(Date.now() / 1000) + 30
+  );
+}
+
+export function readAdminAuthSession() {
+  const session = readStoredAdminAuthSession();
+
+  return isAdminAuthSessionValid(session) ? session : null;
+}
+
+export function getAdminAuthAccessToken() {
+  return readAdminAuthSession()?.accessToken ?? "";
+}
+
+export async function signInAdminWithPassword({ email, password }) {
+  if (!isAdminSupabaseConfigured()) {
+    throw new Error("Supabase auth connection is not configured.");
+  }
+
+  const response = await fetch(buildSupabaseUrl("/auth/v1/token", { grant_type: "password" }), {
+    body: JSON.stringify({
+      email,
+      password,
+    }),
+    headers: {
+      apikey: SUPABASE_ANON_KEY,
+      "Content-Type": "application/json",
+    },
+    method: "POST",
+  });
+
+  if (!response.ok) {
+    throw new Error(await extractSupabaseError(response));
+  }
+
+  const session = normalizeAuthSession(await response.json());
+  writeStoredAdminAuthSession(session);
+
+  return session;
+}
+
+export async function signOutAdminAuth() {
+  const accessToken = getAdminAuthAccessToken();
+  writeStoredAdminAuthSession(null);
+
+  if (!isAdminSupabaseConfigured() || accessToken === "") {
+    return;
+  }
+
+  await fetch(buildSupabaseUrl("/auth/v1/logout"), {
+    headers: {
+      apikey: SUPABASE_ANON_KEY,
+      Authorization: `Bearer ${accessToken}`,
+    },
+    method: "POST",
+  }).catch(() => undefined);
+}
 
 export function buildSupabaseHeaders(extraHeaders = {}) {
+  const accessToken = getAdminAuthAccessToken();
+
   return {
     apikey: SUPABASE_ANON_KEY,
-    Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+    Authorization: `Bearer ${accessToken || SUPABASE_ANON_KEY}`,
     Accept: "application/json",
     "Content-Type": "application/json",
     "Accept-Profile": SUPABASE_SCHEMA,

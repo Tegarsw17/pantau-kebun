@@ -37,6 +37,10 @@ Role resolution expects one of these Supabase Auth JWT claims:
 - `app_metadata.role`
 - `user_metadata.role`
 
+It also supports a database role row in:
+
+- `public.inventory_user_roles`
+
 Admin values are:
 
 - `admin`
@@ -53,9 +57,19 @@ Policy behavior:
 
 Important production note:
 
-- The current app admin gate is frontend-only and does not create a Supabase Auth admin JWT. After strict RLS is applied, admin writes require a real authenticated Supabase user with an admin role claim.
-- If RLS is disabled for the current frontend-admin-key mode, admin requests still use the Supabase `anon` role. The SQL includes temporary anon grants so admin inventory can read prices and write item/movement data. Remove those grants after real Supabase Auth is added.
+- The admin workspace now signs in through Supabase Auth email/password.
+- Create the admin user in Supabase Auth, then insert the user's UUID into `public.inventory_user_roles` with role `admin` or `inventory_admin`.
+- Re-enable RLS after applying the auth schema.
 - PostgreSQL RLS is row-based, not column-based. The frontend avoids requesting `price_per_unit` for non-admin users. If field workers also become authenticated Supabase users, move financial data to a separate admin-only table/RPC before giving them database access.
+
+Bootstrap an admin role after creating the Auth user:
+
+```sql
+insert into public.inventory_user_roles (user_id, role)
+values ('AUTH_USER_UUID_HERE', 'admin')
+on conflict (user_id) do update
+set role = excluded.role;
+```
 
 ## UI Behavior
 

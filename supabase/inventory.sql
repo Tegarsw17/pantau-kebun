@@ -120,15 +120,39 @@ before delete on public.stock_movements
 for each row
 execute function public.prevent_stock_movement_mutation();
 
+create table if not exists public.inventory_user_roles (
+  user_id uuid primary key references auth.users(id) on delete cascade,
+  role text not null check (role in ('admin', 'inventory_admin', 'field_worker')),
+  created_at timestamp with time zone not null default timezone('utc'::text, now())
+);
+
+alter table public.inventory_user_roles enable row level security;
+
+drop policy if exists inventory_user_roles_self_read on public.inventory_user_roles;
+
+create policy inventory_user_roles_self_read
+on public.inventory_user_roles
+for select
+to authenticated
+using (auth.uid() = user_id);
+
 create or replace function public.current_inventory_app_role()
 returns text
 language sql
 stable
+security definer
+set search_path = public
 as $$
   select coalesce(
     nullif(auth.jwt() ->> 'app_role', ''),
     nullif(auth.jwt() -> 'app_metadata' ->> 'role', ''),
     nullif(auth.jwt() -> 'user_metadata' ->> 'role', ''),
+    (
+      select inventory_user_roles.role
+      from public.inventory_user_roles
+      where inventory_user_roles.user_id = auth.uid()
+      limit 1
+    ),
     'field_worker'
   );
 $$;
@@ -198,6 +222,7 @@ with check (
 );
 
 grant usage on schema public to anon, authenticated;
+grant select on public.inventory_user_roles to authenticated;
 grant select on public.items to anon, authenticated;
 grant insert, update on public.items to authenticated;
 
@@ -210,10 +235,5 @@ grant select (id, item_id, type, qty, expiry_date, reason, notes, created_at)
   on public.stock_movements to anon;
 grant select, insert on public.stock_movements to authenticated;
 
--- Current app compatibility mode:
--- The existing admin gate uses a frontend access key, not Supabase Auth, so Supabase
--- still sees admin inventory requests as the anon role. Keep RLS disabled when using
--- this mode, then run these grants so the admin inventory page can read prices and
--- write item/movement data. Remove these anon write grants after Supabase Auth is added.
-grant insert, update on public.items to anon;
-grant select, insert on public.stock_movements to anon;
+revoke insert, update on public.items from anon;
+revoke insert on public.stock_movements from anon;

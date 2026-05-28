@@ -1,65 +1,57 @@
 import { Outlet } from "@tanstack/react-router";
 import { useState } from "react";
+import { toast } from "sonner";
+import {
+  readAdminAuthSession,
+  signInAdminWithPassword,
+  signOutAdminAuth,
+} from "../data/adminOrchardSupabase.js";
 import { WorkspaceSidebar } from "./WorkspaceSidebar.jsx";
 import { AdminWorkspaceProvider } from "./AdminWorkspaceContext.jsx";
 
-const ADMIN_ACCESS_KEY = (
-  import.meta.env.VITE_ADMIN_ACCESS_KEY ?? (import.meta.env.DEV ? "pantaukebun-admin" : "")
-).trim();
-const ADMIN_SESSION_KEY = "pantaukebun.admin-orchard.session";
-
-function readAdminSession() {
-  try {
-    return window.sessionStorage.getItem(ADMIN_SESSION_KEY) === "granted";
-  } catch {
-    return false;
-  }
-}
-
-function writeAdminSession(value) {
-  try {
-    if (value) {
-      window.sessionStorage.setItem(ADMIN_SESSION_KEY, "granted");
-      return;
-    }
-
-    window.sessionStorage.removeItem(ADMIN_SESSION_KEY);
-  } catch {
-    // Ignore storage failures in prototype mode.
-  }
-}
-
 export function AdminOrchardRoute() {
-  const [accessKeyInput, setAccessKeyInput] = useState("");
+  const [emailInput, setEmailInput] = useState("");
+  const [passwordInput, setPasswordInput] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
-  const [isAuthenticated, setIsAuthenticated] = useState(readAdminSession);
+  const [isAuthenticated, setIsAuthenticated] = useState(() => readAdminAuthSession() != null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const isAccessKeyConfigured = ADMIN_ACCESS_KEY.length > 0;
-
-  const handleUnlock = (event) => {
+  const handleUnlock = async (event) => {
     event.preventDefault();
 
-    if (!isAccessKeyConfigured) {
-      setErrorMessage("Admin access key is not configured in VITE_ADMIN_ACCESS_KEY.");
+    if (emailInput.trim() === "" || passwordInput === "") {
+      setErrorMessage("Email and password are required.");
       return;
     }
 
-    if (accessKeyInput.trim() !== ADMIN_ACCESS_KEY) {
-      setErrorMessage("Access key is not valid.");
-      return;
-    }
-
-    writeAdminSession(true);
-    setIsAuthenticated(true);
-    setAccessKeyInput("");
+    setIsSubmitting(true);
     setErrorMessage("");
+
+    try {
+      await signInAdminWithPassword({
+        email: emailInput.trim(),
+        password: passwordInput,
+      });
+      setIsAuthenticated(true);
+      setEmailInput("");
+      setPasswordInput("");
+      toast.success("Admin session started.");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Admin sign in failed.";
+      setErrorMessage(message);
+      toast.error(message);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
-  const handleLock = () => {
-    writeAdminSession(false);
+  const handleLock = async () => {
+    await signOutAdminAuth();
     setIsAuthenticated(false);
     setErrorMessage("");
-    setAccessKeyInput("");
+    setEmailInput("");
+    setPasswordInput("");
+    toast.success("Admin session ended.");
   };
 
   if (!isAuthenticated) {
@@ -68,31 +60,50 @@ export function AdminOrchardRoute() {
         <section className="admin-gate-card" aria-label="Admin Orchard Access Gate">
           <div className="admin-gate-card__header">
             <h1>Admin Orchard</h1>
-            <p className="admin-gate-copy">Access key required for coordinate setup.</p>
+            <p className="admin-gate-copy">Supabase admin account required for protected workspace access.</p>
           </div>
 
           <form className="admin-gate-form" onSubmit={handleUnlock}>
-            <label className="control-block" htmlFor="admin-access-key">
-              <span className="control-label">Access Key</span>
+            <label className="control-block" htmlFor="admin-email">
+              <span className="control-label">Email</span>
               <input
-                id="admin-access-key"
+                id="admin-email"
+                autoComplete="email"
                 className="admin-access-input"
-                type="password"
-                value={accessKeyInput}
                 onChange={(event) => {
-                  setAccessKeyInput(event.target.value);
+                  setEmailInput(event.target.value);
                   if (errorMessage !== "") {
                     setErrorMessage("");
                   }
                 }}
-                placeholder="Enter access key"
-                autoComplete="current-password"
+                placeholder="admin@pantaukebun.local"
                 spellCheck="false"
+                type="email"
+                value={emailInput}
               />
             </label>
 
-            <button className="admin-submit-button" type="submit" disabled={!isAccessKeyConfigured}>
-              Unlock Workspace
+            <label className="control-block" htmlFor="admin-password">
+              <span className="control-label">Password</span>
+              <input
+                id="admin-password"
+                autoComplete="current-password"
+                className="admin-access-input"
+                onChange={(event) => {
+                  setPasswordInput(event.target.value);
+                  if (errorMessage !== "") {
+                    setErrorMessage("");
+                  }
+                }}
+                placeholder="Enter password"
+                spellCheck="false"
+                type="password"
+                value={passwordInput}
+              />
+            </label>
+
+            <button className="admin-submit-button" type="submit" disabled={isSubmitting}>
+              {isSubmitting ? "Signing In..." : "Sign In"}
             </button>
 
             {errorMessage ? (
@@ -118,7 +129,7 @@ export function AdminOrchardRoute() {
           basePath="/admin-orchard"
           footerAction={
             <button className="admin-lock-button admin-lock-button--sidebar" type="button" onClick={handleLock}>
-              Lock Session
+              Sign Out
             </button>
           }
         />
