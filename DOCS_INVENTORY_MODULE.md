@@ -14,7 +14,7 @@ The implementation follows the current app structure: React JSX, Vite, plain CSS
 The inventory model is ledger-based:
 
 - `items` stores master data, optional item image URL, active/archive state, and the cached `current_stock`.
-- `stock_movements` stores append-only stock transactions.
+- `stock_movements` stores append-only stock transactions and `created_by` actor IDs from Supabase Auth.
 
 `stock_movements.qty` is signed:
 
@@ -103,6 +103,7 @@ Admin-only behavior:
 - Item cards show financial information when available.
 - Item cards show the `Mutasi Stok` button.
 - Admin can export the visible stock ledger to CSV for reporting/accounting.
+- Admin can see/export the authenticated actor ID attached to each stock movement.
 - Mutation modal supports `Stok Masuk`, `Stok Keluar`, and `Penyesuaian`.
 - Price and expiry fields are only rendered for `Stok Masuk`.
 

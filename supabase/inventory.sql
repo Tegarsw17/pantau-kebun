@@ -29,6 +29,7 @@ alter table public.items
 create table if not exists public.stock_movements (
   id uuid primary key default gen_random_uuid(),
   item_id uuid not null references public.items(id) on delete restrict,
+  created_by uuid references auth.users(id) on delete set null default auth.uid(),
   type text not null check (
     type in ('IN', 'OUT', 'ADJUSTMENT', 'MAINTENANCE', 'DISPOSAL')
   ),
@@ -49,9 +50,15 @@ create table if not exists public.stock_movements (
   created_at timestamp with time zone not null default timezone('utc'::text, now())
 );
 
+alter table public.stock_movements
+  add column if not exists created_by uuid references auth.users(id) on delete set null default auth.uid();
+
 create index if not exists items_category_idx on public.items (category);
 create index if not exists items_created_at_idx on public.items (created_at desc);
 create index if not exists items_is_active_idx on public.items (is_active);
+create index if not exists stock_movements_created_by_idx
+  on public.stock_movements (created_by)
+  where created_by is not null;
 create index if not exists stock_movements_item_id_created_at_idx
   on public.stock_movements (item_id, created_at desc);
 create index if not exists stock_movements_type_idx on public.stock_movements (type);

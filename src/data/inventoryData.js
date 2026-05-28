@@ -235,6 +235,7 @@ export function normalizeInventoryMovement(movement) {
   return {
     createdAt: normalizeDateValue(movement?.created_at),
     createdAtEpoch: resolveCreatedAtEpoch(movement?.created_at),
+    createdBy: normalizeText(movement?.created_by, ""),
     expiryDate: normalizeDateValue(movement?.expiry_date),
     id: String(movement?.id),
     itemId: String(movement?.item_id),
@@ -337,7 +338,7 @@ export async function fetchInventoryMovements({ includeFinancials = false } = {}
   }
 
   const selectColumns = includeFinancials
-    ? "id,item_id,type,qty,price_per_unit,expiry_date,reason,notes,created_at"
+    ? "id,item_id,created_by,type,qty,price_per_unit,expiry_date,reason,notes,created_at"
     : "id,item_id,type,qty,expiry_date,reason,notes,created_at";
 
   const response = await fetch(
@@ -546,7 +547,7 @@ export async function saveInventoryStockMovement(payload) {
 
   const response = await fetch(
     buildSupabaseUrl("/rest/v1/stock_movements", {
-      select: "id,item_id,type,qty,price_per_unit,expiry_date,reason,notes,created_at",
+      select: "id,item_id,created_by,type,qty,price_per_unit,expiry_date,reason,notes,created_at",
     }),
     {
       body: JSON.stringify(payload),

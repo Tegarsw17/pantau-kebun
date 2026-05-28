@@ -100,6 +100,7 @@ function buildInventoryLedgerRows(items) {
       "Expiry Date",
       "Reason",
       "Notes",
+      "Actor",
     ],
   ];
 
@@ -124,6 +125,7 @@ function buildInventoryLedgerRows(items) {
         movement.expiryDate ?? "",
         movement.reason,
         movement.notes,
+        movement.createdBy,
       ]);
     });
   });

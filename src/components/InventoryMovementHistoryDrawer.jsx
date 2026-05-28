@@ -44,6 +44,14 @@ function resolveMovementClassName(type) {
   return "inventory-history-row--out";
 }
 
+function formatActorLabel(createdBy) {
+  if (typeof createdBy !== "string" || createdBy.trim() === "") {
+    return "Unknown";
+  }
+
+  return createdBy.length > 12 ? `${createdBy.slice(0, 8)}...${createdBy.slice(-4)}` : createdBy;
+}
+
 export function InventoryMovementHistoryDrawer({ item, onClose, userRole }) {
   if (item == null) {
     return null;
@@ -104,6 +112,7 @@ export function InventoryMovementHistoryDrawer({ item, onClose, userRole }) {
                   {isAdmin && movement.pricePerUnit != null ? (
                     <span>Price: {PRICE_FORMATTER.format(movement.pricePerUnit)}</span>
                   ) : null}
+                  {isAdmin ? <span>Actor: {formatActorLabel(movement.createdBy)}</span> : null}
                 </div>
 
                 {movement.notes ? <p>{movement.notes}</p> : null}
