@@ -13,7 +13,7 @@ The implementation follows the current app structure: React JSX, Vite, plain CSS
 
 The inventory model is ledger-based:
 
-- `items` stores master data, optional item image URL, active/archive state, and the cached `current_stock`.
+- `items` stores master data, optional Cloudinary image URL/public ID, active/archive state, and the cached `current_stock`.
 - `stock_movements` stores append-only stock transactions and `created_by` actor IDs from Supabase Auth.
 
 `stock_movements.qty` is signed:
@@ -83,6 +83,7 @@ Main inventory view:
 - Items render as responsive cards: 1 column on mobile, 3-4 columns on desktop.
 - Cards render `items.image_url` when available and fall back to a category visual when empty.
 - Admin item creation uploads images to Cloudinary using `VITE_PUBLIC_CLOUDINARY_CLOUD_NAME` and `VITE_PUBLIC_CLOUDINARY_UPLOAD_PRESET`, with Cloudinary folder `item-image`.
+- Uploaded item images store both `items.image_url` and `items.image_public_id` so future cleanup/replacement can target the Cloudinary asset.
 - Cards show category visual, category badge, name and brand, stock level, stock status, and expiry warning.
 - Table view supports client-side sorting by item, category, stock, threshold, expiry, and last price.
 

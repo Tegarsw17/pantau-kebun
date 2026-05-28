@@ -5,6 +5,7 @@ create table if not exists public.items (
   name text not null check (btrim(name) <> ''),
   brand text,
   image_url text,
+  image_public_id text,
   is_active boolean not null default true,
   category text not null check (
     category in (
@@ -22,6 +23,9 @@ create table if not exists public.items (
 
 alter table public.items
   add column if not exists image_url text;
+
+alter table public.items
+  add column if not exists image_public_id text;
 
 alter table public.items
   add column if not exists is_active boolean not null default true;

@@ -44,5 +44,8 @@ export async function uploadInventoryItemImage(file) {
     throw new Error("Cloudinary upload succeeded without an image URL.");
   }
 
-  return payload.secure_url;
+  return {
+    imagePublicId: typeof payload?.public_id === "string" ? payload.public_id : "",
+    imageUrl: payload.secure_url,
+  };
 }

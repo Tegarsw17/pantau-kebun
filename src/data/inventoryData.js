@@ -225,6 +225,7 @@ function normalizeItem(item) {
     createdAt: normalizeDateValue(item?.created_at),
     currentStock: normalizeNumber(item?.current_stock),
     id: String(item?.id),
+    imagePublicId: normalizeText(item?.image_public_id, ""),
     imageUrl: normalizeText(item?.image_url, ""),
     isActive: item?.is_active !== false,
     lowStockThreshold: normalizeNumber(item?.low_stock_threshold),
@@ -353,7 +354,7 @@ export async function fetchInventoryItems({ includeArchived = false } = {}) {
 
   const searchParams = {
     order: "name.asc",
-    select: "id,name,brand,image_url,is_active,category,current_stock,unit,low_stock_threshold,created_at",
+    select: "id,name,brand,image_url,image_public_id,is_active,category,current_stock,unit,low_stock_threshold,created_at",
   };
 
   if (!includeArchived) {
@@ -490,6 +491,7 @@ export function buildStockMovementPayload({
 export function buildInventoryItemPayload({
   brand,
   category,
+  imagePublicId,
   imageUrl,
   lowStockThreshold,
   name,
@@ -499,6 +501,7 @@ export function buildInventoryItemPayload({
     brand: normalizeText(brand, "") || null,
     category: INVENTORY_CATEGORIES.includes(category) ? category : INVENTORY_CATEGORIES[0],
     current_stock: 0,
+    image_public_id: normalizeText(imagePublicId, "") || null,
     image_url: normalizeText(imageUrl, "") || null,
     is_active: true,
     low_stock_threshold: normalizeNumber(lowStockThreshold),
@@ -510,6 +513,7 @@ export function buildInventoryItemPayload({
 export function buildInventoryItemUpdatePayload({
   brand,
   category,
+  imagePublicId,
   imageUrl,
   lowStockThreshold,
   name,
@@ -518,6 +522,7 @@ export function buildInventoryItemUpdatePayload({
   return {
     brand: normalizeText(brand, "") || null,
     category: INVENTORY_CATEGORIES.includes(category) ? category : INVENTORY_CATEGORIES[0],
+    image_public_id: normalizeText(imagePublicId, "") || null,
     image_url: normalizeText(imageUrl, "") || null,
     low_stock_threshold: normalizeNumber(lowStockThreshold),
     name: normalizeText(name, "Unnamed Item"),
@@ -536,7 +541,7 @@ export async function saveInventoryItem(payload) {
 
   const response = await fetch(
     buildSupabaseUrl("/rest/v1/items", {
-      select: "id,name,brand,image_url,is_active,category,current_stock,unit,low_stock_threshold,created_at",
+      select: "id,name,brand,image_url,image_public_id,is_active,category,current_stock,unit,low_stock_threshold,created_at",
     }),
     {
       body: JSON.stringify(payload),
@@ -573,7 +578,7 @@ export async function updateInventoryItem({ itemId, payload }) {
   const response = await fetch(
     buildSupabaseUrl("/rest/v1/items", {
       id: `eq.${String(itemId)}`,
-      select: "id,name,brand,image_url,is_active,category,current_stock,unit,low_stock_threshold,created_at",
+      select: "id,name,brand,image_url,image_public_id,is_active,category,current_stock,unit,low_stock_threshold,created_at",
     }),
     {
       body: JSON.stringify(payload),

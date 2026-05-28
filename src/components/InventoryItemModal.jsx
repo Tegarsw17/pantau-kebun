@@ -29,6 +29,7 @@ export function InventoryItemModal({ item = null, mode = "create", onClose, onSa
     item == null ? "" : String(item.lowStockThreshold),
   );
   const [imageUrl, setImageUrl] = useState(item?.imageUrl ?? "");
+  const [imagePublicId, setImagePublicId] = useState(item?.imagePublicId ?? "");
   const [selectedImageFile, setSelectedImageFile] = useState(null);
   const [previewImageUrl, setPreviewImageUrl] = useState("");
   const [initialQuantity, setInitialQuantity] = useState("");
@@ -117,11 +118,15 @@ export function InventoryItemModal({ item = null, mode = "create", onClose, onSa
     setErrorMessage("");
 
     try {
-      const resolvedImageUrl =
-        selectedImageFile == null ? imageUrl : await uploadInventoryItemImage(selectedImageFile);
+      const uploadedImage =
+        selectedImageFile == null ? null : await uploadInventoryItemImage(selectedImageFile);
+      const resolvedImageUrl = uploadedImage == null ? imageUrl : uploadedImage.imageUrl;
+      const resolvedImagePublicId =
+        uploadedImage == null ? imagePublicId : uploadedImage.imagePublicId;
       const itemPayload = {
         brand,
         category,
+        imagePublicId: resolvedImagePublicId,
         imageUrl: resolvedImageUrl,
         lowStockThreshold,
         name,
@@ -368,6 +373,7 @@ export function InventoryItemModal({ item = null, mode = "create", onClose, onSa
                 onChange={(event) => {
                   setSelectedImageFile(event.target.files?.[0] ?? null);
                   setImageUrl("");
+                  setImagePublicId("");
                   setErrorMessage("");
                 }}
                 type="file"
