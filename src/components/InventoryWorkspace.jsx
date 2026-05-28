@@ -6,6 +6,7 @@ import {
   loadInventoryWorkspace,
 } from "../data/inventoryData.js";
 import { InventoryItemModal } from "./InventoryItemModal.jsx";
+import { InventoryMovementHistoryDrawer } from "./InventoryMovementHistoryDrawer.jsx";
 import { InventoryMutationModal } from "./InventoryMutationModal.jsx";
 
 const EXPIRY_WARNING_MONTHS = 6;
@@ -117,7 +118,7 @@ function CategoryFallbackVisual({ visual }) {
   return <span className="inventory-card__visual-mark">{visual.label}</span>;
 }
 
-function InventoryItemCard({ item, onEditRequest, onMutationRequest, userRole }) {
+function InventoryItemCard({ item, onEditRequest, onHistoryRequest, onMutationRequest, userRole }) {
   const [hasImageError, setHasImageError] = useState(false);
   const isAdmin = userRole === "admin";
   const visual = CATEGORY_VISUALS[item.category] ?? CATEGORY_VISUALS["Pupuk & Nutrisi"];
@@ -200,11 +201,21 @@ function InventoryItemCard({ item, onEditRequest, onMutationRequest, userRole })
           </button>
         </div>
       ) : null}
+
+      <button
+        className={`inventory-card-history-button ${
+          isAdmin ? "inventory-card-history-button--admin" : ""
+        }`}
+        onClick={() => onHistoryRequest?.(item)}
+        type="button"
+      >
+        View History
+      </button>
     </article>
   );
 }
 
-function InventoryTableView({ items, onEditRequest, onMutationRequest, userRole }) {
+function InventoryTableView({ items, onEditRequest, onHistoryRequest, onMutationRequest, userRole }) {
   const isAdmin = userRole === "admin";
 
   return (
@@ -218,7 +229,7 @@ function InventoryTableView({ items, onEditRequest, onMutationRequest, userRole 
             <th>Threshold</th>
             <th>Expiry</th>
             {isAdmin ? <th>Last Price</th> : null}
-            {isAdmin ? <th>Action</th> : null}
+            <th>Action</th>
           </tr>
         </thead>
         <tbody>
@@ -275,8 +286,16 @@ function InventoryTableView({ items, onEditRequest, onMutationRequest, userRole 
                     )}
                   </td>
                 ) : null}
-                {isAdmin ? (
-                  <td>
+                <td>
+                  <button
+                    className="inventory-table-action"
+                    onClick={() => onHistoryRequest?.(item)}
+                    type="button"
+                  >
+                    History
+                  </button>
+                  {isAdmin ? (
+                    <>
                     <button
                       className="inventory-table-action"
                       onClick={() => onEditRequest?.(item)}
@@ -291,8 +310,9 @@ function InventoryTableView({ items, onEditRequest, onMutationRequest, userRole 
                     >
                       Mutasi
                     </button>
-                  </td>
-                ) : null}
+                    </>
+                  ) : null}
+                </td>
               </tr>
             );
           })}
@@ -335,6 +355,7 @@ export function InventoryWorkspace({ userRole = "non-admin" }) {
   });
   const [isItemModalOpen, setIsItemModalOpen] = useState(false);
   const [selectedEditItem, setSelectedEditItem] = useState(null);
+  const [selectedHistoryItem, setSelectedHistoryItem] = useState(null);
   const [selectedMutationItem, setSelectedMutationItem] = useState(null);
   const [selectedCategory, setSelectedCategory] = useState(ALL_INVENTORY_CATEGORIES);
   const [searchQuery, setSearchQuery] = useState("");
@@ -509,6 +530,7 @@ export function InventoryWorkspace({ userRole = "non-admin" }) {
           <InventoryTableView
             items={filteredItems}
             onEditRequest={setSelectedEditItem}
+            onHistoryRequest={setSelectedHistoryItem}
             onMutationRequest={setSelectedMutationItem}
             userRole={userRole}
           />
@@ -519,6 +541,7 @@ export function InventoryWorkspace({ userRole = "non-admin" }) {
                 item={item}
                 key={item.id}
                 onEditRequest={setSelectedEditItem}
+                onHistoryRequest={setSelectedHistoryItem}
                 onMutationRequest={setSelectedMutationItem}
                 userRole={userRole}
               />
@@ -549,6 +572,14 @@ export function InventoryWorkspace({ userRole = "non-admin" }) {
           mode="edit"
           onClose={() => setSelectedEditItem(null)}
           onSaved={handleItemUpdated}
+        />
+      ) : null}
+
+      {selectedHistoryItem != null ? (
+        <InventoryMovementHistoryDrawer
+          item={selectedHistoryItem}
+          onClose={() => setSelectedHistoryItem(null)}
+          userRole={userRole}
         />
       ) : null}
     </>
