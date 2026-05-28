@@ -2654,6 +2654,25 @@ tbody tr + tr td {
   color: #fff1d4;
 }
 
+.inventory-card__price {
+  display: grid;
+  gap: 4px;
+  padding-top: 6px;
+  border-top: 1px solid rgba(114, 144, 156, 0.12);
+}
+
+.inventory-card__price span {
+  color: var(--muted);
+  font-size: 0.68rem;
+}
+
+.inventory-card__price strong {
+  color: #fff1d4;
+  font-size: 0.78rem;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
 .inventory-card__actions {
   display: grid;
   grid-template-columns: minmax(0, 0.72fr) minmax(0, 1.28fr);

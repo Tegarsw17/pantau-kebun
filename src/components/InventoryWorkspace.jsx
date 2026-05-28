@@ -175,6 +175,12 @@ function InventoryItemCard({ item, onEditRequest, onHistoryRequest, onMutationRe
           </strong>
         </div>
 
+        {isAdmin && item.latestIncomingPrice != null ? (
+          <div className="inventory-card__price">
+            <span>Last unit price</span>
+            <strong>{PRICE_FORMATTER.format(item.latestIncomingPrice)}</strong>
+          </div>
+        ) : null}
       </div>
 
       {isAdmin ? (
