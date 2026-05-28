@@ -2404,7 +2404,7 @@ tbody tr + tr td {
 .inventory-card {
   min-width: 0;
   display: grid;
-  grid-template-rows: 50% minmax(0, 1fr) auto;
+  grid-template-rows: 50% auto auto;
   min-height: 420px;
   overflow: hidden;
   border: 1px solid rgba(114, 144, 156, 0.16);
@@ -2415,8 +2415,8 @@ tbody tr + tr td {
 }
 
 .inventory-card--admin {
-  grid-template-rows: 44% minmax(0, 1fr) auto;
-  min-height: 500px;
+  grid-template-rows: 44% auto auto;
+  min-height: 460px;
 }
 
 .inventory-card__visual {
@@ -2649,7 +2649,7 @@ tbody tr + tr td {
   display: grid;
   grid-template-columns: minmax(0, 0.82fr) minmax(0, 0.72fr) minmax(0, 1.24fr);
   gap: 8px;
-  margin: 0 12px 12px;
+  margin: 2px 12px 12px;
 }
 
 .inventory-mutation-button,
