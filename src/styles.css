@@ -2415,8 +2415,8 @@ tbody tr + tr td {
 }
 
 .inventory-card--admin {
-  grid-template-rows: 46% minmax(0, 1fr) auto;
-  min-height: 470px;
+  grid-template-rows: 44% minmax(0, 1fr) auto;
+  min-height: 500px;
 }
 
 .inventory-card__visual {
@@ -2647,7 +2647,7 @@ tbody tr + tr td {
 
 .inventory-card__actions {
   display: grid;
-  grid-template-columns: minmax(0, 0.72fr) minmax(0, 1.28fr);
+  grid-template-columns: minmax(0, 0.82fr) minmax(0, 0.72fr) minmax(0, 1.24fr);
   gap: 8px;
   margin: 0 12px 12px;
 }
@@ -2686,10 +2686,6 @@ tbody tr + tr td {
   font: inherit;
   font-size: 0.82rem;
   cursor: pointer;
-}
-
-.inventory-card-history-button--admin {
-  margin-top: -6px;
 }
 
 .inventory-mutation-button:hover {
