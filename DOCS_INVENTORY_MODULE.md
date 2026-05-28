@@ -27,6 +27,35 @@ SQL lives in:
 
 - `supabase/inventory.sql`
 
+## RBAC And RLS
+
+The SQL enables row level security on `items` and `stock_movements`.
+
+Role resolution expects one of these Supabase Auth JWT claims:
+
+- `app_role`
+- `app_metadata.role`
+- `user_metadata.role`
+
+Admin values are:
+
+- `admin`
+- `inventory_admin`
+
+Policy behavior:
+
+- Anonymous/non-admin users can read active inventory items.
+- Anonymous/non-admin users can read non-financial stock movement fields for active items.
+- Admin users can read active and archived items.
+- Admin users can create/update item master data.
+- Admin users can insert stock movements for active items.
+- `stock_movements` remains append-only; update/delete is blocked by trigger.
+
+Important production note:
+
+- The current app admin gate is frontend-only and does not create a Supabase Auth admin JWT. After strict RLS is applied, admin writes require a real authenticated Supabase user with an admin role claim.
+- PostgreSQL RLS is row-based, not column-based. The frontend avoids requesting `price_per_unit` for non-admin users. If field workers also become authenticated Supabase users, move financial data to a separate admin-only table/RPC before giving them database access.
+
 ## UI Behavior
 
 Main inventory view:

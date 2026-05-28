@@ -374,6 +374,7 @@ export function InventoryWorkspace({ userRole = "non-admin" }) {
 
     loadInventoryWorkspace({
       allowStaticFallback: !isAdmin,
+      includeFinancials: isAdmin,
       includeArchived: isAdmin,
     })
       .then((snapshot) => {

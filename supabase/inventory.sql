@@ -119,3 +119,93 @@ create trigger stock_movements_prevent_delete
 before delete on public.stock_movements
 for each row
 execute function public.prevent_stock_movement_mutation();
+
+create or replace function public.current_inventory_app_role()
+returns text
+language sql
+stable
+as $$
+  select coalesce(
+    nullif(auth.jwt() ->> 'app_role', ''),
+    nullif(auth.jwt() -> 'app_metadata' ->> 'role', ''),
+    nullif(auth.jwt() -> 'user_metadata' ->> 'role', ''),
+    'field_worker'
+  );
+$$;
+
+create or replace function public.is_inventory_admin()
+returns boolean
+language sql
+stable
+as $$
+  select public.current_inventory_app_role() in ('admin', 'inventory_admin');
+$$;
+
+alter table public.items enable row level security;
+alter table public.stock_movements enable row level security;
+
+drop policy if exists inventory_items_read on public.items;
+drop policy if exists inventory_items_insert_admin on public.items;
+drop policy if exists inventory_items_update_admin on public.items;
+drop policy if exists inventory_movements_read on public.stock_movements;
+drop policy if exists inventory_movements_insert_admin on public.stock_movements;
+
+create policy inventory_items_read
+on public.items
+for select
+to anon, authenticated
+using (is_active = true or public.is_inventory_admin());
+
+create policy inventory_items_insert_admin
+on public.items
+for insert
+to authenticated
+with check (public.is_inventory_admin());
+
+create policy inventory_items_update_admin
+on public.items
+for update
+to authenticated
+using (public.is_inventory_admin())
+with check (public.is_inventory_admin());
+
+create policy inventory_movements_read
+on public.stock_movements
+for select
+to anon, authenticated
+using (
+  public.is_inventory_admin()
+  or exists (
+    select 1
+    from public.items
+    where items.id = stock_movements.item_id
+      and items.is_active = true
+  )
+);
+
+create policy inventory_movements_insert_admin
+on public.stock_movements
+for insert
+to authenticated
+with check (
+  public.is_inventory_admin()
+  and exists (
+    select 1
+    from public.items
+    where items.id = stock_movements.item_id
+      and items.is_active = true
+  )
+);
+
+grant usage on schema public to anon, authenticated;
+grant select on public.items to anon, authenticated;
+grant insert, update on public.items to authenticated;
+
+-- Non-authenticated readers only receive non-financial movement columns.
+-- Authenticated users still need the admin JWT role claim to write because RLS checks
+-- public.is_inventory_admin(). If field workers are also authenticated users, move
+-- price_per_unit behind a separate admin-only endpoint/table before granting them access.
+revoke all on public.stock_movements from anon, authenticated;
+grant select (id, item_id, type, qty, expiry_date, reason, notes, created_at)
+  on public.stock_movements to anon;
+grant select, insert on public.stock_movements to authenticated;

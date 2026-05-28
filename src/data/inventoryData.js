@@ -331,16 +331,19 @@ export async function fetchInventoryItems({ includeArchived = false } = {}) {
   return response.json();
 }
 
-export async function fetchInventoryMovements() {
+export async function fetchInventoryMovements({ includeFinancials = false } = {}) {
   if (!isAdminSupabaseConfigured()) {
     throw new Error("Supabase inventory connection is not configured.");
   }
 
+  const selectColumns = includeFinancials
+    ? "id,item_id,type,qty,price_per_unit,expiry_date,reason,notes,created_at"
+    : "id,item_id,type,qty,expiry_date,reason,notes,created_at";
+
   const response = await fetch(
     buildSupabaseUrl("/rest/v1/stock_movements", {
       order: "created_at.desc",
-      select:
-        "id,item_id,type,qty,price_per_unit,expiry_date,reason,notes,created_at",
+      select: selectColumns,
     }),
     {
       headers: buildSupabaseHeaders(),
@@ -356,13 +359,14 @@ export async function fetchInventoryMovements() {
 
 export async function loadInventoryWorkspace({
   allowStaticFallback = true,
+  includeFinancials = false,
   includeArchived = false,
 } = {}) {
   if (isAdminSupabaseConfigured()) {
     try {
       const [items, movements] = await Promise.all([
         fetchInventoryItems({ includeArchived }),
-        fetchInventoryMovements(),
+        fetchInventoryMovements({ includeFinancials }),
       ]);
 
       return {
