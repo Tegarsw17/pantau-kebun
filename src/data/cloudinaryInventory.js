@@ -1,3 +1,10 @@
+import {
+  buildSupabaseHeaders,
+  buildSupabaseUrl,
+  extractSupabaseError,
+  isAdminSupabaseConfigured,
+} from "./adminOrchardSupabase.js";
+
 const CLOUDINARY_CLOUD_NAME = (import.meta.env.VITE_PUBLIC_CLOUDINARY_CLOUD_NAME ?? "").trim();
 const CLOUDINARY_UPLOAD_PRESET = (
   import.meta.env.VITE_PUBLIC_CLOUDINARY_UPLOAD_PRESET ?? ""
@@ -48,4 +55,30 @@ export async function uploadInventoryItemImage(file) {
     imagePublicId: typeof payload?.public_id === "string" ? payload.public_id : "",
     imageUrl: payload.secure_url,
   };
+}
+
+export async function deleteInventoryItemImage(publicId) {
+  const normalizedPublicId = typeof publicId === "string" ? publicId.trim() : "";
+
+  if (normalizedPublicId === "") {
+    return null;
+  }
+
+  if (!isAdminSupabaseConfigured()) {
+    throw new Error("Supabase connection is required before deleting Cloudinary item images.");
+  }
+
+  const response = await fetch(buildSupabaseUrl("/functions/v1/delete-cloudinary-image"), {
+    body: JSON.stringify({
+      publicId: normalizedPublicId,
+    }),
+    headers: buildSupabaseHeaders(),
+    method: "POST",
+  });
+
+  if (!response.ok) {
+    throw new Error(await extractSupabaseError(response));
+  }
+
+  return response.json();
 }

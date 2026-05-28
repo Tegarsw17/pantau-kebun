@@ -147,6 +147,7 @@ export async function extractSupabaseError(response) {
 
     return (
       parsedPayload.message ??
+      (typeof parsedPayload.error === "string" ? parsedPayload.error : undefined) ??
       parsedPayload.error_description ??
       parsedPayload.details ??
       parsedPayload.hint ??

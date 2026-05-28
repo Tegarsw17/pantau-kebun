@@ -83,7 +83,8 @@ Main inventory view:
 - Items render as responsive cards: 1 column on mobile, 3-4 columns on desktop.
 - Cards render `items.image_url` when available and fall back to a category visual when empty.
 - Admin item creation uploads images to Cloudinary using `VITE_PUBLIC_CLOUDINARY_CLOUD_NAME` and `VITE_PUBLIC_CLOUDINARY_UPLOAD_PRESET`, with Cloudinary folder `item-image`.
-- Uploaded item images store both `items.image_url` and `items.image_public_id` so future cleanup/replacement can target the Cloudinary asset.
+- Uploaded item images store both `items.image_url` and `items.image_public_id` so cleanup/replacement can target the Cloudinary asset.
+- When an admin replaces an item image, the frontend updates the inventory row first, then calls the `delete-cloudinary-image` Supabase Edge Function to delete the previous `item-image/*` Cloudinary asset. Cleanup failure does not roll back the item update.
 - Cards show category visual, category badge, name and brand, stock level, stock status, and expiry warning.
 - Table view supports client-side sorting by item, category, stock, threshold, expiry, and last price.
 
@@ -112,6 +113,29 @@ Admin-only behavior:
 - Mutation modal supports `Stok Masuk`, `Stok Keluar`, and `Penyesuaian`.
 - Mutation modal uses an explicit reason dropdown: `Pembelian`, `Aplikasi Lahan`, `Alat Rusak`, `Hibah Barang`, and `Kadaluarsa/Rusak`.
 - Price and expiry fields are only rendered for `Stok Masuk`.
+
+## Cloudinary Cleanup
+
+Browser uploads remain unsigned and only use public Vite env vars:
+
+- `VITE_PUBLIC_CLOUDINARY_CLOUD_NAME`
+- `VITE_PUBLIC_CLOUDINARY_UPLOAD_PRESET`
+
+Cloudinary deletion uses a Supabase Edge Function because the Cloudinary API secret must never be exposed in the browser. Deploy the function:
+
+```bash
+supabase functions deploy delete-cloudinary-image
+```
+
+Set these Edge Function secrets in Supabase:
+
+```bash
+supabase secrets set CLOUDINARY_CLOUD_NAME="your-cloud-name"
+supabase secrets set CLOUDINARY_API_KEY="your-api-key"
+supabase secrets set CLOUDINARY_API_SECRET="your-api-secret"
+```
+
+Supabase automatically provides `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` to Edge Functions. The function requires a logged-in admin whose `public.user_roles.role` is `admin` or `inventory_admin`, and it only deletes Cloudinary public IDs under `item-image/`.
 
 ## Git Commit Strategy
 

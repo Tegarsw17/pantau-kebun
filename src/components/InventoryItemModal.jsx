@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import Swal from "sweetalert2";
 import {
+  deleteInventoryItemImage,
   isCloudinaryInventoryUploadConfigured,
   uploadInventoryItemImage,
 } from "../data/cloudinaryInventory.js";
@@ -104,6 +105,29 @@ export function InventoryItemModal({ item = null, mode = "create", onClose, onSa
     return "";
   };
 
+  const cleanupReplacedItemImage = async (nextImagePublicId) => {
+    const previousImagePublicId = item?.imagePublicId ?? "";
+
+    if (
+      !isEditing ||
+      selectedImageFile == null ||
+      previousImagePublicId === "" ||
+      previousImagePublicId === nextImagePublicId
+    ) {
+      return;
+    }
+
+    try {
+      await deleteInventoryItemImage(previousImagePublicId);
+    } catch (error) {
+      toast.warning(
+        error instanceof Error
+          ? `Item updated, but old image cleanup failed: ${error.message}`
+          : "Item updated, but old image cleanup failed.",
+      );
+    }
+  };
+
   const handleSave = async (event) => {
     event.preventDefault();
 
@@ -144,6 +168,7 @@ export function InventoryItemModal({ item = null, mode = "create", onClose, onSa
           ...normalizedItem,
           movements: item.movements,
         });
+        await cleanupReplacedItemImage(resolvedImagePublicId);
         toast.success("Inventory item updated.");
         onClose();
         return;
