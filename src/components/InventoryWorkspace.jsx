@@ -483,6 +483,39 @@ export function InventoryWorkspace({ userRole = "non-admin" }) {
 
         <section className="inventory-grid-section" aria-label="Inventory Storefront">
           <div className="inventory-grid-actions">
+            {isAdmin ? (
+              <div className="inventory-grid-actions__left">
+                <button
+                  className="inventory-add-button"
+                  disabled={inventorySnapshot.loadState !== "ready"}
+                  onClick={() => setIsItemModalOpen(true)}
+                  type="button"
+                >
+                  Tambah Item
+                </button>
+
+                <div className="inventory-archive-tabs" aria-label="Inventory archive filter">
+                  {[
+                    ["active", "Active"],
+                    ["archived", "Archived"],
+                    ["all", "All"],
+                  ].map(([value, label]) => (
+                    <button
+                      className={`inventory-archive-tab ${
+                        archiveFilter === value ? "inventory-archive-tab--active" : ""
+                      }`}
+                      disabled={inventorySnapshot.loadState !== "ready"}
+                      key={value}
+                      onClick={() => setArchiveFilter(value)}
+                      type="button"
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+
             <div className="inventory-view-toggle" aria-label="Inventory view mode">
               <button
                 aria-pressed={viewMode === "grid"}
@@ -507,40 +540,7 @@ export function InventoryWorkspace({ userRole = "non-admin" }) {
                 Table
               </button>
             </div>
-
-            {isAdmin ? (
-              <button
-                className="inventory-add-button"
-                disabled={inventorySnapshot.loadState !== "ready"}
-                onClick={() => setIsItemModalOpen(true)}
-                type="button"
-              >
-                Tambah Item
-              </button>
-            ) : null}
           </div>
-
-          {isAdmin ? (
-            <div className="inventory-archive-tabs" aria-label="Inventory archive filter">
-              {[
-                ["active", "Active"],
-                ["archived", "Archived"],
-                ["all", "All"],
-              ].map(([value, label]) => (
-                <button
-                  className={`inventory-archive-tab ${
-                    archiveFilter === value ? "inventory-archive-tab--active" : ""
-                  }`}
-                  disabled={inventorySnapshot.loadState !== "ready"}
-                  key={value}
-                  onClick={() => setArchiveFilter(value)}
-                  type="button"
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
-          ) : null}
 
           {inventorySnapshot.loadState === "loading" ? (
             <div className="inventory-empty-state">

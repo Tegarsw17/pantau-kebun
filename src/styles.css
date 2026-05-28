@@ -2310,11 +2310,17 @@ tbody tr + tr td {
   margin-bottom: 12px;
 }
 
+.inventory-grid-actions__left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
 .inventory-archive-tabs {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  margin-bottom: 14px;
   padding: 5px;
   border: 1px solid rgba(114, 144, 156, 0.14);
   background: rgba(8, 16, 20, 0.58);
@@ -3429,9 +3435,19 @@ tbody tr + tr td {
     flex-direction: column;
   }
 
+  .inventory-grid-actions__left {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
   .inventory-view-toggle,
+  .inventory-archive-tabs,
   .inventory-add-button {
     width: 100%;
+  }
+
+  .inventory-archive-tab {
+    flex: 1;
   }
 
   .inventory-view-toggle__button {
