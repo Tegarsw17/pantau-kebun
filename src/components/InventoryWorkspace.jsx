@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { useDeferredValue, useEffect, useState } from "react";
 import { toast } from "sonner";
+import Swal from "sweetalert2";
 import {
   ALL_INVENTORY_CATEGORIES,
   INVENTORY_CATEGORIES,
@@ -670,8 +671,6 @@ export function InventoryWorkspace({ userRole = "non-admin" }) {
   const [selectedHistoryItem, setSelectedHistoryItem] = useState(null);
   const [selectedMutationItem, setSelectedMutationItem] = useState(null);
   const [archiveFilter, setArchiveFilter] = useState("active");
-  const [exportEndDate, setExportEndDate] = useState("");
-  const [exportStartDate, setExportStartDate] = useState("");
   const [selectedCategory, setSelectedCategory] = useState(ALL_INVENTORY_CATEGORIES);
   const [searchQuery, setSearchQuery] = useState("");
   const [viewMode, setViewMode] = useState("grid");
@@ -758,15 +757,53 @@ export function InventoryWorkspace({ userRole = "non-admin" }) {
         .sort((leftItem, rightItem) => leftItem.name.localeCompare(rightItem.name)),
     }));
   };
-  const handleLedgerExport = () => {
-    if (exportStartDate !== "" && exportEndDate !== "" && exportStartDate > exportEndDate) {
-      toast.error("Export start date cannot be after end date.");
+  const handleLedgerExport = async () => {
+    const exportScope = await Swal.fire({
+      background: "#071116",
+      cancelButtonColor: "#26343b",
+      color: "#edf7f8",
+      confirmButtonColor: "#b27624",
+      confirmButtonText: "Export CSV",
+      focusConfirm: false,
+      html: `
+        <div class="inventory-export-dialog">
+          <p>Leave both dates empty to export all visible ledger movements.</p>
+          <label>
+            <span>From</span>
+            <input id="inventory-export-start-date" type="date" class="swal2-input" />
+          </label>
+          <label>
+            <span>To</span>
+            <input id="inventory-export-end-date" type="date" class="swal2-input" />
+          </label>
+        </div>
+      `,
+      icon: "question",
+      preConfirm: () => {
+        const startDate = document.getElementById("inventory-export-start-date")?.value ?? "";
+        const endDate = document.getElementById("inventory-export-end-date")?.value ?? "";
+
+        if (startDate !== "" && endDate !== "" && startDate > endDate) {
+          Swal.showValidationMessage("Start date cannot be after end date.");
+          return false;
+        }
+
+        return {
+          endDate,
+          startDate,
+        };
+      },
+      showCancelButton: true,
+      title: "Export ledger",
+    });
+
+    if (!exportScope.isConfirmed) {
       return;
     }
 
     const ledgerRows = buildInventoryLedgerRows(filteredItems, {
-      endDate: exportEndDate,
-      startDate: exportStartDate,
+      endDate: exportScope.value.endDate,
+      startDate: exportScope.value.startDate,
     });
     const movementCount = ledgerRows.length - 1;
 
@@ -846,27 +883,6 @@ export function InventoryWorkspace({ userRole = "non-admin" }) {
                   <Download size={16} strokeWidth={2} />
                   Export Ledger
                 </button>
-
-                <div className="inventory-export-range" aria-label="Ledger export date range">
-                  <label>
-                    <span>From</span>
-                    <input
-                      disabled={inventorySnapshot.loadState !== "ready"}
-                      onChange={(event) => setExportStartDate(event.target.value)}
-                      type="date"
-                      value={exportStartDate}
-                    />
-                  </label>
-                  <label>
-                    <span>To</span>
-                    <input
-                      disabled={inventorySnapshot.loadState !== "ready"}
-                      onChange={(event) => setExportEndDate(event.target.value)}
-                      type="date"
-                      value={exportEndDate}
-                    />
-                  </label>
-                </div>
 
                 <div className="inventory-archive-tabs" aria-label="Inventory archive filter">
                   {[

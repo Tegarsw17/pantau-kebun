@@ -56,6 +56,35 @@ body::before {
   box-shadow: var(--shadow);
 }
 
+.inventory-export-dialog {
+  display: grid;
+  gap: 12px;
+  text-align: left;
+}
+
+.inventory-export-dialog p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.inventory-export-dialog label {
+  display: grid;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.inventory-export-dialog .swal2-input {
+  width: 100%;
+  height: 42px;
+  margin: 0;
+  border: 1px solid rgba(114, 144, 156, 0.22);
+  background: rgba(8, 16, 20, 0.9);
+  color: var(--text);
+  box-shadow: none;
+}
+
 .app-shell {
   width: min(1600px, calc(100vw - 32px));
   margin: 0 auto;
@@ -2322,39 +2351,6 @@ tbody tr + tr td {
   opacity: 0.56;
 }
 
-.inventory-export-range {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 5px;
-  border: 1px solid rgba(114, 144, 156, 0.14);
-  background: rgba(8, 16, 20, 0.58);
-}
-
-.inventory-export-range label {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  color: var(--muted);
-  font-size: 0.72rem;
-}
-
-.inventory-export-range input {
-  width: 132px;
-  min-height: 30px;
-  border: 1px solid rgba(114, 144, 156, 0.14);
-  background: rgba(8, 16, 20, 0.9);
-  color: var(--text);
-  font: inherit;
-  font-size: 0.78rem;
-  padding: 0 8px;
-}
-
-.inventory-export-range input:disabled {
-  cursor: not-allowed;
-  opacity: 0.56;
-}
-
 .inventory-grid-actions {
   display: flex;
   justify-content: space-between;
@@ -3591,23 +3587,9 @@ tbody tr + tr td {
 
   .inventory-view-toggle,
   .inventory-archive-tabs,
-  .inventory-export-range,
   .inventory-export-button,
   .inventory-add-button {
     width: 100%;
-  }
-
-  .inventory-export-range {
-    align-items: stretch;
-    flex-direction: column;
-  }
-
-  .inventory-export-range label {
-    justify-content: space-between;
-  }
-
-  .inventory-export-range input {
-    width: min(190px, 68%);
   }
 
   .inventory-export-button {
