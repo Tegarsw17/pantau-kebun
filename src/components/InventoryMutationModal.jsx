@@ -3,12 +3,14 @@ import { toast } from "sonner";
 import Swal from "sweetalert2";
 import {
   INVENTORY_MUTATION_OPTIONS,
+  INVENTORY_REASON_OPTIONS,
   buildStockMovementPayload,
   normalizeInventoryMovement,
   saveInventoryStockMovement,
 } from "../data/inventoryData.js";
 
 const DEFAULT_MUTATION_TYPE = "IN";
+const DEFAULT_REASON = "Pembelian";
 
 function formatStockValue(value) {
   return Number(value).toLocaleString("id-ID", {
@@ -24,6 +26,7 @@ function resolveMutationLabel(value) {
 export function InventoryMutationModal({ item, onClose, onSaved }) {
   const [mutationType, setMutationType] = useState(DEFAULT_MUTATION_TYPE);
   const [quantity, setQuantity] = useState("");
+  const [reason, setReason] = useState(DEFAULT_REASON);
   const [pricePerUnit, setPricePerUnit] = useState("");
   const [expiryDate, setExpiryDate] = useState("");
   const [notes, setNotes] = useState("");
@@ -102,7 +105,9 @@ export function InventoryMutationModal({ item, onClose, onSaved }) {
       showCancelButton: true,
       text: `${itemTitle}\nType: ${resolveMutationLabel(mutationType)}\nQuantity: ${formatStockValue(
         numericQuantity,
-      )} ${item.unit}\nStock after save: ${formatStockValue(nextStock)} ${item.unit}`,
+      )} ${item.unit}\nReason: ${reason}\nStock after save: ${formatStockValue(nextStock)} ${
+        item.unit
+      }`,
       title: "Save stock mutation?",
     });
 
@@ -120,6 +125,7 @@ export function InventoryMutationModal({ item, onClose, onSaved }) {
         notes,
         pricePerUnit,
         quantity,
+        reason,
         type: mutationType,
       });
       const savedMovement = await saveInventoryStockMovement(payload);
@@ -199,6 +205,24 @@ export function InventoryMutationModal({ item, onClose, onSaved }) {
                 type="number"
                 value={quantity}
               />
+            </label>
+
+            <label className="control-block">
+              <span className="control-label">Reason</span>
+              <select
+                disabled={isSaving}
+                onChange={(event) => {
+                  setReason(event.target.value);
+                  setErrorMessage("");
+                }}
+                value={reason}
+              >
+                {INVENTORY_REASON_OPTIONS.map((reasonOption) => (
+                  <option key={reasonOption} value={reasonOption}>
+                    {reasonOption}
+                  </option>
+                ))}
+              </select>
             </label>
 
             {isIncomingStock ? (

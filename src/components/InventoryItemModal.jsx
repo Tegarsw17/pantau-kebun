@@ -159,6 +159,7 @@ export function InventoryItemModal({ item = null, mode = "create", onClose, onSa
             notes: initialNotes || "Initial stock",
             pricePerUnit: initialPricePerUnit,
             quantity: initialQuantity,
+            reason: "Pembelian",
             type: "IN",
           }),
         );

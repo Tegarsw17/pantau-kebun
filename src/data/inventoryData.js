@@ -17,19 +17,24 @@ export const ALL_INVENTORY_CATEGORIES = "Semua Kategori";
 export const INVENTORY_MUTATION_OPTIONS = [
   {
     label: "Stok Masuk",
-    reason: "Pembelian",
     value: "IN",
   },
   {
     label: "Stok Keluar",
-    reason: "Aplikasi Lahan",
     value: "OUT",
   },
   {
     label: "Penyesuaian",
-    reason: "Penyesuaian Stok",
     value: "ADJUSTMENT",
   },
+];
+
+export const INVENTORY_REASON_OPTIONS = [
+  "Pembelian",
+  "Aplikasi Lahan",
+  "Alat Rusak",
+  "Hibah Barang",
+  "Kadaluarsa/Rusak",
 ];
 
 const STATIC_ITEMS = [
@@ -399,10 +404,15 @@ export async function loadInventoryWorkspace({
   };
 }
 
-export function buildStockMovementPayload({ expiryDate, itemId, notes, pricePerUnit, quantity, type }) {
-  const mutationOption =
-    INVENTORY_MUTATION_OPTIONS.find((option) => option.value === type) ??
-    INVENTORY_MUTATION_OPTIONS[1];
+export function buildStockMovementPayload({
+  expiryDate,
+  itemId,
+  notes,
+  pricePerUnit,
+  quantity,
+  reason = "Pembelian",
+  type,
+}) {
   const normalizedQuantity = Math.abs(normalizeNumber(quantity));
   const signedQuantity = type === "IN" ? normalizedQuantity : -normalizedQuantity;
 
@@ -412,7 +422,7 @@ export function buildStockMovementPayload({ expiryDate, itemId, notes, pricePerU
     notes: normalizeText(notes, ""),
     price_per_unit: type === "IN" ? normalizeNumber(pricePerUnit) : null,
     qty: signedQuantity,
-    reason: mutationOption.reason,
+    reason: INVENTORY_REASON_OPTIONS.includes(reason) ? reason : INVENTORY_REASON_OPTIONS[0],
     type,
   };
 }

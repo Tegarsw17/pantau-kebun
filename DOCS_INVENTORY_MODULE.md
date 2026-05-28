@@ -105,6 +105,7 @@ Admin-only behavior:
 - Admin can export the visible stock ledger to CSV for reporting/accounting.
 - Admin can see/export the authenticated actor ID attached to each stock movement.
 - Mutation modal supports `Stok Masuk`, `Stok Keluar`, and `Penyesuaian`.
+- Mutation modal uses an explicit reason dropdown: `Pembelian`, `Aplikasi Lahan`, `Alat Rusak`, `Hibah Barang`, and `Kadaluarsa/Rusak`.
 - Price and expiry fields are only rendered for `Stok Masuk`.
 
 ## Git Commit Strategy
