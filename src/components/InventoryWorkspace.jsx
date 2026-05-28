@@ -92,7 +92,37 @@ function formatLedgerExportDate(value) {
   ].join(" ");
 }
 
-function buildInventoryLedgerRows(items) {
+function movementMatchesExportDateRange(movement, startDate, endDate) {
+  if (startDate === "" && endDate === "") {
+    return true;
+  }
+
+  const movementDate = new Date(movement.createdAt);
+
+  if (Number.isNaN(movementDate.getTime())) {
+    return false;
+  }
+
+  if (startDate !== "") {
+    const start = new Date(`${startDate}T00:00:00`);
+
+    if (movementDate < start) {
+      return false;
+    }
+  }
+
+  if (endDate !== "") {
+    const end = new Date(`${endDate}T23:59:59.999`);
+
+    if (movementDate > end) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+function buildInventoryLedgerRows(items, { endDate = "", startDate = "" } = {}) {
   const rows = [
     [
       "Movement Date",
@@ -115,27 +145,29 @@ function buildInventoryLedgerRows(items) {
   items.forEach((item) => {
     const itemTitle = buildItemTitle(item);
 
-    item.movements.forEach((movement) => {
-      const totalValue =
-        movement.pricePerUnit == null ? "" : Math.abs(movement.qty) * movement.pricePerUnit;
+    item.movements
+      .filter((movement) => movementMatchesExportDateRange(movement, startDate, endDate))
+      .forEach((movement) => {
+        const totalValue =
+          movement.pricePerUnit == null ? "" : Math.abs(movement.qty) * movement.pricePerUnit;
 
-      rows.push([
-        formatLedgerExportDate(movement.createdAt),
-        itemTitle,
-        item.brand,
-        item.category,
-        item.isActive ? "Active" : "Archived",
-        movement.type,
-        movement.qty,
-        item.unit,
-        movement.pricePerUnit ?? "",
-        totalValue,
-        movement.expiryDate ?? "",
-        movement.reason,
-        movement.notes,
-        movement.createdBy,
-      ]);
-    });
+        rows.push([
+          formatLedgerExportDate(movement.createdAt),
+          itemTitle,
+          item.brand,
+          item.category,
+          item.isActive ? "Active" : "Archived",
+          movement.type,
+          movement.qty,
+          item.unit,
+          movement.pricePerUnit ?? "",
+          totalValue,
+          movement.expiryDate ?? "",
+          movement.reason,
+          movement.notes,
+          movement.createdBy,
+        ]);
+      });
   });
 
   return rows;
@@ -638,6 +670,8 @@ export function InventoryWorkspace({ userRole = "non-admin" }) {
   const [selectedHistoryItem, setSelectedHistoryItem] = useState(null);
   const [selectedMutationItem, setSelectedMutationItem] = useState(null);
   const [archiveFilter, setArchiveFilter] = useState("active");
+  const [exportEndDate, setExportEndDate] = useState("");
+  const [exportStartDate, setExportStartDate] = useState("");
   const [selectedCategory, setSelectedCategory] = useState(ALL_INVENTORY_CATEGORIES);
   const [searchQuery, setSearchQuery] = useState("");
   const [viewMode, setViewMode] = useState("grid");
@@ -725,7 +759,15 @@ export function InventoryWorkspace({ userRole = "non-admin" }) {
     }));
   };
   const handleLedgerExport = () => {
-    const ledgerRows = buildInventoryLedgerRows(filteredItems);
+    if (exportStartDate !== "" && exportEndDate !== "" && exportStartDate > exportEndDate) {
+      toast.error("Export start date cannot be after end date.");
+      return;
+    }
+
+    const ledgerRows = buildInventoryLedgerRows(filteredItems, {
+      endDate: exportEndDate,
+      startDate: exportStartDate,
+    });
     const movementCount = ledgerRows.length - 1;
 
     if (movementCount <= 0) {
@@ -804,6 +846,27 @@ export function InventoryWorkspace({ userRole = "non-admin" }) {
                   <Download size={16} strokeWidth={2} />
                   Export Ledger
                 </button>
+
+                <div className="inventory-export-range" aria-label="Ledger export date range">
+                  <label>
+                    <span>From</span>
+                    <input
+                      disabled={inventorySnapshot.loadState !== "ready"}
+                      onChange={(event) => setExportStartDate(event.target.value)}
+                      type="date"
+                      value={exportStartDate}
+                    />
+                  </label>
+                  <label>
+                    <span>To</span>
+                    <input
+                      disabled={inventorySnapshot.loadState !== "ready"}
+                      onChange={(event) => setExportEndDate(event.target.value)}
+                      type="date"
+                      value={exportEndDate}
+                    />
+                  </label>
+                </div>
 
                 <div className="inventory-archive-tabs" aria-label="Inventory archive filter">
                   {[
