@@ -2872,6 +2872,31 @@ tbody tr + tr td {
   white-space: nowrap;
 }
 
+.inventory-table-sort {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  padding: 0;
+  cursor: pointer;
+}
+
+.inventory-table-sort span {
+  color: var(--subtle);
+  font-size: 0.76rem;
+}
+
+.inventory-table-sort--active {
+  color: #fff1d4;
+}
+
+.inventory-table-sort--active span {
+  color: var(--amber);
+}
+
 .inventory-table-item {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);

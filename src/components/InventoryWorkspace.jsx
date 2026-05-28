@@ -24,6 +24,14 @@ const PRICE_FORMATTER = new Intl.NumberFormat("id-ID", {
   maximumFractionDigits: 0,
   style: "currency",
 });
+const TABLE_SORT_LABELS = {
+  category: "Category",
+  expiry: "Expiry",
+  item: "Item",
+  price: "Last Price",
+  stock: "Stock",
+  threshold: "Threshold",
+};
 
 const CATEGORY_VISUALS = {
   Agrokimia: {
@@ -105,7 +113,7 @@ function buildInventoryLedgerRows(items) {
   ];
 
   items.forEach((item) => {
-    const itemTitle = item.brand ? `${item.name} (${item.brand})` : item.name;
+    const itemTitle = buildItemTitle(item);
 
     item.movements.forEach((movement) => {
       const totalValue =
@@ -146,6 +154,51 @@ function downloadCsvFile({ filename, rows }) {
   link.click();
   link.remove();
   URL.revokeObjectURL(objectUrl);
+}
+
+function buildItemTitle(item) {
+  return item.brand ? `${item.name} (${item.brand})` : item.name;
+}
+
+function getTableSortValue(item, key) {
+  if (key === "category") {
+    return item.category;
+  }
+
+  if (key === "expiry") {
+    return item.latestExpiryDate == null
+      ? Number.POSITIVE_INFINITY
+      : new Date(`${item.latestExpiryDate}T00:00:00`).getTime();
+  }
+
+  if (key === "price") {
+    return item.latestIncomingPrice ?? Number.NEGATIVE_INFINITY;
+  }
+
+  if (key === "stock") {
+    return item.currentStock;
+  }
+
+  if (key === "threshold") {
+    return item.lowStockThreshold;
+  }
+
+  return buildItemTitle(item).toLowerCase();
+}
+
+function sortInventoryTableItems(items, sortState) {
+  const directionMultiplier = sortState.direction === "asc" ? 1 : -1;
+
+  return [...items].sort((leftItem, rightItem) => {
+    const leftValue = getTableSortValue(leftItem, sortState.key);
+    const rightValue = getTableSortValue(rightItem, sortState.key);
+
+    if (typeof leftValue === "number" && typeof rightValue === "number") {
+      return (leftValue - rightValue) * directionMultiplier;
+    }
+
+    return String(leftValue).localeCompare(String(rightValue), "id-ID") * directionMultiplier;
+  });
 }
 
 function resolveStockState(item) {
@@ -311,7 +364,7 @@ function InventoryItemCard({ item, onEditRequest, onHistoryRequest, onMutationRe
   const visual = CATEGORY_VISUALS[item.category] ?? CATEGORY_VISUALS["Pupuk & Nutrisi"];
   const stockState = resolveStockState(item);
   const expiryState = resolveExpiryState(item.latestExpiryDate);
-  const itemTitle = item.brand ? `${item.name} (${item.brand})` : item.name;
+  const itemTitle = buildItemTitle(item);
 
   return (
     <article className={`inventory-card ${isAdmin ? "inventory-card--admin" : ""}`}>
@@ -406,27 +459,59 @@ function InventoryItemCard({ item, onEditRequest, onHistoryRequest, onMutationRe
 
 function InventoryTableView({ items, onEditRequest, onHistoryRequest, onMutationRequest, userRole }) {
   const isAdmin = userRole === "admin";
+  const [sortState, setSortState] = useState({
+    direction: "asc",
+    key: "item",
+  });
+  const sortedItems = sortInventoryTableItems(items, sortState);
+
+  const handleSortRequest = (key) => {
+    setSortState((currentSortState) => ({
+      direction:
+        currentSortState.key === key && currentSortState.direction === "asc" ? "desc" : "asc",
+      key,
+    }));
+  };
+
+  const renderSortHeader = (key) => {
+    const isActive = sortState.key === key;
+
+    return (
+      <button
+        aria-label={`Sort by ${TABLE_SORT_LABELS[key]}`}
+        aria-pressed={isActive}
+        className={`inventory-table-sort ${
+          isActive ? "inventory-table-sort--active" : ""
+        }`}
+        onClick={() => handleSortRequest(key)}
+        type="button"
+      >
+        {TABLE_SORT_LABELS[key]}
+        <span>{isActive ? (sortState.direction === "asc" ? "↑" : "↓") : "↕"}</span>
+      </button>
+    );
+  };
 
   return (
     <div className="inventory-table-shell">
       <table className="inventory-table">
         <thead>
           <tr>
-            <th>Item</th>
-            <th>Category</th>
-            <th>Stock</th>
-            <th>Threshold</th>
-            <th>Expiry</th>
-            {isAdmin ? <th>Last Price</th> : null}
+            <th>{renderSortHeader("item")}</th>
+            <th>{renderSortHeader("category")}</th>
+            <th>{renderSortHeader("stock")}</th>
+            <th>{renderSortHeader("threshold")}</th>
+            <th>{renderSortHeader("expiry")}</th>
+            {isAdmin ? <th>{renderSortHeader("price")}</th> : null}
             <th>Action</th>
           </tr>
         </thead>
         <tbody>
-          {items.map((item) => {
+          {sortedItems.map((item) => {
             const visual = CATEGORY_VISUALS[item.category] ?? CATEGORY_VISUALS["Pupuk & Nutrisi"];
             const stockState = resolveStockState(item);
             const expiryState = resolveExpiryState(item.latestExpiryDate);
-            const itemTitle = item.brand ? `${item.name} (${item.brand})` : item.name;
+            const itemTitle = buildItemTitle(item);
 
             return (
               <tr key={item.id}>

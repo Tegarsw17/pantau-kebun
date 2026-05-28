@@ -81,6 +81,7 @@ Main inventory view:
 - Cards render `items.image_url` when available and fall back to a category visual when empty.
 - Admin item creation uploads images to Cloudinary using `VITE_PUBLIC_CLOUDINARY_CLOUD_NAME` and `VITE_PUBLIC_CLOUDINARY_UPLOAD_PRESET`, with Cloudinary folder `item-image`.
 - Cards show category visual, category badge, name and brand, stock level, stock status, and expiry warning.
+- Table view supports client-side sorting by item, category, stock, threshold, expiry, and last price.
 
 Stock states:
 
