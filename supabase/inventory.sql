@@ -5,6 +5,7 @@ create table if not exists public.items (
   name text not null check (btrim(name) <> ''),
   brand text,
   image_url text,
+  is_active boolean not null default true,
   category text not null check (
     category in (
       'Pupuk & Nutrisi',
@@ -21,6 +22,9 @@ create table if not exists public.items (
 
 alter table public.items
   add column if not exists image_url text;
+
+alter table public.items
+  add column if not exists is_active boolean not null default true;
 
 create table if not exists public.stock_movements (
   id uuid primary key default gen_random_uuid(),
@@ -47,6 +51,7 @@ create table if not exists public.stock_movements (
 
 create index if not exists items_category_idx on public.items (category);
 create index if not exists items_created_at_idx on public.items (created_at desc);
+create index if not exists items_is_active_idx on public.items (is_active);
 create index if not exists stock_movements_item_id_created_at_idx
   on public.stock_movements (item_id, created_at desc);
 create index if not exists stock_movements_type_idx on public.stock_movements (type);

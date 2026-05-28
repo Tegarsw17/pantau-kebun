@@ -220,6 +220,7 @@ function normalizeItem(item) {
     currentStock: normalizeNumber(item?.current_stock),
     id: String(item?.id),
     imageUrl: normalizeText(item?.image_url, ""),
+    isActive: item?.is_active !== false,
     lowStockThreshold: normalizeNumber(item?.low_stock_threshold),
     name: normalizeText(item?.name, "Unnamed Item"),
     unit: normalizeText(item?.unit, "Unit"),
@@ -302,16 +303,22 @@ export function buildInventoryItems(items, movements) {
   });
 }
 
-export async function fetchInventoryItems() {
+export async function fetchInventoryItems({ includeArchived = false } = {}) {
   if (!isAdminSupabaseConfigured()) {
     throw new Error("Supabase inventory connection is not configured.");
   }
 
+  const searchParams = {
+    order: "name.asc",
+    select: "id,name,brand,image_url,is_active,category,current_stock,unit,low_stock_threshold,created_at",
+  };
+
+  if (!includeArchived) {
+    searchParams.is_active = "eq.true";
+  }
+
   const response = await fetch(
-    buildSupabaseUrl("/rest/v1/items", {
-      order: "name.asc",
-      select: "id,name,brand,image_url,category,current_stock,unit,low_stock_threshold,created_at",
-    }),
+    buildSupabaseUrl("/rest/v1/items", searchParams),
     {
       headers: buildSupabaseHeaders(),
     },
@@ -347,11 +354,14 @@ export async function fetchInventoryMovements() {
   return response.json();
 }
 
-export async function loadInventoryWorkspace({ allowStaticFallback = true } = {}) {
+export async function loadInventoryWorkspace({
+  allowStaticFallback = true,
+  includeArchived = false,
+} = {}) {
   if (isAdminSupabaseConfigured()) {
     try {
       const [items, movements] = await Promise.all([
-        fetchInventoryItems(),
+        fetchInventoryItems({ includeArchived }),
         fetchInventoryMovements(),
       ]);
 
@@ -415,6 +425,7 @@ export function buildInventoryItemPayload({
     category: INVENTORY_CATEGORIES.includes(category) ? category : INVENTORY_CATEGORIES[0],
     current_stock: 0,
     image_url: normalizeText(imageUrl, "") || null,
+    is_active: true,
     low_stock_threshold: normalizeNumber(lowStockThreshold),
     name: normalizeText(name, "Unnamed Item"),
     unit: normalizeText(unit, "Unit"),
@@ -450,7 +461,7 @@ export async function saveInventoryItem(payload) {
 
   const response = await fetch(
     buildSupabaseUrl("/rest/v1/items", {
-      select: "id,name,brand,image_url,category,current_stock,unit,low_stock_threshold,created_at",
+      select: "id,name,brand,image_url,is_active,category,current_stock,unit,low_stock_threshold,created_at",
     }),
     {
       body: JSON.stringify(payload),
@@ -479,6 +490,7 @@ export async function updateInventoryItem({ itemId, payload }) {
     return {
       ...payload,
       current_stock: payload.current_stock ?? 0,
+      is_active: payload.is_active ?? true,
       id: itemId,
     };
   }
@@ -486,7 +498,7 @@ export async function updateInventoryItem({ itemId, payload }) {
   const response = await fetch(
     buildSupabaseUrl("/rest/v1/items", {
       id: `eq.${String(itemId)}`,
-      select: "id,name,brand,image_url,category,current_stock,unit,low_stock_threshold,created_at",
+      select: "id,name,brand,image_url,is_active,category,current_stock,unit,low_stock_threshold,created_at",
     }),
     {
       body: JSON.stringify(payload),
@@ -508,6 +520,15 @@ export async function updateInventoryItem({ itemId, payload }) {
   }
 
   return rows[0];
+}
+
+export async function updateInventoryItemActiveStatus({ itemId, isActive }) {
+  return updateInventoryItem({
+    itemId,
+    payload: {
+      is_active: Boolean(isActive),
+    },
+  });
 }
 
 export async function saveInventoryStockMovement(payload) {

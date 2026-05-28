@@ -149,6 +149,7 @@ function InventoryItemCard({ item, onEditRequest, onHistoryRequest, onMutationRe
       <div className="inventory-card__body">
         <div className="inventory-card__header">
           <span className="inventory-category-badge">{item.category}</span>
+          {!item.isActive ? <span className="inventory-archive-badge">Archived</span> : null}
           {expiryState ? (
             <span className={`inventory-expiry ${expiryState.className}`}>
               {expiryState.label}
@@ -194,6 +195,7 @@ function InventoryItemCard({ item, onEditRequest, onHistoryRequest, onMutationRe
           </button>
           <button
             className="inventory-mutation-button"
+            disabled={!item.isActive}
             onClick={() => onMutationRequest?.(item)}
             type="button"
           >
@@ -253,6 +255,9 @@ function InventoryTableView({ items, onEditRequest, onHistoryRequest, onMutation
                     <div>
                       <strong>{itemTitle}</strong>
                       <span>{item.unit}</span>
+                      {!item.isActive ? (
+                        <span className="inventory-table-archive-label">Archived</span>
+                      ) : null}
                     </div>
                   </div>
                 </td>
@@ -296,20 +301,21 @@ function InventoryTableView({ items, onEditRequest, onHistoryRequest, onMutation
                   </button>
                   {isAdmin ? (
                     <>
-                    <button
-                      className="inventory-table-action"
-                      onClick={() => onEditRequest?.(item)}
-                      type="button"
-                    >
-                      Edit
-                    </button>
-                    <button
-                      className="inventory-table-action inventory-table-action--primary"
-                      onClick={() => onMutationRequest?.(item)}
-                      type="button"
-                    >
-                      Mutasi
-                    </button>
+                      <button
+                        className="inventory-table-action"
+                        onClick={() => onEditRequest?.(item)}
+                        type="button"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        className="inventory-table-action inventory-table-action--primary"
+                        disabled={!item.isActive}
+                        onClick={() => onMutationRequest?.(item)}
+                        type="button"
+                      >
+                        Mutasi
+                      </button>
                     </>
                   ) : null}
                 </td>
@@ -357,6 +363,7 @@ export function InventoryWorkspace({ userRole = "non-admin" }) {
   const [selectedEditItem, setSelectedEditItem] = useState(null);
   const [selectedHistoryItem, setSelectedHistoryItem] = useState(null);
   const [selectedMutationItem, setSelectedMutationItem] = useState(null);
+  const [archiveFilter, setArchiveFilter] = useState("active");
   const [selectedCategory, setSelectedCategory] = useState(ALL_INVENTORY_CATEGORIES);
   const [searchQuery, setSearchQuery] = useState("");
   const [viewMode, setViewMode] = useState("grid");
@@ -367,6 +374,7 @@ export function InventoryWorkspace({ userRole = "non-admin" }) {
 
     loadInventoryWorkspace({
       allowStaticFallback: !isAdmin,
+      includeArchived: isAdmin,
     })
       .then((snapshot) => {
         if (!isMounted) {
@@ -404,8 +412,13 @@ export function InventoryWorkspace({ userRole = "non-admin" }) {
   const filteredItems = inventorySnapshot.items.filter((item) => {
     const matchesCategory =
       selectedCategory === ALL_INVENTORY_CATEGORIES || item.category === selectedCategory;
+    const matchesArchiveFilter =
+      !isAdmin ||
+      archiveFilter === "all" ||
+      (archiveFilter === "active" && item.isActive) ||
+      (archiveFilter === "archived" && !item.isActive);
 
-    return matchesCategory && itemMatchesSearch(item, normalizedSearchQuery);
+    return matchesArchiveFilter && matchesCategory && itemMatchesSearch(item, normalizedSearchQuery);
   });
   const handleMovementSaved = (movement) => {
     setInventorySnapshot((currentSnapshot) => ({
@@ -435,120 +448,142 @@ export function InventoryWorkspace({ userRole = "non-admin" }) {
   return (
     <>
       <main className="dashboard inventory-workspace">
-      <section className="workspace-panel workspace-panel--primary inventory-hero">
-        <p className="section-kicker inventory-hero__title">Etalase Inventory</p>
+        <section className="workspace-panel workspace-panel--primary inventory-hero">
+          <p className="section-kicker inventory-hero__title">Etalase Inventory</p>
 
-        <div className="inventory-toolbar">
-          <label className="search-shell inventory-search" aria-label="Search inventory">
-            <span className="search-shell__icon">⌕</span>
-            <input
-              disabled={inventorySnapshot.loadState !== "ready"}
-              onChange={(event) => setSearchQuery(event.target.value)}
-              placeholder="Search item, brand, category, or unit"
-              type="text"
-              value={searchQuery}
-            />
-          </label>
-
-          <div className="inventory-tabs" aria-label="Inventory categories">
-            {[ALL_INVENTORY_CATEGORIES, ...INVENTORY_CATEGORIES].map((category) => (
-              <button
-                className={`inventory-tab ${
-                  selectedCategory === category ? "inventory-tab--active" : ""
-                }`}
+          <div className="inventory-toolbar">
+            <label className="search-shell inventory-search" aria-label="Search inventory">
+              <span className="search-shell__icon">⌕</span>
+              <input
                 disabled={inventorySnapshot.loadState !== "ready"}
-                key={category}
-                onClick={() => setSelectedCategory(category)}
+                onChange={(event) => setSearchQuery(event.target.value)}
+                placeholder="Search item, brand, category, or unit"
+                type="text"
+                value={searchQuery}
+              />
+            </label>
+
+            <div className="inventory-tabs" aria-label="Inventory categories">
+              {[ALL_INVENTORY_CATEGORIES, ...INVENTORY_CATEGORIES].map((category) => (
+                <button
+                  className={`inventory-tab ${
+                    selectedCategory === category ? "inventory-tab--active" : ""
+                  }`}
+                  disabled={inventorySnapshot.loadState !== "ready"}
+                  key={category}
+                  onClick={() => setSelectedCategory(category)}
+                  type="button"
+                >
+                  {category}
+                </button>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section className="inventory-grid-section" aria-label="Inventory Storefront">
+          <div className="inventory-grid-actions">
+            <div className="inventory-view-toggle" aria-label="Inventory view mode">
+              <button
+                aria-pressed={viewMode === "grid"}
+                className={`inventory-view-toggle__button ${
+                  viewMode === "grid" ? "inventory-view-toggle__button--active" : ""
+                }`}
+                onClick={() => setViewMode("grid")}
                 type="button"
               >
-                {category}
+                <Grid2X2 size={16} strokeWidth={2} />
+                Card
               </button>
-            ))}
-          </div>
-        </div>
-      </section>
+              <button
+                aria-pressed={viewMode === "table"}
+                className={`inventory-view-toggle__button ${
+                  viewMode === "table" ? "inventory-view-toggle__button--active" : ""
+                }`}
+                onClick={() => setViewMode("table")}
+                type="button"
+              >
+                <TableOfContents size={16} strokeWidth={2} />
+                Table
+              </button>
+            </div>
 
-      <section className="inventory-grid-section" aria-label="Inventory Storefront">
-        <div className="inventory-grid-actions">
-          <div className="inventory-view-toggle" aria-label="Inventory view mode">
-            <button
-              aria-pressed={viewMode === "grid"}
-              className={`inventory-view-toggle__button ${
-                viewMode === "grid" ? "inventory-view-toggle__button--active" : ""
-              }`}
-              onClick={() => setViewMode("grid")}
-              type="button"
-            >
-              <Grid2X2 size={16} strokeWidth={2} />
-              Card
-            </button>
-            <button
-              aria-pressed={viewMode === "table"}
-              className={`inventory-view-toggle__button ${
-                viewMode === "table" ? "inventory-view-toggle__button--active" : ""
-              }`}
-              onClick={() => setViewMode("table")}
-              type="button"
-            >
-              <TableOfContents size={16} strokeWidth={2} />
-              Table
-            </button>
+            {isAdmin ? (
+              <button
+                className="inventory-add-button"
+                disabled={inventorySnapshot.loadState !== "ready"}
+                onClick={() => setIsItemModalOpen(true)}
+                type="button"
+              >
+                Tambah Item
+              </button>
+            ) : null}
           </div>
 
           {isAdmin ? (
-            <button
-              className="inventory-add-button"
-              disabled={inventorySnapshot.loadState !== "ready"}
-              onClick={() => setIsItemModalOpen(true)}
-              type="button"
-            >
-              Tambah Item
-            </button>
+            <div className="inventory-archive-tabs" aria-label="Inventory archive filter">
+              {[
+                ["active", "Active"],
+                ["archived", "Archived"],
+                ["all", "All"],
+              ].map(([value, label]) => (
+                <button
+                  className={`inventory-archive-tab ${
+                    archiveFilter === value ? "inventory-archive-tab--active" : ""
+                  }`}
+                  disabled={inventorySnapshot.loadState !== "ready"}
+                  key={value}
+                  onClick={() => setArchiveFilter(value)}
+                  type="button"
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
           ) : null}
-        </div>
 
-        {inventorySnapshot.loadState === "loading" ? (
-          <div className="inventory-empty-state">
-            <strong>Loading inventory</strong>
-            <span>Preparing stock cards and movement summaries.</span>
-          </div>
-        ) : inventorySnapshot.loadState === "error" ? (
-          <div className="inventory-empty-state">
-            <strong>Inventory unavailable</strong>
-            <span>
-              {isAdmin
-                ? "Admin inventory requires Supabase tables and environment variables."
-                : "Check Supabase configuration or static preview data."}
-            </span>
-          </div>
-        ) : filteredItems.length === 0 ? (
-          <div className="inventory-empty-state">
-            <strong>No items found</strong>
-            <span>Try another search term or category filter.</span>
-          </div>
-        ) : viewMode === "table" ? (
-          <InventoryTableView
-            items={filteredItems}
-            onEditRequest={setSelectedEditItem}
-            onHistoryRequest={setSelectedHistoryItem}
-            onMutationRequest={setSelectedMutationItem}
-            userRole={userRole}
-          />
-        ) : (
-          <div className="inventory-grid">
-            {filteredItems.map((item) => (
-              <InventoryItemCard
-                item={item}
-                key={item.id}
-                onEditRequest={setSelectedEditItem}
-                onHistoryRequest={setSelectedHistoryItem}
-                onMutationRequest={setSelectedMutationItem}
-                userRole={userRole}
-              />
-            ))}
-          </div>
-        )}
-      </section>
+          {inventorySnapshot.loadState === "loading" ? (
+            <div className="inventory-empty-state">
+              <strong>Loading inventory</strong>
+              <span>Preparing stock cards and movement summaries.</span>
+            </div>
+          ) : inventorySnapshot.loadState === "error" ? (
+            <div className="inventory-empty-state">
+              <strong>Inventory unavailable</strong>
+              <span>
+                {isAdmin
+                  ? "Admin inventory requires Supabase tables and environment variables."
+                  : "Check Supabase configuration or static preview data."}
+              </span>
+            </div>
+          ) : filteredItems.length === 0 ? (
+            <div className="inventory-empty-state">
+              <strong>No items found</strong>
+              <span>Try another search term or category filter.</span>
+            </div>
+          ) : viewMode === "table" ? (
+            <InventoryTableView
+              items={filteredItems}
+              onEditRequest={setSelectedEditItem}
+              onHistoryRequest={setSelectedHistoryItem}
+              onMutationRequest={setSelectedMutationItem}
+              userRole={userRole}
+            />
+          ) : (
+            <div className="inventory-grid">
+              {filteredItems.map((item) => (
+                <InventoryItemCard
+                  item={item}
+                  key={item.id}
+                  onEditRequest={setSelectedEditItem}
+                  onHistoryRequest={setSelectedHistoryItem}
+                  onMutationRequest={setSelectedMutationItem}
+                  userRole={userRole}
+                />
+              ))}
+            </div>
+          )}
+        </section>
       </main>
 
       {isAdmin && selectedMutationItem != null ? (

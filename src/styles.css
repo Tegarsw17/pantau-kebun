@@ -2310,6 +2310,38 @@ tbody tr + tr td {
   margin-bottom: 12px;
 }
 
+.inventory-archive-tabs {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 14px;
+  padding: 5px;
+  border: 1px solid rgba(114, 144, 156, 0.14);
+  background: rgba(8, 16, 20, 0.58);
+}
+
+.inventory-archive-tab {
+  min-height: 30px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 0.78rem;
+  padding: 0 10px;
+  cursor: pointer;
+}
+
+.inventory-archive-tab--active {
+  border-color: rgba(60, 230, 255, 0.18);
+  background: rgba(10, 29, 36, 0.76);
+  color: #d8fbff;
+}
+
+.inventory-archive-tab:disabled {
+  cursor: not-allowed;
+  opacity: 0.56;
+}
+
 .inventory-view-toggle {
   display: inline-flex;
   align-items: center;
@@ -2526,7 +2558,14 @@ tbody tr + tr td {
   gap: 12px;
 }
 
+.inventory-card__header {
+  justify-content: flex-start;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
 .inventory-category-badge,
+.inventory-archive-badge,
 .inventory-expiry,
 .inventory-stock__pill {
   display: inline-flex;
@@ -2544,6 +2583,12 @@ tbody tr + tr td {
   color: #d8fbff;
   border-color: rgba(60, 230, 255, 0.16);
   background: rgba(10, 29, 36, 0.72);
+}
+
+.inventory-archive-badge {
+  border-color: rgba(114, 144, 156, 0.22);
+  background: rgba(21, 29, 33, 0.78);
+  color: #cfd9dd;
 }
 
 .inventory-expiry--warning {
@@ -2698,6 +2743,19 @@ tbody tr + tr td {
   transform: translateY(-1px);
 }
 
+.inventory-mutation-button:disabled,
+.inventory-table-action:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+  filter: grayscale(0.35);
+}
+
+.inventory-mutation-button:disabled:hover {
+  border-color: rgba(255, 202, 95, 0.28);
+  filter: grayscale(0.35);
+  transform: none;
+}
+
 .inventory-table-shell {
   overflow: auto;
   border: 1px solid rgba(114, 144, 156, 0.16);
@@ -2747,6 +2805,15 @@ tbody tr + tr td {
 .inventory-table-muted {
   color: var(--muted);
   font-size: 0.82rem;
+}
+
+.inventory-table-archive-label {
+  width: fit-content;
+  padding: 2px 7px;
+  border: 1px solid rgba(114, 144, 156, 0.18);
+  background: rgba(21, 29, 33, 0.72);
+  color: #cfd9dd;
+  font-size: 0.72rem;
 }
 
 .inventory-table-thumb {
@@ -3131,6 +3198,20 @@ tbody tr + tr td {
   border-color: rgba(255, 202, 95, 0.32);
   background: rgba(64, 48, 16, 0.92);
   color: #fff1d4;
+}
+
+.inventory-modal__button--danger {
+  margin-right: auto;
+  border-color: rgba(255, 107, 107, 0.34);
+  background: rgba(75, 20, 20, 0.72);
+  color: #ffd4d4;
+}
+
+.inventory-modal__button--success {
+  margin-right: auto;
+  border-color: rgba(87, 242, 135, 0.28);
+  background: rgba(10, 33, 19, 0.78);
+  color: #d5ffd9;
 }
 
 @media (max-width: 1120px) {

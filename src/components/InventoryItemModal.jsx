@@ -14,6 +14,7 @@ import {
   saveInventoryItem,
   saveInventoryStockMovement,
   updateInventoryItem,
+  updateInventoryItemActiveStatus,
 } from "../data/inventoryData.js";
 
 export function InventoryItemModal({ item = null, mode = "create", onClose, onSaved }) {
@@ -178,6 +179,44 @@ export function InventoryItemModal({ item = null, mode = "create", onClose, onSa
       onClose();
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : "Inventory item could not be saved.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleStatusChange = async () => {
+    if (!isEditing || item == null || isSaving) {
+      return;
+    }
+
+    const nextIsActive = !item.isActive;
+    const confirmationMessage = nextIsActive
+      ? "Restore this item to active inventory?"
+      : "Archive this item? Existing movement history will be preserved.";
+
+    if (!window.confirm(confirmationMessage)) {
+      return;
+    }
+
+    setIsSaving(true);
+    setErrorMessage("");
+
+    try {
+      const savedItem = await updateInventoryItemActiveStatus({
+        isActive: nextIsActive,
+        itemId: item.id,
+      });
+      const normalizedItem = normalizeInventoryItem(savedItem, item.movements);
+
+      onSaved({
+        ...normalizedItem,
+        movements: item.movements,
+      });
+      onClose();
+    } catch (error) {
+      setErrorMessage(
+        error instanceof Error ? error.message : "Inventory item status could not be updated.",
+      );
     } finally {
       setIsSaving(false);
     }
@@ -391,6 +430,20 @@ export function InventoryItemModal({ item = null, mode = "create", onClose, onSa
           ) : null}
 
           <div className="inventory-modal__footer">
+            {isEditing ? (
+              <button
+                className={`inventory-modal__button ${
+                  item.isActive
+                    ? "inventory-modal__button--danger"
+                    : "inventory-modal__button--success"
+                }`}
+                disabled={isSaving}
+                onClick={handleStatusChange}
+                type="button"
+              >
+                {item.isActive ? "Archive Item" : "Restore Item"}
+              </button>
+            ) : null}
             <button
               className="inventory-modal__button"
               disabled={isSaving}

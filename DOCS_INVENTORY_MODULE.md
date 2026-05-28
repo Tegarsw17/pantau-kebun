@@ -13,7 +13,7 @@ The implementation follows the current app structure: React JSX, Vite, plain CSS
 
 The inventory model is ledger-based:
 
-- `items` stores master data, optional item image URL, and the cached `current_stock`.
+- `items` stores master data, optional item image URL, active/archive state, and the cached `current_stock`.
 - `stock_movements` stores append-only stock transactions.
 
 `stock_movements.qty` is signed:
@@ -55,6 +55,7 @@ Admin-only behavior:
 - Admin can create new master items from `Tambah Item`.
 - New item creation supports optional Cloudinary image upload and optional initial stock.
 - Admin inventory does not use static fallback data; Supabase must be configured and reachable.
+- Admin can archive and restore item master data from the edit modal.
 - Item cards show financial information when available.
 - Item cards show the `Mutasi Stok` button.
 - Mutation modal supports `Stok Masuk`, `Stok Keluar`, and `Penyesuaian`.
