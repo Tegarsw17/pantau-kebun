@@ -1669,7 +1669,13 @@ tbody tr + tr td {
 
 .history-drawer__header-copy {
   display: grid;
-  gap: 8px;
+  gap: 6px;
+  min-width: 0;
+}
+
+.history-drawer__header-copy h2 {
+  margin: 0;
+  line-height: 1.08;
 }
 
 .history-drawer__eyebrow,
@@ -1693,23 +1699,35 @@ tbody tr + tr td {
   align-items: center;
   justify-content: flex-end;
   flex-wrap: wrap;
-  gap: 10px;
+  gap: 8px;
 }
 
 .history-drawer__action,
 .history-drawer__close {
-  min-height: 38px;
+  min-height: 36px;
   border: 1px solid rgba(60, 230, 255, 0.22);
+  border-radius: 999px;
   background: rgba(13, 28, 36, 0.86);
   color: #d7fbff;
   font: inherit;
-  padding: 0 14px;
+  font-size: 0.82rem;
+  padding: 0 12px;
   cursor: pointer;
 }
 
+.history-drawer__action {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
 .history-drawer__action--accent {
-  border-color: rgba(60, 230, 255, 0.32);
-  background: rgba(8, 35, 43, 0.92);
+  border-color: rgba(255, 202, 95, 0.28);
+  background:
+    linear-gradient(135deg, rgba(255, 202, 95, 0.18), rgba(60, 230, 255, 0.09)),
+    rgba(8, 24, 31, 0.92);
+  color: #fff1d4;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.18);
 }
 
 .history-drawer__action:disabled {
@@ -1718,7 +1736,11 @@ tbody tr + tr td {
 }
 
 .history-drawer__close {
-  min-width: 74px;
+  display: inline-grid;
+  place-items: center;
+  width: 36px;
+  min-width: 36px;
+  padding: 0;
 }
 
 .history-drawer__summary {

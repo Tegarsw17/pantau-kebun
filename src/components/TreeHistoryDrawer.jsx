@@ -1,3 +1,4 @@
+import { ArrowLeftRight, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { HistoryCompareModal } from "./HistoryCompareModal.jsx";
 import { UpdateMediaGallery } from "./UpdateMediaGallery.jsx";
@@ -180,9 +181,8 @@ export function TreeHistoryDrawer({
         >
           <div className="history-drawer__header">
             <div className="history-drawer__header-copy">
-              <p className="history-drawer__eyebrow">Tree History</p>
-              <h2 id="tree-history-drawer-title">{resolvedTreeId}</h2>
-              <p className="history-drawer__subtitle">{resolvedPlantName}</p>
+              <h2 id="tree-history-drawer-title">{resolvedPlantName}</h2>
+              <p className="history-drawer__subtitle">{resolvedTreeId}</p>
             </div>
 
             <div className="history-drawer__actions">
@@ -192,7 +192,8 @@ export function TreeHistoryDrawer({
                 onClick={() => setIsCompareModalOpen(true)}
                 type="button"
               >
-                Open Compare
+                <ArrowLeftRight size={15} strokeWidth={2} />
+                Compare
               </button>
               <button
                 aria-label="Close tree history"
@@ -200,7 +201,7 @@ export function TreeHistoryDrawer({
                 onClick={onClose}
                 type="button"
               >
-                Close
+                <X size={18} strokeWidth={2} />
               </button>
             </div>
           </div>
