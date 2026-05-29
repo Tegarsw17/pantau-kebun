@@ -2469,15 +2469,16 @@ tbody tr + tr td {
 
 .inventory-category-select select {
   width: 100%;
-  min-height: 46px;
+  height: 40px;
+  min-height: 40px;
   appearance: none;
   border: 1px solid rgba(114, 144, 156, 0.16);
   border-radius: 999px;
   background: rgba(7, 15, 19, 0.84);
   color: var(--text);
   font: inherit;
-  font-size: 0.9rem;
-  padding: 0 42px 0 16px;
+  font-size: 0.78rem;
+  padding: 0 36px 0 12px;
   cursor: pointer;
   outline: none;
   box-shadow: 0 14px 34px rgba(0, 0, 0, 0.16);
@@ -2501,7 +2502,7 @@ tbody tr + tr td {
 
 .inventory-category-select svg {
   position: absolute;
-  right: 15px;
+  right: 13px;
   pointer-events: none;
   color: var(--subtle);
 }
