@@ -2444,25 +2444,20 @@ tbody tr + tr td {
 }
 
 .inventory-search {
-  min-height: 38px;
+  min-height: 46px;
   width: 25%;
   border-color: rgba(255, 202, 95, 0.2);
   border-radius: 999px;
   background: rgba(7, 15, 19, 0.84);
-  font-size: 0.82rem;
+  font-size: 0.9rem;
   box-shadow: 0 14px 34px rgba(0, 0, 0, 0.16);
   overflow: hidden;
 }
 
-.inventory-search .search-shell__icon {
-  width: 40px;
-  font-size: 0.9rem;
-}
-
 .inventory-search input {
-  min-height: 38px;
-  padding-right: 14px;
-  font-size: 0.82rem;
+  min-height: 46px;
+  padding-right: 18px;
+  font-size: 0.9rem;
 }
 
 .inventory-category-select {
@@ -2474,15 +2469,15 @@ tbody tr + tr td {
 
 .inventory-category-select select {
   width: 100%;
-  min-height: 38px;
+  min-height: 46px;
   appearance: none;
   border: 1px solid rgba(114, 144, 156, 0.16);
   border-radius: 999px;
   background: rgba(7, 15, 19, 0.84);
   color: var(--text);
   font: inherit;
-  font-size: 0.82rem;
-  padding: 0 38px 0 14px;
+  font-size: 0.9rem;
+  padding: 0 42px 0 16px;
   cursor: pointer;
   outline: none;
   box-shadow: 0 14px 34px rgba(0, 0, 0, 0.16);
@@ -2506,7 +2501,7 @@ tbody tr + tr td {
 
 .inventory-category-select svg {
   position: absolute;
-  right: 14px;
+  right: 15px;
   pointer-events: none;
   color: var(--subtle);
 }
