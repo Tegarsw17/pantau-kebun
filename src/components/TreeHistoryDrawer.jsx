@@ -207,31 +207,33 @@ export function TreeHistoryDrawer({
             </div>
           </div>
 
-          <section className="history-drawer__section">
-            <p className="history-drawer__label">Report Snapshot</p>
-            <div className="history-drawer__status-row">
-              <span className="status-badge" style={resolvedBadgeStyle ?? undefined}>
-                {resolvedConditionIcon} {resolvedConditionLabel}
-              </span>
-              <span className="history-drawer__timestamp">{resolvedUpdatedAt}</span>
-            </div>
-          </section>
+          <div className="history-drawer__report-focus">
+            <section className="history-drawer__section">
+              <p className="history-drawer__label">Report Snapshot</p>
+              <div className="history-drawer__status-row">
+                <span className="status-badge" style={resolvedBadgeStyle ?? undefined}>
+                  {resolvedConditionIcon} {resolvedConditionLabel}
+                </span>
+                <span className="history-drawer__timestamp">{resolvedUpdatedAt}</span>
+              </div>
+            </section>
 
-          <section className="history-drawer__section">
-            <p className="history-drawer__label">Field Note</p>
-            <p className="history-drawer__note">{resolvedNote}</p>
-          </section>
+            <section className="history-drawer__section">
+              <p className="history-drawer__label">Field Note</p>
+              <p className="history-drawer__note">{resolvedNote}</p>
+            </section>
 
-          <section className="history-drawer__section">
-            <p className="history-drawer__label">Attached Media</p>
-            <div className="history-drawer__summary">
-              <span className="history-drawer__summary-chip">{mediaAssets.length} total</span>
-              <span className="history-drawer__summary-chip">{mediaCounts.image} images</span>
-              <span className="history-drawer__summary-chip">{mediaCounts.video} videos</span>
-            </div>
+            <section className="history-drawer__section">
+              <p className="history-drawer__label">Attached Media</p>
+              <div className="history-drawer__summary">
+                <span className="history-drawer__summary-chip">{mediaAssets.length} total</span>
+                <span className="history-drawer__summary-chip">{mediaCounts.image} images</span>
+                <span className="history-drawer__summary-chip">{mediaCounts.video} videos</span>
+              </div>
 
-            <UpdateMediaGallery mediaAssets={mediaAssets} />
-          </section>
+              <UpdateMediaGallery mediaAssets={mediaAssets} />
+            </section>
+          </div>
 
           <section className="history-drawer__section">
             <p className="history-drawer__label">Update Timeline</p>
