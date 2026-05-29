@@ -181,6 +181,7 @@ export function TreeHistoryDrawer({
         >
           <div className="history-drawer__header">
             <div className="history-drawer__header-copy">
+              <p className="history-drawer__eyebrow">Tree History</p>
               <h2 id="tree-history-drawer-title">{resolvedPlantName}</h2>
               <p className="history-drawer__subtitle">{resolvedTreeId}</p>
             </div>
@@ -204,23 +205,6 @@ export function TreeHistoryDrawer({
                 <X size={18} strokeWidth={2} />
               </button>
             </div>
-          </div>
-
-          <div className="history-drawer__summary">
-            <span className="history-drawer__summary-chip">{resolvedPlantType}</span>
-            <span className="history-drawer__summary-chip">
-              {selectedTree != null ? "Mapped on canvas" : "No mapped coordinate"}
-            </span>
-            <span className="history-drawer__summary-chip">
-              {historyCount === 1 ? "1 update loaded" : `${historyCount} updates loaded`}
-            </span>
-            {activeHistoryEntry != null ? (
-              <span className="history-drawer__summary-chip">
-                {activeHistoryEntry.id === latestHistoryEntry?.id
-                  ? "Latest report focused"
-                  : "Timeline report focused"}
-              </span>
-            ) : null}
           </div>
 
           <section className="history-drawer__section">
