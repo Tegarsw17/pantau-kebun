@@ -832,7 +832,7 @@ export function InventoryWorkspace({ userRole = "non-admin" }) {
               <input
                 disabled={inventorySnapshot.loadState !== "ready"}
                 onChange={(event) => setSearchQuery(event.target.value)}
-                placeholder="Search item, brand, category, or unit"
+                placeholder="Cari item"
                 type="text"
                 value={searchQuery}
               />
