@@ -2362,6 +2362,14 @@ tbody tr + tr td {
   min-width: 0;
 }
 
+.inventory-grid-actions__right {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  min-width: 0;
+}
+
 .inventory-archive-tabs {
   display: inline-flex;
   align-items: center;
@@ -2425,32 +2433,32 @@ tbody tr + tr td {
 .inventory-toolbar {
   position: relative;
   z-index: 1;
-  display: grid;
-  grid-template-columns: minmax(280px, 1fr) minmax(220px, 280px);
-  gap: 12px;
-  align-items: center;
+  display: flex;
+  justify-content: flex-end;
 }
 
 .inventory-search {
   min-height: 46px;
-  width: 100%;
+  width: 25%;
   border-color: rgba(255, 202, 95, 0.2);
   border-radius: 999px;
   background: rgba(7, 15, 19, 0.84);
+  font-size: 0.9rem;
   box-shadow: 0 14px 34px rgba(0, 0, 0, 0.16);
   overflow: hidden;
 }
 
 .inventory-search input {
-  min-height: 44px;
+  min-height: 46px;
   padding-right: 18px;
+  font-size: 0.9rem;
 }
 
 .inventory-category-select {
   position: relative;
   display: flex;
   align-items: center;
-  width: 100%;
+  width: min(280px, 32vw);
 }
 
 .inventory-category-select select {
@@ -3407,10 +3415,6 @@ tbody tr + tr td {
 }
 
 @media (max-width: 960px) {
-  .inventory-toolbar {
-    grid-template-columns: 1fr;
-  }
-
   .inventory-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -3595,8 +3599,14 @@ tbody tr + tr td {
     flex-direction: column;
   }
 
+  .inventory-grid-actions__right {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
   .inventory-view-toggle,
   .inventory-archive-tabs,
+  .inventory-category-select,
   .inventory-export-button,
   .inventory-add-button {
     width: 100%;

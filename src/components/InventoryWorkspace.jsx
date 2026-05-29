@@ -837,21 +837,6 @@ export function InventoryWorkspace({ userRole = "non-admin" }) {
                 value={searchQuery}
               />
             </label>
-
-            <label className="inventory-category-select" aria-label="Filter inventory category">
-              <select
-                disabled={inventorySnapshot.loadState !== "ready"}
-                onChange={(event) => setSelectedCategory(event.target.value)}
-                value={selectedCategory}
-              >
-                {[ALL_INVENTORY_CATEGORIES, ...INVENTORY_CATEGORIES].map((category) => (
-                  <option key={category} value={category}>
-                    {category}
-                  </option>
-                ))}
-              </select>
-              <ChevronDown size={16} strokeWidth={2} />
-            </label>
           </div>
         </section>
 
@@ -904,29 +889,46 @@ export function InventoryWorkspace({ userRole = "non-admin" }) {
               </div>
             ) : null}
 
-            <div className="inventory-view-toggle" aria-label="Inventory view mode">
-              <button
-                aria-pressed={viewMode === "grid"}
-                className={`inventory-view-toggle__button ${
-                  viewMode === "grid" ? "inventory-view-toggle__button--active" : ""
-                }`}
-                onClick={() => setViewMode("grid")}
-                type="button"
-              >
-                <Grid2X2 size={16} strokeWidth={2} />
-                Card
-              </button>
-              <button
-                aria-pressed={viewMode === "table"}
-                className={`inventory-view-toggle__button ${
-                  viewMode === "table" ? "inventory-view-toggle__button--active" : ""
-                }`}
-                onClick={() => setViewMode("table")}
-                type="button"
-              >
-                <TableOfContents size={16} strokeWidth={2} />
-                Table
-              </button>
+            <div className="inventory-grid-actions__right">
+              <label className="inventory-category-select" aria-label="Filter inventory category">
+                <select
+                  disabled={inventorySnapshot.loadState !== "ready"}
+                  onChange={(event) => setSelectedCategory(event.target.value)}
+                  value={selectedCategory}
+                >
+                  {[ALL_INVENTORY_CATEGORIES, ...INVENTORY_CATEGORIES].map((category) => (
+                    <option key={category} value={category}>
+                      {category}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown size={16} strokeWidth={2} />
+              </label>
+
+              <div className="inventory-view-toggle" aria-label="Inventory view mode">
+                <button
+                  aria-pressed={viewMode === "grid"}
+                  className={`inventory-view-toggle__button ${
+                    viewMode === "grid" ? "inventory-view-toggle__button--active" : ""
+                  }`}
+                  onClick={() => setViewMode("grid")}
+                  type="button"
+                >
+                  <Grid2X2 size={16} strokeWidth={2} />
+                  Card
+                </button>
+                <button
+                  aria-pressed={viewMode === "table"}
+                  className={`inventory-view-toggle__button ${
+                    viewMode === "table" ? "inventory-view-toggle__button--active" : ""
+                  }`}
+                  onClick={() => setViewMode("table")}
+                  type="button"
+                >
+                  <TableOfContents size={16} strokeWidth={2} />
+                  Table
+                </button>
+              </div>
             </div>
           </div>
 
