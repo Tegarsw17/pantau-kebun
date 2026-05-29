@@ -1,3 +1,10 @@
 node_modules
 dist
 .DS_Store
+
+.env
+
+
+DOCS_ADMIN_ARCHITECTURE.md
+DOCS_MONITORING_DASHBOARD.md
+DOCS_INVENTORY_MODULE.md
