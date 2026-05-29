@@ -2444,8 +2444,9 @@ tbody tr + tr td {
 }
 
 .inventory-search {
-  min-height: 46px;
-  width: 25%;
+  height: 42px;
+  min-height: 42px;
+  width: 22%;
   border-color: rgba(255, 202, 95, 0.2);
   border-radius: 999px;
   background: rgba(7, 15, 19, 0.84);
@@ -2455,7 +2456,8 @@ tbody tr + tr td {
 }
 
 .inventory-search input {
-  min-height: 46px;
+  height: 42px;
+  min-height: 42px;
   padding-right: 18px;
   font-size: 0.9rem;
 }
