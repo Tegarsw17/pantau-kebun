@@ -2444,7 +2444,8 @@ tbody tr + tr td {
 }
 
 .inventory-search {
-  min-height: 38px;
+  height: 36px;
+  min-height: 36px;
   width: 25%;
   border-color: rgba(255, 202, 95, 0.2);
   border-radius: 999px;
@@ -2455,14 +2456,17 @@ tbody tr + tr td {
 }
 
 .inventory-search .search-shell__icon {
-  width: 40px;
-  font-size: 0.9rem;
+  width: 36px;
+  height: 36px;
+  font-size: 0.82rem;
 }
 
 .inventory-search input {
-  min-height: 38px;
-  padding-right: 14px;
+  height: 36px;
+  min-height: 36px;
+  padding: 0 12px 0 0;
   font-size: 0.82rem;
+  line-height: 36px;
 }
 
 .inventory-category-select {
@@ -2474,7 +2478,8 @@ tbody tr + tr td {
 
 .inventory-category-select select {
   width: 100%;
-  min-height: 38px;
+  height: 36px;
+  min-height: 36px;
   appearance: none;
   border: 1px solid rgba(114, 144, 156, 0.16);
   border-radius: 999px;
