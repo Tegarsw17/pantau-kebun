@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { HistoryCompareModal } from "./HistoryCompareModal.jsx";
 import { UpdateMediaGallery } from "./UpdateMediaGallery.jsx";
 
@@ -86,6 +86,7 @@ export function TreeHistoryDrawer({
   reportRow,
   selectedTree,
 }) {
+  const drawerRef = useRef(null);
   const [isCompareModalOpen, setIsCompareModalOpen] = useState(false);
   const [selectedHistoryEntryId, setSelectedHistoryEntryId] = useState(latestHistoryEntry?.id ?? null);
 
@@ -151,6 +152,17 @@ export function TreeHistoryDrawer({
     }
   }, [canOpenCompare]);
 
+  const handleHistoryEntrySelect = (historyEntryId) => {
+    setSelectedHistoryEntryId(historyEntryId);
+
+    window.requestAnimationFrame(() => {
+      drawerRef.current?.scrollTo({
+        behavior: "smooth",
+        top: 0,
+      });
+    });
+  };
+
   if (reportRow == null && selectedTree == null) {
     return null;
   }
@@ -163,6 +175,7 @@ export function TreeHistoryDrawer({
           aria-modal="true"
           className="history-drawer"
           onClick={(event) => event.stopPropagation()}
+          ref={drawerRef}
           role="dialog"
         >
           <div className="history-drawer__header">
@@ -265,7 +278,7 @@ export function TreeHistoryDrawer({
                             activeHistoryEntry?.id === historyEntry.id ? "history-card--selected" : ""
                           }`}
                           key={historyEntry.id ?? `${historyGroup.key}-${index}`}
-                          onClick={() => setSelectedHistoryEntryId(historyEntry.id ?? null)}
+                          onClick={() => handleHistoryEntrySelect(historyEntry.id ?? null)}
                           type="button"
                         >
                           <div className="history-card__header">
